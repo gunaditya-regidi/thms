@@ -1,0 +1,559 @@
+{% extends "base.html" %}
+
+{% block title %}Live Leaderboard & Statistics{% endblock %}
+{% block container_class %}container-fluid p-0{% endblock %}
+
+{% block content %}
+<!-- Navbar / Status Bar -->
+<div class="navbar navbar-expand-lg bg-dark navbar-dark py-3 px-4 shadow-sm">
+    <div class="container-fluid d-flex justify-content-between align-items-center">
+        <span class="navbar-brand fw-bold mb-0 text-warning"><i class="bi bi-bar-chart-line-fill me-2 text-warning"></i>Live Stats Dashboard</span>
+        <div class="d-flex align-items-center">
+            <!-- Ticking Digital Clock -->
+            <div id="gameTimer" class="badge bg-danger fs-6 rounded-pill px-3 py-2 font-monospace me-3 d-flex align-items-center">
+                <i class="bi bi-clock-fill me-2"></i>00:00:00
+            </div>
+            
+            <a href="{{ url_for('stats_logout') }}" class="btn btn-sm btn-outline-light rounded-pill px-3 me-2">
+                <i class="bi bi-lock-fill me-1"></i>Lock Screen
+            </a>
+            <button class="btn btn-sm btn-outline-light rounded-circle" onclick="toggleTheme()" type="button" style="width: 32px; height: 32px; padding:0;">
+                <i class="bi bi-sun-fill dark-mode-hidden"></i>
+                <i class="bi bi-moon-fill light-mode-hidden"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Split Container -->
+<div class="stats-split-container {% if split_enabled %}split{% endif %}" id="statsContainer">
+    
+    <!-- LEFT PANEL: Active Team List Grid (40% or 100%) -->
+    <div class="stats-left-panel">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0 text-primary"><i class="bi bi-people-fill me-2"></i>Active Team Grid</h5>
+            <span class="badge bg-secondary rounded-pill" id="totalTeamsCount">{{ teams|length }} Teams Registered</span>
+        </div>
+        
+        <div class="glass-card p-3">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 small">
+                    <thead>
+                        <tr>
+                            <th>Team Details</th>
+                            <th>Status</th>
+                            <th>Progress</th>
+                            <th class="text-end">Last Active</th>
+                        </tr>
+                    </thead>
+                    <tbody id="teamsTableBody">
+                        <!-- Filled Dynamically -->
+                        {% for t in teams %}
+                            {% set status_class = 'bg-secondary' %}
+                            {% if t.round2_completed %}
+                                {% set status_class = 'bg-success' %}
+                            {% elif t.current_round == 2 %}
+                                {% set status_class = 'bg-info' %}
+                            {% elif t.round1_status == 'requested' %}
+                                {% set status_class = 'bg-warning text-dark' %}
+                            {% elif t.round1_status == 'verified' %}
+                                {% set status_class = 'bg-danger' %}
+                            {% endif %}
+                            
+                            <tr id="row_team_{{ t.id }}">
+                                <td class="fw-bold">{{ t.team_name }}</td>
+                                <td><span class="badge bg-light text-dark border font-monospace">{{ t.house.name }}</span></td>
+                                <td>Round {{ t.current_round }}</td>
+                                <td><span class="badge {{ status_class }}">{{ t.round1_status|upper }}</span></td>
+                                <td class="text-muted" id="active_time_{{ t.id }}">Just now</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL: Leaderboard & Charts (60% or Hidden) -->
+    <div class="stats-right-panel" id="rightPanel">
+        
+        <!-- Tab navigation inside statistics -->
+        <ul class="nav nav-tabs border-bottom-0 mb-3" id="statsTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active fw-bold px-3 border-0 bg-transparent text-primary" id="leaderboard-tab" data-bs-toggle="tab" data-bs-target="#leaderboard-pane" type="button" role="tab">
+                    <i class="bi bi-trophy-fill me-1"></i>Top 10 Leaderboard
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fw-bold px-3 border-0 bg-transparent text-primary" id="charts-tab" data-bs-toggle="tab" data-bs-target="#charts-pane" type="button" role="tab">
+                    <i class="bi bi-pie-chart-fill me-1"></i>Analytics Charts
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="statsTabContent">
+            
+            <!-- Pane A: Leaderboard -->
+            <div class="tab-pane fade show active" id="leaderboard-pane" role="tabpanel" aria-labelledby="leaderboard-tab" tabindex="0">
+                <div class="glass-card p-3 mb-4 border-primary border-opacity-25">
+                    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-trophy me-2"></i>Current Standings</h6>
+                    <div class="table-responsive">
+                        <table class="table table-striped align-middle mb-0 small">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Team</th>
+                                    <th>House</th>
+                                    <th>Round</th>
+                                    <th>QR Progress</th>
+                                    <th>Completion Time</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboardTableBody">
+                                <!-- Filled Dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Quick Metrics Cards -->
+                <div class="row g-2 mb-4">
+                    <div class="col-6 col-md-3">
+                        <div class="glass-card p-3 text-center">
+                            <h6 class="text-secondary small mb-1">Total Scans</h6>
+                            <h4 class="fw-bold mb-0 text-primary" id="metricTotalScans">0</h4>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="glass-card p-3 text-center">
+                            <h6 class="text-secondary small mb-1">Fastest Finish</h6>
+                            <h6 class="fw-bold mb-0 text-success text-truncate" id="metricFastestTeam" style="font-size: 13px;">None</h6>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="glass-card p-3 text-center">
+                            <h6 class="text-secondary small mb-1">Most Active</h6>
+                            <h6 class="fw-bold mb-0 text-info text-truncate" id="metricMostActive" style="font-size: 13px;">None</h6>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="glass-card p-3 text-center">
+                            <h6 class="text-secondary small mb-1">House Leader</h6>
+                            <h6 class="fw-bold mb-0 text-warning text-truncate" id="metricHouseLeader" style="font-size: 13px;">None</h6>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pane B: Charts -->
+            <div class="tab-pane fade" id="charts-pane" role="tabpanel" aria-labelledby="charts-tab" tabindex="0">
+                <div class="row g-3">
+                    <!-- Chart 1: House distribution -->
+                    <div class="col-12 col-md-6">
+                        <div class="glass-card p-3">
+                            <h6 class="fw-bold text-secondary mb-2">Teams per House</h6>
+                            <div style="height: 200px; position: relative;">
+                                <canvas id="houseChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Chart 2: Round Status counts -->
+                    <div class="col-12 col-md-6">
+                        <div class="glass-card p-3">
+                            <h6 class="fw-bold text-secondary mb-2">Round Completions</h6>
+                            <div style="height: 200px; position: relative;">
+                                <canvas id="roundChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Chart 3: QR Scan analytics line -->
+                    <div class="col-12">
+                        <div class="glass-card p-3">
+                            <h6 class="fw-bold text-secondary mb-2">QR Clue Scans Volume</h6>
+                            <div style="height: 200px; position: relative;">
+                                <canvas id="qrScanChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+// Declare Chart.js variables globally to allow updates
+let houseChartInst = null;
+let roundChartInst = null;
+let qrScanChartInst = null;
+
+// Initial stats fetch & clock start
+document.addEventListener('DOMContentLoaded', () => {
+    fetchStatsData();
+    startLocalClock();
+});
+
+// Running local time ticking logic
+function startLocalClock() {
+    setInterval(() => {
+        const timerEl = document.getElementById('gameTimer');
+        if (timerEl) {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            timerEl.innerHTML = `<i class="bi bi-clock-fill me-2"></i>${hours}:${minutes}:${seconds}`;
+        }
+    }, 1000);
+}
+
+// Listener for real-time DOM overrides
+function refreshDashboardData() {
+    fetchStatsData();
+}
+
+function fetchStatsData() {
+    fetch('/api/stats/data')
+        .then(response => response.json())
+        .then(data => {
+            updateStatsView(data);
+        })
+        .catch(err => console.error("Error loading stats api:", err));
+}
+
+function updateStatsView(data) {
+    // 1. Check if we need to enable Split-Screen Layout
+    const r2_completed_or_started = (data.round_stats['R1 Verified'] > 0 || 
+                                     data.round_stats['R1 Pending'] > 0 ||
+                                     data.round_stats['R2 Active'] > 0 || 
+                                     data.round_stats['R2 Completed'] > 0);
+    
+    const container = document.getElementById('statsContainer');
+    const rightPanel = document.getElementById('rightPanel');
+    
+    if (r2_completed_or_started) {
+        if (!container.classList.contains('split')) {
+            container.classList.add('split');
+            // Give time for layout transition before rendering charts
+            setTimeout(() => initializeCharts(data), 600);
+        } else {
+            initializeCharts(data); // update directly
+        }
+    }
+
+    // 2. Update Left side Team Grid Table with Progress Bars and House Colors
+    const tableBody = document.getElementById('teamsTableBody');
+    tableBody.innerHTML = '';
+    
+    data.teams_progress.forEach(team => {
+        const teamName = team.team_name;
+        const houseName = team.house_name;
+        const currentRound = team.current_round;
+        const round1Status = team.round1_status;
+        const round1Pct = team.round1_pct;
+        const round2Pct = team.round2_pct;
+        const round2Clue = team.round2_clue;
+        const round2Completed = team.round2_completed;
+        const lastActive = team.last_active;
+        
+        let houseClass = houseName.toLowerCase();
+        let borderClass = 'border-primary';
+        let badgeColor = 'bg-primary';
+        
+        if (houseClass === 'red') {
+            borderClass = 'border-danger';
+            badgeColor = 'bg-danger';
+        } else if (houseClass === 'green') {
+            borderClass = 'border-success';
+            badgeColor = 'bg-success';
+        } else if (houseClass === 'yellow') {
+            borderClass = 'border-warning';
+            badgeColor = 'bg-warning text-dark';
+        }
+        
+        let badgeClass = 'bg-secondary';
+        let statusText = 'R1 ACTIVE';
+        let progressVal = round1Pct;
+        let progressLabel = `R1 Tasks: ${Math.round(round1Pct/10)}/10 (${round1Pct}%)`;
+        
+        if (round2Completed) {
+            badgeClass = 'bg-success';
+            statusText = 'FINISHED 🏆';
+            progressVal = 100;
+            progressLabel = `FINISHED 🏆 (100%)`;
+        } else if (currentRound === 2 || round1Status === 'approved') {
+            badgeClass = 'bg-info text-dark';
+            statusText = 'R2 ACTIVE';
+            progressVal = round2Pct;
+            progressLabel = `R2 Clues: ${round2Clue - 1}/7 solved (${round2Pct}%)`;
+        } else if (round1Status === 'verified') {
+            badgeClass = 'bg-danger';
+            statusText = 'R1 VERIFIED';
+            progressVal = 100;
+            progressLabel = `R1 Verified (100%)`;
+        } else if (round1Status === 'requested') {
+            badgeClass = 'bg-warning text-dark';
+            statusText = 'R1 REQUESTED';
+            progressVal = 100;
+            progressLabel = `R1 Request Sent (100%)`;
+        }
+        
+        const tr = document.createElement('tr');
+        tr.className = `border-start border-4 ${borderClass}`;
+        tr.innerHTML = `
+            <td>
+                <div class="fw-bold text-${houseClass === 'yellow' ? 'warning' : (houseClass === 'red' ? 'danger' : (houseClass === 'green' ? 'success' : 'primary'))}">
+                    ${teamName}
+                </div>
+                <div class="mt-1">
+                    <span class="badge ${badgeColor} font-monospace" style="font-size: 10px;">${houseName} House</span>
+                </div>
+            </td>
+            <td>
+                <div class="fw-semibold text-secondary" style="font-size: 11px;">Round ${currentRound}</div>
+                <span class="badge ${badgeClass} mt-1" style="font-size: 10px;">${statusText}</span>
+            </td>
+            <td style="width: 40%;">
+                <div class="small fw-semibold text-secondary mb-1" style="font-size: 10px;">${progressLabel}</div>
+                <div class="progress" style="height: 10px; border-radius: 50px;">
+                    <div class="progress-bar ${badgeColor} progress-bar-striped progress-bar-animated" role="progressbar" style="width: ${progressVal}%;" aria-valuenow="${progressVal}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            </td>
+            <td class="text-muted text-end small">
+                <i class="bi bi-clock-history me-1"></i>${lastActive}
+            </td>
+        `;
+        tableBody.appendChild(tr);
+    });
+
+    // 3. Update Right side Leaderboard Grid (Top 10)
+    const leaderboardBody = document.getElementById('leaderboardTableBody');
+    leaderboardBody.innerHTML = '';
+    
+    const top10 = data.leaderboard.slice(0, 10);
+    top10.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="fw-bold">#${row[0]}</td>
+            <td class="fw-bold">${row[1]}</td>
+            <td><span class="badge bg-light text-dark border font-monospace">${row[2]}</span></td>
+            <td>${row[3]}</td>
+            <td><span class="badge bg-primary">${row[5]}</span></td>
+            <td class="text-muted font-monospace small">${row[4]}</td>
+        `;
+        leaderboardBody.appendChild(tr);
+    });
+
+    // 4. Update Quick stats cards
+    document.getElementById('metricTotalScans').innerText = data.metrics.total_scans;
+    document.getElementById('metricFastestTeam').innerText = data.metrics.fastest_team;
+    document.getElementById('metricMostActive').innerText = data.metrics.most_active_team;
+    
+    const hRank = data.metrics.house_rankings;
+    if (hRank && hRank.length > 0) {
+        document.getElementById('metricHouseLeader').innerText = `${hRank[0].name} (${hRank[0].finished} Fin)`;
+    }
+}
+
+function initializeCharts(data) {
+    const isDark = document.documentElement.classList.contains('dark-mode');
+    const labelColor = isDark ? '#f8fafc' : '#1e293b';
+    const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)';
+    
+    // Colors for Houses: Red, Green, Blue, Yellow
+    const houseColors = {
+        'Red': '#ef4444',
+        'Green': '#22c55e',
+        'Blue': '#3b82f6',
+        'Yellow': '#eab308'
+    };
+
+    // A. Chart 1: House Distribution
+    const houseCanvas = document.getElementById('houseChart');
+    if (houseCanvas) {
+        const labels = Object.keys(data.house_dist);
+        const values = Object.values(data.house_dist);
+        const bgColors = labels.map(l => houseColors[l] || '#cccccc');
+        
+        if (houseChartInst) houseChartInst.destroy();
+        houseChartInst = new Chart(houseCanvas, {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: bgColors,
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: labelColor }
+                    }
+                }
+            }
+        });
+    }
+
+    // B. Chart 2: Round completions
+    const roundCanvas = document.getElementById('roundChart');
+    if (roundCanvas) {
+        const labels = Object.keys(data.round_stats);
+        const values = Object.values(data.round_stats);
+        
+        if (roundChartInst) roundChartInst.destroy();
+        roundChartInst = new Chart(roundCanvas, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Teams Count',
+                    data: values,
+                    backgroundColor: ['#3b82f6', '#eab308', '#ef4444', '#a855f7', '#22c55e'],
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: labelColor },
+                        grid: { display: false }
+                    },
+                    y: {
+                        ticks: { color: labelColor, stepSize: 1 },
+                        grid: { color: gridColor }
+                    }
+                }
+            }
+        });
+    }
+
+    // C. Chart 3: QR Scans
+    const qrCanvas = document.getElementById('qrScanChart');
+    if (qrCanvas) {
+        const labels = Object.keys(data.qr_scans);
+        const values = Object.values(data.qr_scans);
+        
+        if (qrScanChartInst) qrScanChartInst.destroy();
+        qrScanChartInst = new Chart(qrCanvas, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Scan Counts',
+                    data: values,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: labelColor },
+                        grid: { display: false }
+                    },
+                    y: {
+                        ticks: { color: labelColor, stepSize: 2 },
+                        grid: { color: gridColor }
+                    }
+                }
+            }
+        });
+    }
+}
+</script>
+
+<style>
+    .dark-mode-hidden { display: inline-block; }
+    .light-mode-hidden { display: none; }
+    .dark-mode .dark-mode-hidden { display: none; }
+    .dark-mode .light-mode-hidden { display: inline-block; }
+    
+    .stats-split-container {
+        display: flex;
+        width: 100vw;
+        height: calc(100vh - 68px);
+        overflow: hidden;
+    }
+    
+    .stats-left-panel {
+        width: 100%;
+        height: 100%;
+        overflow-y: auto;
+        padding: 24px;
+        transition: width 0.5s ease-in-out;
+    }
+    
+    .stats-right-panel {
+        width: 0%;
+        height: 100%;
+        overflow-y: auto;
+        padding: 24px;
+        transition: width 0.5s ease-in-out, opacity 0.3s ease;
+        opacity: 0;
+        background-color: var(--bg-card);
+        border-left: 1px solid var(--border-color);
+        display: none;
+    }
+    
+    .stats-split-container.split .stats-left-panel {
+        width: 40%;
+    }
+    
+    .stats-split-container.split .stats-right-panel {
+        width: 60%;
+        opacity: 1;
+        display: block;
+    }
+
+    @media (max-width: 991px) {
+        /* On small screens, split container stacks vertically instead of side-by-side */
+        .stats-split-container {
+            flex-direction: column;
+            height: auto;
+            overflow: visible;
+        }
+        .stats-left-panel {
+            width: 100% !important;
+            height: auto;
+            overflow: visible;
+        }
+        .stats-right-panel {
+            width: 100% !important;
+            height: auto;
+            overflow: visible;
+            opacity: 1;
+            display: none;
+            border-left: none;
+            border-top: 1px solid var(--border-color);
+        }
+        .stats-split-container.split .stats-right-panel {
+            display: block;
+        }
+    }
+</style>
+{% endblock %}

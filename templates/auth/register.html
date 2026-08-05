@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}Register Team - Treasure Hunt{% endblock %}
+{% block container_class %}mobile-container{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 px-2 pt-3">
+    <a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+        <i class="bi bi-chevron-left me-1"></i>Back
+    </a>
+    <h5 class="mb-0 fw-bold">Team Registration</h5>
+    <button class="btn btn-sm btn-outline-secondary rounded-circle" onclick="toggleTheme()" type="button">
+        <i class="bi bi-sun-fill dark-mode-hidden"></i>
+        <i class="bi bi-moon-fill light-mode-hidden"></i>
+    </button>
+</div>
+
+<div class="glass-card p-4 mx-2 mb-4">
+    <div class="text-center mb-4">
+        <h4 class="fw-bold mb-1">Create Team</h4>
+        <p class="text-muted small">Register your Team Leader and members. Houses will be assigned randomly to maintain balance.</p>
+    </div>
+
+    <!-- Flask Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show rounded-3 small py-2 px-3 mb-3" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('auth.register') }}" onsubmit="return validateForm()">
+        
+        <!-- Section: Leader Credentials -->
+        <h6 class="fw-bold text-primary mb-3"><i class="bi bi-person-badge-fill me-2"></i>Team Leader (Main Account)</h6>
+        
+        <div class="form-floating mb-3">
+            <input type="text" class="form-control" id="team_name" name="team_name" placeholder="Unique Team Name" required>
+            <label for="team_name">Team Name (UID for login)</label>
+            <div class="form-text small">This will be your username to sign in.</div>
+        </div>
+
+        <div class="form-floating mb-3">
+            <input type="text" class="form-control" id="leader_name" name="leader_name" placeholder="Leader Full Name" required>
+            <label for="leader_name">Leader Full Name</label>
+        </div>
+
+        <div class="form-floating mb-3">
+            <input type="tel" class="form-control" id="leader_phone" name="leader_phone" placeholder="Leader Phone Number" pattern="[0-9]{10,15}" required>
+            <label for="leader_phone">Leader Phone Number</label>
+            <div class="form-text small">Must be unique across the entire system.</div>
+        </div>
+
+        <div class="form-floating mb-4">
+            <input type="password" class="form-control" id="leader_password" name="leader_password" placeholder="Password" required>
+            <label for="leader_password">Password (PWD for login)</label>
+        </div>
+
+        <hr class="my-4">
+
+        <!-- Section: Additional Members (Collapsible for cleaner mobile display) -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold text-primary mb-0"><i class="bi bi-people-fill me-2"></i>Team Members (Optional)</h6>
+            <button class="btn btn-sm btn-link text-decoration-none py-0" type="button" data-bs-toggle="collapse" data-bs-target="#membersCollapse" aria-expanded="false" aria-controls="membersCollapse">
+                Show/Hide
+            </button>
+        </div>
+
+        <div class="collapse show" id="membersCollapse">
+            <!-- Member 2 -->
+            <div class="card bg-light border-0 p-3 rounded-4 mb-3">
+                <span class="badge bg-secondary align-self-start mb-2">Member 2</span>
+                <div class="mb-2">
+                    <input type="text" class="form-control form-control-sm mb-2" id="member2_name" name="member2_name" placeholder="Name">
+                </div>
+                <div>
+                    <input type="tel" class="form-control form-control-sm" id="member2_phone" name="member2_phone" placeholder="Phone" pattern="[0-9]{10,15}">
+                </div>
+            </div>
+
+            <!-- Member 3 -->
+            <div class="card bg-light border-0 p-3 rounded-4 mb-3">
+                <span class="badge bg-secondary align-self-start mb-2">Member 3</span>
+                <div class="mb-2">
+                    <input type="text" class="form-control form-control-sm mb-2" id="member3_name" name="member3_name" placeholder="Name">
+                </div>
+                <div>
+                    <input type="tel" class="form-control form-control-sm" id="member3_phone" name="member3_phone" placeholder="Phone" pattern="[0-9]{10,15}">
+                </div>
+            </div>
+
+            <!-- Member 4 -->
+            <div class="card bg-light border-0 p-3 rounded-4 mb-3">
+                <span class="badge bg-secondary align-self-start mb-2">Member 4</span>
+                <div class="mb-2">
+                    <input type="text" class="form-control form-control-sm mb-2" id="member4_name" name="member4_name" placeholder="Name">
+                </div>
+                <div>
+                    <input type="tel" class="form-control form-control-sm" id="member4_phone" name="member4_phone" placeholder="Phone" pattern="[0-9]{10,15}">
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 py-3 rounded-3 fw-semibold mt-3">
+            <i class="bi bi-check-circle-fill me-2"></i>Register Team
+        </button>
+    </form>
+</div>
+
+<style>
+    .dark-mode-hidden { display: inline-block; }
+    .light-mode-hidden { display: none; }
+    .dark-mode .dark-mode-hidden { display: none; }
+    .dark-mode .light-mode-hidden { display: inline-block; }
+    
+    .dark-mode .card.bg-light {
+        background-color: #334155 !important;
+        border-color: #475569 !important;
+    }
+</style>
+
+<script>
+function validateForm() {
+    // Basic JS check to ensure that if name or phone is filled for a member, both must be filled
+    for (let i = 2; i <= 4; i++) {
+        const nameVal = document.getElementById(`member${i}_name`).value.trim();
+        const phoneVal = document.getElementById(`member${i}_phone`).value.trim();
+        
+        if ((nameVal !== "" && phoneVal === "") || (nameVal === "" && phoneVal !== "")) {
+            alert(`Please provide both Name and Phone for Member ${i}.`);
+            return false;
+        }
+    }
+    return true;
+}
+</script>
+{% endblock %}

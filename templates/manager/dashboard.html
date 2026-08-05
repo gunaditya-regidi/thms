@@ -1,0 +1,283 @@
+{% extends "base.html" %}
+
+{% block title %}Manager - {{ house.name }} House{% endblock %}
+{% block container_class %}mobile-container{% endblock %}
+
+{% block content %}
+<!-- Premium Header with House Theme -->
+<div class="premium-header house-{{ house.name.lower() }} mx-2 mt-2 position-relative">
+    <div class="d-flex justify-content-between align-items-start">
+        <div>
+            <span class="badge bg-white text-dark mb-2 small fw-bold">House Manager Panel</span>
+            <h3 class="fw-bold mb-1">{{ house.name }} House</h3>
+            <p class="mb-0 small"><i class="bi bi-person-fill me-1"></i>Logged in: <strong>{{ current_user.username }}</strong></p>
+        </div>
+        <div class="d-flex flex-column align-items-end gap-2">
+            <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-light rounded-pill px-3 fw-semibold">
+                <i class="bi bi-box-arrow-right me-1"></i>Logout
+            </a>
+            <button class="btn btn-sm btn-outline-light rounded-circle" onclick="toggleTheme()" type="button" style="width: 32px; height: 32px; padding: 0;">
+                <i class="bi bi-sun-fill dark-mode-hidden"></i>
+                <i class="bi bi-moon-fill light-mode-hidden"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Main Area -->
+<div class="px-2 mt-4">
+    <!-- Flask Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show rounded-3 small py-2 px-3 mb-3" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- House Statistics Summary Grid -->
+    <div class="row g-2 mb-4">
+        <div class="col-6">
+            <div class="glass-card p-3 text-center">
+                <h3 class="fw-bold mb-0 text-primary">{{ total_teams }}</h3>
+                <small class="text-secondary">Total Teams</small>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="glass-card p-3 text-center bg-warning bg-opacity-10 border-warning border-opacity-20">
+                <h3 class="fw-bold mb-0 text-warning" id="statPendingR1">{{ r1_pending }}</h3>
+                <small class="text-secondary">R1 Pending</small>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="glass-card p-3 text-center bg-info bg-opacity-10 border-info border-opacity-20">
+                <h3 class="fw-bold mb-0 text-info" id="statR2Active">{{ r2_started }}</h3>
+                <small class="text-secondary">R2 Started</small>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="glass-card p-3 text-center bg-success bg-opacity-10 border-success border-opacity-20">
+                <h3 class="fw-bold mb-0 text-success" id="statR2Finished">{{ r2_finished }}</h3>
+                <small class="text-secondary">R2 Finished</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <ul class="nav nav-pills nav-fill bg-light p-1 rounded-4 mb-4" id="managerTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active rounded-3 py-2 fw-semibold" id="teams-tab" data-bs-toggle="pill" data-bs-target="#teams-pane" type="button" role="tab"><i class="bi bi-people me-1"></i>Teams</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link rounded-3 py-2 fw-semibold" id="feed-tab" data-bs-toggle="pill" data-bs-target="#feed-pane" type="button" role="tab"><i class="bi bi-clock-history me-1"></i>Activity</button>
+        </li>
+    </ul>
+
+    <!-- Tab Contents -->
+    <div class="tab-content" id="managerTabsContent">
+        
+        <!-- Tab 1: Teams List -->
+        <div class="tab-pane fade show active" id="teams-pane" role="tabpanel" tabindex="0">
+            <h5 class="fw-bold mb-3"><i class="bi bi-card-list me-2"></i>Active House Teams</h5>
+            
+            {% for team in teams %}
+                {% set completions_map = {} %}
+                {% for tc in team.task_completions %}
+                    {% set _ = completions_map.update({tc.task_id: tc}) %}
+                {% endfor %}
+                {% set completed_count = team.task_completions|length %}
+                
+                <div class="glass-card mb-3 p-3" id="teamCard_{{ team.id }}">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <h6 class="fw-bold mb-1">{{ team.team_name }}</h6>
+                            <small class="text-secondary"><i class="bi bi-person me-1"></i>Leader: {{ team.leader_name }}</small>
+                        </div>
+                        <div>
+                            <!-- Status Badges -->
+                            {% if team.round2_completed %}
+                                <span class="badge bg-success rounded-pill">R2 Finished</span>
+                            {% elif team.current_round == 2 %}
+                                <span class="badge bg-info rounded-pill">R2 Clue {{ team.round2_current_clue }}</span>
+                            {% elif team.round1_status == 'requested' %}
+                                <span class="badge bg-warning text-dark rounded-pill">R1 Verification Req</span>
+                            {% elif team.round1_status == 'verified' %}
+                                <span class="badge bg-secondary rounded-pill">R1 Verified (Awaiting Admin)</span>
+                            {% else %}
+                                <span class="badge bg-light text-dark border rounded-pill">Round 1 Active</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <small class="text-secondary"><i class="bi bi-check-circle me-1"></i>R1 Tasks: <strong id="r1Count_{{ team.id }}">{{ completed_count }}</strong> / 10</small>
+                        <small class="text-secondary"><i class="bi bi-qr-code me-1"></i>Total Scans: <strong>{{ team.scan_logs|length }}</strong></small>
+                    </div>
+
+                    <!-- Collapsible Task Verification Area -->
+                    {% if team.current_round == 1 %}
+                    <div class="border-top pt-3 mt-2">
+                        <button class="btn btn-sm btn-outline-secondary w-100 rounded-3 mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#verifyCollapse_{{ team.id }}" aria-expanded="false" aria-controls="verifyCollapse_{{ team.id }}">
+                            <i class="bi bi-pencil-square me-1"></i>Manage Task Completions
+                        </button>
+                        
+                        <div class="collapse" id="verifyCollapse_{{ team.id }}">
+                            <div class="card card-body bg-light border-0 p-2 rounded-3 small">
+                                <p class="text-muted mb-2 small"><i class="bi bi-info-circle me-1"></i>Toggle task checkboxes directly after physical completion. Updates save instantly.</p>
+                                
+                                <!-- Check All Tasks Shortcut -->
+                                <button type="button" class="btn btn-sm btn-outline-primary w-100 rounded-3 mb-3 fw-bold" onclick="checkAllTasks({{ team.id }})">
+                                    <i class="bi bi-check-all me-1"></i>Check All Tasks at Once
+                                </button>
+                                
+                                {% for task in tasks %}
+                                    {% set completed = task.id in completions_map %}
+                                    <div class="form-check d-flex justify-content-between align-items-center py-1 border-bottom border-dashed">
+                                        <div>
+                                            <input class="form-check-input" type="checkbox" id="taskCheck_{{ team.id }}_{{ task.id }}" 
+                                                   {% if completed %}checked{% endif %}
+                                                   {% if team.round1_status in ['verified', 'approved'] %}disabled{% endif %}
+                                                   onchange="toggleTaskCompletion({{ team.id }}, {{ task.id }}, this.checked)">
+                                            <label class="form-check-label text-dark {% if completed %}text-decoration-line-through text-muted{% endif %}" for="taskCheck_{{ team.id }}_{{ task.id }}">
+                                                T{{ task.task_number }}: {{ task.title }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Verification Submit button for manager verification -->
+                    {% if team.round1_status == 'requested' %}
+                    <div class="mt-3">
+                        <form method="POST" action="{{ url_for('manager.verify_r1', team_id=team.id) }}">
+                            <button type="submit" class="btn btn-warning btn-sm w-100 py-2 rounded-3 fw-bold text-dark pulse">
+                                <i class="bi bi-shield-check me-1"></i>Verify Round 1 Completion physically
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+            
+            {% if not teams %}
+                <div class="text-center text-secondary py-5 glass-card">
+                    <i class="bi bi-people fs-1 block mb-2"></i>
+                    <p class="mb-0">No teams registered in {{ house.name }} House yet.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Tab 2: Activity logs -->
+        <div class="tab-pane fade" id="feed-pane" role="tabpanel" tabindex="0">
+            <h5 class="fw-bold mb-3"><i class="bi bi-clock-history me-2"></i>Recent House Feed</h5>
+            
+            <div class="glass-card p-3">
+                <div class="list-group list-group-flush small" id="activityFeed">
+                    {% for log in recent_activity %}
+                        <div class="list-group-item px-0 py-2">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <strong class="text-primary">{{ log.action.upper() }}</strong>
+                                <small class="text-muted">{{ log.timestamp.strftime('%I:%M:%S %p') }}</small>
+                            </div>
+                            <p class="mb-0 text-secondary">{{ log.details }}</p>
+                        </div>
+                    {% endfor %}
+                    
+                    {% if not recent_activity %}
+                        <div class="text-center text-secondary py-4">
+                            No recent activity found.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// AJAX function to toggle task completions
+function toggleTaskCompletion(teamId, taskId, isChecked) {
+    fetch(`/manager/verify-task/${teamId}/${taskId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ completed: isChecked })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            console.log(`Task ${taskId} for Team ${teamId} toggled successfully.`);
+            // Local DOM update text-decoration if check toggled
+            const label = document.querySelector(`label[for="taskCheck_${teamId}_${taskId}"]`);
+            if (isChecked) {
+                label.classList.add('text-decoration-line-through', 'text-muted');
+            } else {
+                label.classList.remove('text-decoration-line-through', 'text-muted');
+            }
+        } else {
+            alert("Error updating task: " + data.message);
+            // Revert checkbox state
+            document.getElementById(`taskCheck_${teamId}_${taskId}`).checked = !isChecked;
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Failed to connect to server.");
+        document.getElementById(`taskCheck_${teamId}_${taskId}`).checked = !isChecked;
+    });
+}
+
+function checkAllTasks(teamId) {
+    if (!confirm("Are you sure you want to verify all 10 tasks at once for this team?")) return;
+    fetch(`/manager/verify-all-tasks/${teamId}`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            console.log("All tasks verified successfully.");
+            window.location.reload();
+        } else {
+            alert("Error: " + data.message);
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Failed to connect to server.");
+    });
+}
+
+// Global page reloading handle on Socket events
+function refreshDashboardData() {
+    // When Socket events fire, we can reload to fetch updated team counts, scan counters, and verification triggers
+    setTimeout(() => window.location.reload(), 1000);
+}
+</script>
+
+<style>
+    .dark-mode-hidden { display: inline-block; }
+    .light-mode-hidden { display: none; }
+    .dark-mode .dark-mode-hidden { display: none; }
+    .dark-mode .light-mode-hidden { display: inline-block; }
+    
+    .border-dashed {
+        border-bottom-style: dashed !important;
+    }
+    
+    .dark-mode .card.card-body.bg-light {
+        background-color: #334155 !important;
+        color: #f8fafc !important;
+    }
+    
+    .dark-mode .card.card-body.bg-light label {
+        color: #e2e8f0 !important;
+    }
+</style>
+{% endblock %}

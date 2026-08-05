@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Teams - Admin{% endblock %}
+{% block container_class %}mobile-container{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 px-2 pt-3">
+    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+        <i class="bi bi-chevron-left me-1"></i>Back
+    </a>
+    <h5 class="mb-0 fw-bold">Manage Teams</h5>
+    <div style="width: 55px;"></div> <!-- placeholder to center header -->
+</div>
+
+<div class="px-2">
+    <!-- Flask Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show rounded-3 small py-2 px-3 mb-3" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-people-fill me-2"></i>Registered Teams ({{ teams|length }})</h6>
+
+    {% for team in teams %}
+        <div class="glass-card mb-3 p-3">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                    <h6 class="fw-bold mb-1">{{ team.team_name }}</h6>
+                    <span class="house-badge {{ team.house.name.lower() }} mb-2">
+                        <i class="bi bi-flag-fill"></i>{{ team.house.name }}
+                    </span>
+                </div>
+                <div>
+                    {% if team.round2_completed %}
+                        <span class="badge bg-success rounded-pill">R2 Completed</span>
+                    {% elif team.current_round == 2 %}
+                        <span class="badge bg-info rounded-pill">R2 Clue {{ team.round2_current_clue }}</span>
+                    {% else %}
+                        <span class="badge bg-light text-dark border rounded-pill">R1: {{ team.round1_status|upper }}</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Team Contact Details -->
+            <div class="bg-light p-2 rounded-3 small mb-3 border">
+                <div class="mb-1"><strong>Leader:</strong> {{ team.leader_name }} ({{ team.leader_phone }})</div>
+                {% if team.members %}
+                    <div class="mb-0">
+                        <strong>Members:</strong> 
+                        {% for m in team.members %}
+                            {{ m.name }} ({{ m.phone }}){% if not loop.last %}, {% endif %}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Round 1 Verification & Approval -->
+            {% if team.current_round == 1 %}
+                <div class="mb-3">
+                    <p class="small text-secondary mb-2">
+                        <i class="bi bi-activity me-1"></i>Round 1 Tasks completed: <strong>{{ team.task_completions|length }} / 10</strong>
+                    </p>
+                    
+                    <!-- Direct Promote Action -->
+                    <form method="POST" action="{{ url_for('admin.promote_r2', team_id=team.id) }}" class="d-block mb-2">
+                        <button type="submit" class="btn btn-primary btn-sm w-100 py-2 rounded-3 fw-bold" onclick="return confirm('Promote {{ team.team_name }} to Round 2? This will mark all 10 tasks completed and auto-approve Round 1.');">
+                            <i class="bi bi-arrow-up-right-circle me-1"></i>Promote to Round 2 directly
+                        </button>
+                    </form>
+
+                    {% if team.round1_status in ['requested', 'verified'] %}
+                        <form method="POST" action="{{ url_for('admin.approve_r1', team_id=team.id) }}" class="d-inline">
+                            <button type="submit" class="btn btn-success btn-sm w-100 py-2 rounded-3 fw-semibold mb-2">
+                                <i class="bi bi-unlock-fill me-1"></i>Approve Round 1 & Unlock Round 2
+                            </button>
+                        </form>
+                        {% if team.round1_status == 'requested' %}
+                            <div class="text-center text-warning small mb-2"><i class="bi bi-exclamation-triangle"></i> Leader requested completion but House Manager has not verified physically yet.</div>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            {% else %}
+                <!-- Round 2 Info -->
+                <div class="mb-3 small">
+                    <div class="mb-1"><i class="bi bi-qr-code me-1"></i>QR Progress: <strong>{{ team.round2_current_clue - 1 }} / 7 clues solved</strong></div>
+                    {% if team.round2_completed %}
+                        <div class="text-success"><i class="bi bi-clock-fill me-1"></i>Completed Hunt: {{ team.round2_completion_time.strftime('%Y-%m-%d %I:%M %p') }}</div>
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            <!-- Team Control Actions -->
+            <div class="border-top pt-3 d-flex gap-2">
+                <button type="button" class="btn btn-sm btn-outline-danger w-50 py-2 rounded-3" data-bs-toggle="modal" data-bs-target="#resetTeamModal_{{ team.id }}">
+                    <i class="bi bi-trash3 me-1"></i>Reset Team
+                </button>
+                
+                {% if team.current_round == 2 %}
+                <button type="button" class="btn btn-sm btn-outline-warning w-50 py-2 rounded-3 text-dark" data-bs-toggle="modal" data-bs-target="#resetQrModal_{{ team.id }}">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>Reset QR
+                </button>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Reset Team Modal -->
+        <div class="modal fade" id="resetTeamModal_{{ team.id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content glass-card border-0">
+                    <div class="modal-header border-bottom-0 bg-light">
+                        <h6 class="modal-title fw-bold text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Reset Progress?</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body small text-secondary">
+                        Are you sure you want to completely reset <strong>{{ team.team_name }}</strong>? All completed tasks, Round 1 approvals, and Round 2 QR logs will be deleted.
+                    </div>
+                    <div class="modal-footer border-top-0 gap-2">
+                        <button type="button" class="btn btn-sm btn-light border rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                        <form method="POST" action="{{ url_for('admin.reset_team', team_id=team.id) }}">
+                            <button type="submit" class="btn btn-sm btn-danger rounded-pill px-3">Confirm Reset</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reset QR Modal -->
+        <div class="modal fade" id="resetQrModal_{{ team.id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content glass-card border-0">
+                    <div class="modal-header border-bottom-0 bg-light">
+                        <h6 class="modal-title fw-bold text-warning"><i class="bi bi-arrow-counterclockwise me-2"></i>Reset QR Progress?</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body small text-secondary">
+                        Are you sure you want to reset the Round 2 QR clue progress for <strong>{{ team.team_name }}</strong>? This resets them back to Clue #1.
+                    </div>
+                    <div class="modal-footer border-top-0 gap-2">
+                        <button type="button" class="btn btn-sm btn-light border rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                        <form method="POST" action="{{ url_for('admin.reset_qr_progress', team_id=team.id) }}">
+                            <button type="submit" class="btn btn-sm btn-warning rounded-pill px-3">Confirm Reset</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+
+    {% if not teams %}
+        <div class="text-center text-secondary py-5 glass-card">
+            <i class="bi bi-people fs-1 block mb-2"></i>
+            <p class="mb-0">No teams registered yet.</p>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    .dark-mode .card.bg-light, .dark-mode .bg-light {
+        background-color: #334155 !important;
+        border-color: #475569 !important;
+        color: #f8fafc !important;
+    }
+</style>
+{% endblock %}

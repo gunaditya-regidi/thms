@@ -40,28 +40,18 @@ def dashboard():
             # The team is currently looking for clue 'team.round2_current_clue'
             # Let's see what hint we can display.
             # To get to clue X, they must have scanned clue X-1.
-            # For Clue 1, they get an initial hint.
-            # Let's fetch the QRCode for the current clue they need to scan.
             current_clue = QRCode.query.filter_by(clue_number=team.round2_current_clue, is_dummy=False).first()
-            
-            # The previous clue gives them the hint for the current clue.
-            # If they are on Clue 1, what is their hint?
-            # We can have a starting clue hint from the Admin, or display the Hint from Clue 1 itself as "Starting Clue"
-            if team.round2_current_clue == 1:
-                next_clue_hint = "Start clue: Find the first station!"
-            else:
-                prev_clue = QRCode.query.filter_by(clue_number=team.round2_current_clue - 1, is_dummy=False).first()
-                if prev_clue:
-                    next_clue_hint = prev_clue.hint
+            if current_clue:
+                next_clue_hint = current_clue.hint
 
     # Get latest scan log
     latest_scan = QRScanLog.query.filter_by(team_id=team.id).order_by(QRScanLog.timestamp.desc()).first()
 
     # Pass ISO timestamps for client stopwatch
     r1_app = Round1Approval.query.filter_by(team_id=team.id).first()
-    approved_iso = r1_app.approved_at.isoformat() if (r1_app and r1_app.approved_at) else ""
-    created_iso = team.created_at.isoformat() if team.created_at else ""
-    finished_iso = team.round2_completion_time.isoformat() if team.round2_completion_time else ""
+    approved_iso = r1_app.approved_at.isoformat() + "Z" if (r1_app and r1_app.approved_at) else ""
+    created_iso = team.created_at.isoformat() + "Z" if team.created_at else ""
+    finished_iso = team.round2_completion_time.isoformat() + "Z" if team.round2_completion_time else ""
 
     return render_template('team/dashboard.html', 
                            team=team, 
@@ -441,16 +431,18 @@ def process_qr_scan(team, token, req):
                 'message': 'Congratulations! You found all 7 clues. Please report to your House Manager.',
                 'clue_number': 7,
                 'password': qr.password,
-                'hint': qr.hint,
+                'hint': 'Hunt Completed! 🏆',
                 'image': qr.image_path
             }
         else:
+            next_qr = QRCode.query.filter_by(clue_number=qr.clue_number + 1, is_dummy=False).first()
+            next_hint = next_qr.hint if next_qr else "No more clues! Report to your House Manager."
             return {
                 'status': 'success',
                 'message': f"Clue {qr.clue_number} solved! Check details for your next destination.",
                 'clue_number': qr.clue_number,
                 'password': qr.password,
-                'hint': qr.hint,
+                'hint': next_hint,
                 'image': qr.image_path
             }
             

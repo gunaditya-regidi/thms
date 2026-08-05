@@ -1,3 +1,6 @@
+import eventlet
+eventlet.monkey_patch()
+
 import os
 from flask import Flask, redirect, url_for, render_template, request, session, send_from_directory, flash
 from flask_login import LoginManager, current_user

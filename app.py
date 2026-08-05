@@ -20,11 +20,8 @@ def create_app(config_override=None):
     if not app.config.get('TESTING'):
         with app.app_context():
             try:
-                db.create_all()
-                from models import User
-                if User.query.count() == 0:
-                    from seed import run_seed
-                    run_seed()
+                from seed import run_seed
+                run_seed()
             except Exception as e:
                 app.logger.warning(f"Self-healing database setup failed: {str(e)}")
     

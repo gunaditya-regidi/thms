@@ -15,6 +15,18 @@ def create_app(config_override=None):
 
     # Initialize extensions
     db.init_app(app)
+
+    # Self-healing database check & seed (skipped in testing mode)
+    if not app.config.get('TESTING'):
+        with app.app_context():
+            try:
+                db.create_all()
+                from models import User
+                if User.query.count() == 0:
+                    from seed import run_seed
+                    run_seed()
+            except Exception as e:
+                app.logger.warning(f"Self-healing database setup failed: {str(e)}")
     
     # Configure Flask Login
     login_manager = LoginManager()

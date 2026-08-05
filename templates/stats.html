@@ -77,107 +77,85 @@
     <!-- RIGHT PANEL: Leaderboard & Charts (60% or Hidden) -->
     <div class="stats-right-panel" id="rightPanel">
         
-        <!-- Tab navigation inside statistics -->
-        <ul class="nav nav-tabs border-bottom-0 mb-3" id="statsTab" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active fw-bold px-3 border-0 bg-transparent text-primary" id="leaderboard-tab" data-bs-toggle="tab" data-bs-target="#leaderboard-pane" type="button" role="tab">
-                    <i class="bi bi-trophy-fill me-1"></i>Top 10 Leaderboard
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link fw-bold px-3 border-0 bg-transparent text-primary" id="charts-tab" data-bs-toggle="tab" data-bs-target="#charts-pane" type="button" role="tab">
-                    <i class="bi bi-pie-chart-fill me-1"></i>Analytics Charts
-                </button>
-            </li>
-        </ul>
-
-        <div class="tab-content" id="statsTabContent">
-            
-            <!-- Pane A: Leaderboard -->
-            <div class="tab-pane fade show active" id="leaderboard-pane" role="tabpanel" aria-labelledby="leaderboard-tab" tabindex="0">
-                <div class="glass-card p-3 mb-4 border-primary border-opacity-25">
-                    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-trophy me-2"></i>Current Standings</h6>
-                    <div class="table-responsive">
-                        <table class="table table-striped align-middle mb-0 small">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>Rank</th>
-                                    <th>Team</th>
-                                    <th>House</th>
-                                    <th>Round</th>
-                                    <th>QR Progress</th>
-                                    <th>Completion Time</th>
-                                </tr>
-                            </thead>
-                            <tbody id="leaderboardTableBody">
-                                <!-- Filled Dynamically -->
-                            </tbody>
-                        </table>
-                    </div>
+        <!-- Section 1: Top 10 Leaderboard -->
+        <div class="glass-card p-3 mb-4 border-primary border-opacity-25 shadow-sm">
+            <h6 class="fw-bold text-primary mb-3"><i class="bi bi-trophy-fill me-2"></i>Top 10 Leaderboard</h6>
+            <div class="table-responsive">
+                <table class="table table-striped align-middle mb-0 small">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Rank</th>
+                            <th>Team</th>
+                            <th>House</th>
+                            <th>Round</th>
+                            <th>QR Progress</th>
+                            <th>Completion Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboardTableBody">
+                        <!-- Filled Dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Section 2: Quick Metrics Cards -->
+        <div class="row g-2 mb-4">
+            <div class="col-6 col-md-3">
+                <div class="glass-card p-3 text-center">
+                    <h6 class="text-secondary small mb-1">Total Scans</h6>
+                    <h4 class="fw-bold mb-0 text-primary" id="metricTotalScans">0</h4>
                 </div>
-                
-                <!-- Quick Metrics Cards -->
-                <div class="row g-2 mb-4">
-                    <div class="col-6 col-md-3">
-                        <div class="glass-card p-3 text-center">
-                            <h6 class="text-secondary small mb-1">Total Scans</h6>
-                            <h4 class="fw-bold mb-0 text-primary" id="metricTotalScans">0</h4>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="glass-card p-3 text-center">
-                            <h6 class="text-secondary small mb-1">Fastest Finish</h6>
-                            <h6 class="fw-bold mb-0 text-success text-truncate" id="metricFastestTeam" style="font-size: 13px;">None</h6>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="glass-card p-3 text-center">
-                            <h6 class="text-secondary small mb-1">Most Active</h6>
-                            <h6 class="fw-bold mb-0 text-info text-truncate" id="metricMostActive" style="font-size: 13px;">None</h6>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="glass-card p-3 text-center">
-                            <h6 class="text-secondary small mb-1">House Leader</h6>
-                            <h6 class="fw-bold mb-0 text-warning text-truncate" id="metricHouseLeader" style="font-size: 13px;">None</h6>
-                        </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="glass-card p-3 text-center">
+                    <h6 class="text-secondary small mb-1">Fastest Finish</h6>
+                    <h6 class="fw-bold mb-0 text-success text-truncate" id="metricFastestTeam" style="font-size: 13px;">None</h6>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="glass-card p-3 text-center">
+                    <h6 class="text-secondary small mb-1">Most Active</h6>
+                    <h6 class="fw-bold mb-0 text-info text-truncate" id="metricMostActive" style="font-size: 13px;">None</h6>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="glass-card p-3 text-center">
+                    <h6 class="text-secondary small mb-1">House Leader</h6>
+                    <h6 class="fw-bold mb-0 text-warning text-truncate" id="metricHouseLeader" style="font-size: 13px;">None</h6>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3: Analytics Charts -->
+        <div class="row g-3">
+            <!-- Chart 1: House distribution -->
+            <div class="col-12 col-md-6">
+                <div class="glass-card p-3 shadow-sm">
+                    <h6 class="fw-bold text-secondary mb-2">Teams per House</h6>
+                    <div style="height: 200px; position: relative;">
+                        <canvas id="houseChart"></canvas>
                     </div>
                 </div>
             </div>
-
-            <!-- Pane B: Charts -->
-            <div class="tab-pane fade" id="charts-pane" role="tabpanel" aria-labelledby="charts-tab" tabindex="0">
-                <div class="row g-3">
-                    <!-- Chart 1: House distribution -->
-                    <div class="col-12 col-md-6">
-                        <div class="glass-card p-3">
-                            <h6 class="fw-bold text-secondary mb-2">Teams per House</h6>
-                            <div style="height: 200px; position: relative;">
-                                <canvas id="houseChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Chart 2: Round Status counts -->
-                    <div class="col-12 col-md-6">
-                        <div class="glass-card p-3">
-                            <h6 class="fw-bold text-secondary mb-2">Round Completions</h6>
-                            <div style="height: 200px; position: relative;">
-                                <canvas id="roundChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Chart 3: QR Scan analytics line -->
-                    <div class="col-12">
-                        <div class="glass-card p-3">
-                            <h6 class="fw-bold text-secondary mb-2">QR Clue Scans Volume</h6>
-                            <div style="height: 200px; position: relative;">
-                                <canvas id="qrScanChart"></canvas>
-                            </div>
-                        </div>
+            <!-- Chart 2: Round Status counts -->
+            <div class="col-12 col-md-6">
+                <div class="glass-card p-3 shadow-sm">
+                    <h6 class="fw-bold text-secondary mb-2">Round Completions</h6>
+                    <div style="height: 200px; position: relative;">
+                        <canvas id="roundChart"></canvas>
                     </div>
                 </div>
             </div>
-            
+            <!-- Chart 3: QR Scan analytics line -->
+            <div class="col-12">
+                <div class="glass-card p-3 shadow-sm">
+                    <h6 class="fw-bold text-secondary mb-2">QR Clue Scans Volume</h6>
+                    <div style="height: 200px; position: relative;">
+                        <canvas id="qrScanChart"></canvas>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

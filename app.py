@@ -20,6 +20,13 @@ def create_app(config_override=None):
     if not app.config.get('TESTING'):
         with app.app_context():
             try:
+                # Run structure updates on PostgreSQL if table exists
+                try:
+                    with db.engine.begin() as conn:
+                        conn.execute(db.text("ALTER TABLE users ALTER COLUMN password_hash TYPE VARCHAR(255)"))
+                except Exception:
+                    pass
+                
                 from seed import run_seed
                 run_seed()
             except Exception as e:

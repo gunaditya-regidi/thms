@@ -74,6 +74,22 @@
         
         initTheme();
 
+        // Account Password Viewer Utility
+        function toggleAccountPassword() {
+            const pwdVal = document.getElementById('accountPasswordVal');
+            const eyeIcon = document.getElementById('accountPasswordEye');
+            if (!pwdVal || !eyeIcon) return;
+            
+            const plainPwd = pwdVal.getAttribute('data-password');
+            if (pwdVal.innerText === '••••••••') {
+                pwdVal.innerText = plainPwd;
+                eyeIcon.classList.replace('bi-eye', 'bi-eye-slash');
+            } else {
+                pwdVal.innerText = '••••••••';
+                eyeIcon.classList.replace('bi-eye-slash', 'bi-eye');
+            }
+        }
+
         // 2. Real-Time Toast Alerts via Socket.io
         document.addEventListener('DOMContentLoaded', () => {
             window.socket = io();

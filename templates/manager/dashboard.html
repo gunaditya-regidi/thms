@@ -71,6 +71,18 @@
         </div>
     </div>
 
+    <!-- Account Password Card -->
+    <div class="glass-card p-3 mb-4">
+        <h6 class="fw-bold text-secondary mb-2"><i class="bi bi-key-fill text-warning me-1"></i>Your Account Password</h6>
+        <p class="text-secondary small mb-2" style="font-size: 11px;">Use this password to log in to your house manager dashboard:</p>
+        <div class="d-flex align-items-center justify-content-between bg-light p-2 rounded-3 border">
+            <code class="text-primary font-monospace fs-6 fw-bold" id="accountPasswordVal" data-password="{{ current_user.plain_password or 'N/A' }}">••••••••</code>
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill border-0 px-2 py-1" onclick="toggleAccountPassword()">
+                <i class="bi bi-eye" id="accountPasswordEye"></i>
+            </button>
+        </div>
+    </div>
+
     <!-- First Clue Passcode & Location Helper Card -->
     {% if first_clue %}
     <div class="glass-card p-3 mb-4 border border-primary border-opacity-30">

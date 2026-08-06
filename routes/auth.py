@@ -202,7 +202,8 @@ def login():
         else:
             flash("Invalid username or password.", "danger")
 
-    return render_template('auth/login.html')
+    all_users = User.query.all()
+    return render_template('auth/login.html', users=all_users)
 
 @auth_bp.route('/logout')
 @login_required
@@ -358,3 +359,55 @@ def qr_login_finalize(token):
         redirect_url = url_for('manager.dashboard')
         
     return {'status': 'success', 'redirect_url': redirect_url}
+
+@auth_bp.route('/change-password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    if request.method == 'POST':
+        old_password = request.form.get('old_password')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+        
+        if not old_password or not new_password or not confirm_password:
+            flash("All fields are required.", "danger")
+            return redirect(url_for('auth.change_password'))
+            
+        if not current_user.check_password(old_password):
+            flash("Incorrect current password.", "danger")
+            return redirect(url_for('auth.change_password'))
+            
+        if new_password != confirm_password:
+            flash("New passwords do not match.", "danger")
+            return redirect(url_for('auth.change_password'))
+            
+        if len(new_password) < 4:
+            flash("New password must be at least 4 characters long.", "danger")
+            return redirect(url_for('auth.change_password'))
+            
+        # Update password
+        current_user.set_password(new_password)
+        
+        # Log system event
+        team_id = current_user.team_profile.id if current_user.role == 'team_leader' else None
+        log = SystemLog(
+            action='change_password',
+            details=f"User '{current_user.username}' changed their password.",
+            user_id=current_user.id,
+            team_id=team_id,
+            ip_address=request.remote_addr,
+            browser=request.user_agent.string
+        )
+        db.session.add(log)
+        db.session.commit()
+        
+        flash("Password changed successfully!", "success")
+        
+        # Redirect based on role
+        if current_user.role == 'admin':
+            return redirect(url_for('admin.dashboard'))
+        elif current_user.role == 'manager':
+            return redirect(url_for('manager.dashboard'))
+        else:
+            return redirect(url_for('team.dashboard'))
+            
+    return render_template('auth/change_password.html')

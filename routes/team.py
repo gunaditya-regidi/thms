@@ -41,8 +41,12 @@ def dashboard():
             # Let's see what hint we can display.
             # To get to clue X, they must have scanned clue X-1.
             current_clue = QRCode.query.filter_by(clue_number=team.round2_current_clue, is_dummy=False).first()
-            if current_clue:
-                next_clue_hint = current_clue.hint
+            if team.round2_current_clue == 1:
+                next_clue_hint = "Look under the stone bench near the cafeteria gazebo."
+            else:
+                prev_clue = QRCode.query.filter_by(clue_number=team.round2_current_clue - 1, is_dummy=False).first()
+                if prev_clue:
+                    next_clue_hint = prev_clue.hint
 
     # Get latest scan log
     latest_scan = QRScanLog.query.filter_by(team_id=team.id).order_by(QRScanLog.timestamp.desc()).first()
@@ -431,18 +435,16 @@ def process_qr_scan(team, token, req):
                 'message': 'Congratulations! You found all 7 clues. Please report to your House Manager.',
                 'clue_number': 7,
                 'password': qr.password,
-                'hint': 'Hunt Completed! 🏆',
+                'hint': qr.hint,
                 'image': qr.image_path
             }
         else:
-            next_qr = QRCode.query.filter_by(clue_number=qr.clue_number + 1, is_dummy=False).first()
-            next_hint = next_qr.hint if next_qr else "No more clues! Report to your House Manager."
             return {
                 'status': 'success',
                 'message': f"Clue {qr.clue_number} solved! Check details for your next destination.",
                 'clue_number': qr.clue_number,
                 'password': qr.password,
-                'hint': next_hint,
+                'hint': qr.hint,
                 'image': qr.image_path
             }
             

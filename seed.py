@@ -1,4 +1,6 @@
 import uuid
+import os
+import qrcode
 from app import create_app
 from models import db, User, House, Manager, Admin, Task, QRCode
 
@@ -76,16 +78,21 @@ def run_seed():
             print(f"Seeded Task {index}: {title}")
     db.session.commit()
 
-    # 5. Seed 7 Round 2 QR codes
+    # 5. Seed 7 Round 2 QR codes (Shifted hints: QRCode X has hint for Clue X+1)
     qr_data = [
-        (1, "r2-alpha-99", "Look under the stone bench near the cafeteria gazebo.", "c1-uuid-1111"),
-        (2, "r2-beta-88", "Behind the central lawn sun dial.", "c2-uuid-2222"),
-        (3, "r2-gamma-77", "On the glass panel of the IT department server room.", "c3-uuid-3333"),
-        (4, "r2-delta-66", "Under the water cooler in the Mechanical block ground floor.", "c4-uuid-4444"),
-        (5, "r2-epsilon-55", "Back of the seminar hall podium structure.", "c5-uuid-5555"),
-        (6, "r2-zeta-44", "Attached to the solar panel charging station near the gym.", "c6-uuid-6666"),
-        (7, "r2-omega-final", "Under the reception desk in the main administrative building.", "c7-uuid-7777")
+        (1, "r2-alpha-99", "Behind the central lawn sun dial.", "c1-uuid-1111"),
+        (2, "r2-beta-88", "On the glass panel of the IT department server room.", "c2-uuid-2222"),
+        (3, "r2-gamma-77", "Under the water cooler in the Mechanical block ground floor.", "c3-uuid-3333"),
+        (4, "r2-delta-66", "Back of the seminar hall podium structure.", "c4-uuid-4444"),
+        (5, "r2-epsilon-55", "Attached to the solar panel charging station near the gym.", "c5-uuid-5555"),
+        (6, "r2-zeta-44", "Under the reception desk in the main administrative building.", "c6-uuid-6666"),
+        (7, "r2-omega-final", "Congratulations! Report to the House Manager to claim your treasure.", "c7-uuid-7777")
     ]
+
+    base_dir = os.path.abspath(os.path.dirname(__file__))
+    qr_folder = os.path.join(base_dir, 'generated_qr')
+    os.makedirs(qr_folder, exist_ok=True)
+    base_url = os.environ.get('RENDER_EXTERNAL_URL', 'http://localhost:5000')
 
     for num, pwd, hint, fixed_uuid in qr_data:
         qr = QRCode.query.filter_by(clue_number=num, is_dummy=False).first()
@@ -99,6 +106,12 @@ def run_seed():
             )
             db.session.add(qr)
             print(f"Seeded QR Clue {num}: {pwd}")
+        
+        # Always generate PNG for local loading
+        scan_url = f"{base_url.rstrip('/')}/scan/{fixed_uuid}"
+        img = qrcode.make(scan_url)
+        filepath = os.path.join(qr_folder, f"qr_{fixed_uuid}.png")
+        img.save(filepath)
     db.session.commit()
 
     # 6. Seed 3 Dummy QR codes
@@ -120,6 +133,12 @@ def run_seed():
             )
             db.session.add(qr)
             print(f"Seeded Dummy QR: {d_uuid}")
+
+        # Always generate PNG for local loading
+        scan_url = f"{base_url.rstrip('/')}/scan/{d_uuid}"
+        img = qrcode.make(scan_url)
+        filepath = os.path.join(qr_folder, f"qr_{d_uuid}.png")
+        img.save(filepath)
     db.session.commit()
     
     print("Database seeding completed successfully!")

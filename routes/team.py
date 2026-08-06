@@ -37,7 +37,7 @@ def dashboard():
     current_clue_passcode = "N/A"
     current_clue = None
     if team.current_round == 2 and team.round1_status == 'approved':
-        if team.round2_current_clue <= 6:
+        if team.round2_current_clue <= 7:
             # Query the clue level dynamically based on level and house restriction
             active_qrs = QRCode.query.filter_by(clue_number=team.round2_current_clue, is_dummy=False).all()
             for aq in active_qrs:
@@ -302,8 +302,23 @@ def process_qr_scan(team, token, passcode, req):
                 
             return {'status': 'wrong_house', 'message': 'Wrong Clue! This station belongs to another house.'}
 
+    # Determine the required passcode for this station.
+    # Level 1 requires its own seeded password (given by manager).
+    # Level > 1 requires the password of the previous level clue (Clue X-1).
+    required_password = qr.password
+    if qr.clue_number > 1 and not qr.is_dummy:
+        prev_qrs = QRCode.query.filter_by(clue_number=qr.clue_number - 1, is_dummy=False).all()
+        for pq in prev_qrs:
+            if not pq.allowed_houses:
+                required_password = pq.password
+                break
+            allowed_list = [h.strip().lower() for h in pq.allowed_houses.split(',')]
+            if team.house.name.lower() in allowed_list:
+                required_password = pq.password
+                break
+
     # 3. Verify passcode (Case-insensitive check for user convenience)
-    if not passcode or qr.password.strip().lower() != passcode.strip().lower():
+    if not passcode or required_password.strip().lower() != passcode.strip().lower():
         # Log wrong password scan
         log = QRScanLog(
             team_id=team.id,
@@ -498,15 +513,15 @@ def process_qr_scan(team, token, passcode, req):
         # Update team expected clue
         team.round2_current_clue = team.round2_current_clue + 1
         
-        # Check if they have scanned clue 6 (completion of Hunt)
-        is_final = (qr.clue_number == 6)
+        # Check if they have scanned clue 7 (completion of Hunt)
+        is_final = (qr.clue_number == 7)
         if is_final:
             team.round2_completed = True
             team.round2_completion_time = timestamp
             
             sys_log = SystemLog(
                 action='hunt_completed',
-                details=f"Team '{team.team_name}' successfully completed all 6 levels and finished the Hunt!",
+                details=f"Team '{team.team_name}' successfully completed all 7 levels and finished the Hunt!",
                 team_id=team.id,
                 ip_address=ip,
                 browser=ua
@@ -546,8 +561,8 @@ def process_qr_scan(team, token, passcode, req):
         if is_final:
             return {
                 'status': 'completed_hunt',
-                'message': 'Congratulations! You completed all 6 levels of the hunt. Please report to your House Manager.',
-                'clue_number': 6,
+                'message': 'Congratulations! You completed all 7 levels of the hunt. Please report to your House Manager.',
+                'clue_number': 7,
                 'password': 'N/A',
                 'hint': 'None. You completed the Hunt!',
                 'image': qr.image_path
@@ -579,3 +594,77 @@ def process_qr_scan(team, token, passcode, req):
         db.session.rollback()
         current_app.logger.error(f"Error processing scan: {str(e)}")
         return {'status': 'error', 'message': 'An error occurred while saving scan progress.'}
+
+CLUE_FILES = {
+    1: {
+        'Red': 'Red 1.jpg',
+        'Green': 'Green 1.jpg',
+        'Blue': 'BLUE 1.jpg',
+        'Yellow': 'YELLOW 1.jpg'
+    },
+    2: {
+        'Red': 'Red 2.jpg',
+        'Green': 'Green 2.jpg',
+        'Blue': 'BLUE 2.jpg',
+        'Yellow': 'YELLOW 2.jpg'
+    },
+    3: {
+        'Red': 'PURPLE.jpg',
+        'Blue': 'PURPLE.jpg',
+        'Green': 'ORANGE.jpg',
+        'Yellow': 'ORANGE.jpg'
+    },
+    4: {
+        'Red': 'BLACK 1.jpg',
+        'Green': 'BLACK 1.jpg',
+        'Blue': 'BLACK 1.jpg',
+        'Yellow': 'BLACK 1.jpg'
+    },
+    5: {
+        'Red': 'BLACK 2.jpg',
+        'Green': 'BLACK 2.jpg',
+        'Blue': 'BLACK 2.jpg',
+        'Yellow': 'BLACK 2.jpg'
+    },
+    6: {
+        'Red': 'BLACK 3.jpg',
+        'Green': 'BLACK 3.jpg',
+        'Blue': 'BLACK 3.jpg',
+        'Yellow': 'BLACK 3.jpg'
+    },
+    7: {
+        'Red': 'BLACK FINAL.jpg',
+        'Green': 'BLACK FINAL.jpg',
+        'Blue': 'BLACK FINAL.jpg',
+        'Yellow': 'BLACK FINAL.jpg'
+    }
+}
+
+@team_bp.route('/clue-image/<int:level>')
+@login_required
+def serve_clue_image_by_level(level):
+    from flask import send_from_directory, abort
+    team = current_user.team_profile
+    if not team:
+        abort(403)
+        
+    if level >= team.round2_current_clue and not team.round2_completed:
+        abort(403)
+        
+    house_name = team.house.name
+    filename = None
+    if level in CLUE_FILES:
+        filename = CLUE_FILES[level].get(house_name)
+        
+    if not filename:
+        abort(404)
+        
+    clues_dir = r'C:\Users\ASUS\Downloads\clues'
+    return send_from_directory(clues_dir, filename)
+
+@team_bp.route('/clue-image/dummy')
+@login_required
+def serve_dummy_image():
+    from flask import send_from_directory
+    clues_dir = r'C:\Users\ASUS\Downloads\clues'
+    return send_from_directory(clues_dir, 'DUMMY.jpg')

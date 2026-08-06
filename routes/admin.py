@@ -956,9 +956,9 @@ def get_report_data(report_type):
                 if r1_app and r1_app.approved_at:
                     comp_time = f"R1 Appr: {r1_app.approved_at.strftime('%Y-%m-%d %H:%M:%S')}"
                     
-            qr_prog = f"{t.round2_current_clue - 1} / 6 solved" if t.current_round == 2 else "Not started"
+            qr_prog = f"{t.round2_current_clue - 1} / 7 solved" if t.current_round == 2 else "Not started"
             if t.round2_completed:
-                qr_prog = "6 / 6 solved"
+                qr_prog = "7 / 7 solved"
                 
             data.append([
                 rank,
@@ -1006,7 +1006,7 @@ def get_report_data(report_type):
         teams = Team.query.all()
         for t in teams:
             r1_done = f"{len(t.task_completions)} / 10"
-            r2_prog = f"{t.round2_current_clue - 1} / 6" if t.current_round == 2 else "Locked"
+            r2_prog = f"{t.round2_current_clue - 1} / 7" if t.current_round == 2 else "Locked"
             if t.round2_completed:
                 r2_prog = "Completed"
                 

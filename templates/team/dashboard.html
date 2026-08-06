@@ -162,30 +162,16 @@
                     {% if team.round2_completed %}
                         <span class="badge bg-success rounded-pill">Completed</span>
                     {% else %}
-                        <span class="badge bg-warning text-dark rounded-pill">Level {{ team.round2_current_clue }} / 6</span>
+                        <span class="badge bg-warning text-dark rounded-pill">Level {{ team.round2_current_clue }} / 7</span>
                     {% endif %}
                 </div>
 
-                <div class="p-3 text-center">
-                    {% if not team.round2_completed %}
-                        <div class="alert alert-info border-0 rounded-4 text-start p-3 mb-4">
-                            <h6 class="fw-bold mb-2"><i class="bi bi-compass-fill me-2"></i>Next Clue Hint</h6>
-                            <p class="mb-0 text-dark" id="currentHint">{{ next_clue_hint }}</p>
-                            
-                            <hr class="my-2 border-info">
-                            
-                            <h6 class="fw-bold mb-2"><i class="bi bi-key-fill me-2"></i>Expected Passcode</h6>
-                            <p class="mb-0 text-dark font-monospace fw-semibold" id="expectedPasscode">{{ current_clue_passcode }}</p>
-                        </div>
-
-                        <button type="button" class="btn btn-primary w-100 py-3 rounded-3 fw-bold mb-3 pulse" data-bs-toggle="modal" data-bs-target="#scannerModal">
-                            <i class="bi bi-qr-code-scan me-2"></i>Scan Clue QR Code
-                        </button>
-                    {% else %}
-                        <div class="py-4">
-                            <i class="bi bi-trophy-fill text-warning fs-1 block mb-3"></i>
+                <div class="p-3">
+                    {% if team.round2_completed %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-trophy-fill text-warning fs-1 block mb-3 animate__animated animate__bounceIn"></i>
                             <h4 class="fw-bold text-success">Hunt Completed!</h4>
-                            <p class="text-secondary small mb-3">Congratulations, you completed all 6 levels of the hunt. Please report to your House Manager immediately to claim your treasure.</p>
+                            <p class="text-secondary small mb-3">Congratulations, you completed all 7 levels of the hunt. Please report to your House Manager immediately to claim your treasure.</p>
                             {% if team.round2_completion_time %}
                                 <div class="bg-light p-3 rounded-4 border d-inline-block small text-muted">
                                     <i class="bi bi-clock-fill me-1"></i>Finish Time: {{ team.round2_completion_time.strftime('%Y-%m-%d %I:%M:%S %p') }}
@@ -193,7 +179,60 @@
                             {% endif %}
                         </div>
                     {% endif %}
-                </div>
+
+                    <!-- Clues List (1 to 7) -->
+                    <div class="d-flex flex-column gap-3 mt-2">
+                        {% for lvl in range(1, 8) %}
+                            {% set is_unlocked = (team.round2_current_clue > lvl or team.round2_completed) %}
+                            {% set is_active = (team.round2_current_clue == lvl and not team.round2_completed) %}
+                            
+                            {% if is_unlocked %}
+                                <!-- Unlocked Clue Card -->
+                                <div class="card border-success bg-success bg-opacity-5 rounded-4 shadow-sm overflow-hidden">
+                                    <div class="card-header bg-success bg-opacity-10 border-success border-opacity-20 d-flex justify-content-between align-items-center py-2.5 px-3">
+                                        <h6 class="fw-bold mb-0 text-success"><i class="bi bi-check-circle-fill me-2"></i>Clue #{{ lvl }} (Unlocked)</h6>
+                                        <span class="badge bg-success small rounded-pill">Solved</span>
+                                    </div>
+                                    <div class="card-body p-3">
+                                        <div class="text-center mb-3">
+                                            <img src="/team/clue-image/{{ lvl }}" class="img-fluid rounded border shadow-sm animate__animated animate__fadeIn" style="max-height: 250px; cursor: zoom-in;" onclick="window.open('/team/clue-image/{{ lvl }}', '_blank')" alt="Clue {{ lvl }}">
+                                        </div>
+                                    </div>
+                                </div>
+                            {% elif is_active %}
+                                <!-- Active Clue Card -->
+                                <div class="card border-primary bg-primary bg-opacity-5 rounded-4 shadow-sm overflow-hidden">
+                                    <div class="card-header bg-primary bg-opacity-10 border-primary border-opacity-20 d-flex justify-content-between align-items-center py-2.5 px-3">
+                                        <h6 class="fw-bold mb-0 text-primary"><i class="bi bi-hourglass-split me-2"></i>Clue #{{ lvl }} (Active)</h6>
+                                        <span class="badge bg-primary small rounded-pill">In Progress</span>
+                                    </div>
+                                    <div class="card-body p-3">
+                                        <div class="alert alert-info border-0 rounded-4 text-start p-3 mb-3">
+                                            <h6 class="fw-bold mb-1"><i class="bi bi-compass-fill me-2"></i>Location Hint</h6>
+                                            <p class="mb-0 text-dark" id="currentHint">{{ next_clue_hint }}</p>
+                                            
+                                            <hr class="my-2 border-info">
+                                            
+                                            <h6 class="fw-bold mb-1"><i class="bi bi-key-fill me-2"></i>Required Passcode</h6>
+                                            <p class="mb-0 text-dark font-monospace fw-semibold" id="expectedPasscode">{{ current_clue_passcode }}</p>
+                                        </div>
+
+                                        <button type="button" class="btn btn-primary w-100 py-3 rounded-3 fw-bold pulse" data-bs-toggle="modal" data-bs-target="#scannerModal">
+                                            <i class="bi bi-qr-code-scan me-2"></i>Scan Clue QR Code
+                                        </button>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <!-- Locked Clue Card -->
+                                <div class="card border-secondary bg-light bg-opacity-50 rounded-4 shadow-sm opacity-75">
+                                    <div class="card-header border-bottom-0 d-flex justify-content-between align-items-center py-2.5 px-3">
+                                        <h6 class="fw-bold mb-0 text-muted"><i class="bi bi-lock-fill me-2"></i>Clue #{{ lvl }} (Locked)</h6>
+                                        <span class="badge bg-secondary small rounded-pill">Locked</span>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
             </div>
             {% endif %}
 
@@ -283,7 +322,7 @@
                     </div>
 
                     <!-- Round 2 Levels -->
-                    {% for lvl in range(1, 7) %}
+                    {% for lvl in range(1, 8) %}
                         {% set comp_at = progress_map.get(lvl) %}
                         <div class="mb-3 position-relative">
                             {% if comp_at %}

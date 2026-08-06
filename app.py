@@ -186,7 +186,7 @@ def create_app(config_override=None):
             r1_comp_count = len(t.task_completions)
             r1_pct = int((r1_comp_count / 10) * 100)
             
-            r2_pct = int(((t.round2_current_clue - 1) / 6) * 100) if t.current_round == 2 else 0
+            r2_pct = int(((t.round2_current_clue - 1) / 7) * 100) if t.current_round == 2 else 0
             if t.round2_completed:
                 r2_pct = 100
                 

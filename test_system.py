@@ -28,9 +28,9 @@ class THMSTestSuite(unittest.TestCase):
             self.houses.append(house)
         db.session.commit()
         
-        # Seed basic clues (1 to 6) with house restrictions and a Dummy Clue
+        # Seed basic clues (1 to 7) with house restrictions and a Dummy Clue
         self.clues = []
-        for i in range(1, 7):
+        for i in range(1, 8):
             allowed = None
             if i in [1, 2]:
                 allowed = "Red"
@@ -137,7 +137,7 @@ class THMSTestSuite(unittest.TestCase):
         req = MockRequest()
         
         # 1. Scan Clue 2 first (out of order, should fail)
-        res1 = process_qr_scan(team, "test-clue-2", "pass2", req)
+        res1 = process_qr_scan(team, "test-clue-2", "pass1", req)
         self.assertEqual(res1['status'], 'out_of_order')
         self.assertEqual(team.round2_current_clue, 1, "Progress advanced on out of order scan")
         
@@ -156,13 +156,13 @@ class THMSTestSuite(unittest.TestCase):
         self.assertEqual(res_rep['status'], 'repeated')
         self.assertEqual(team.round2_current_clue, 2, "Progress changed on repeated scan")
         
-        # 5. Scan sequentially to completion (Level 2 to 5)
-        for i in range(2, 6):
-            res = process_qr_scan(team, f"test-clue-{i}", f"pass{i}", req)
+        # 5. Scan sequentially to completion (Level 2 to 6)
+        for i in range(2, 7):
+            res = process_qr_scan(team, f"test-clue-{i}", f"pass{i-1}", req)
             self.assertEqual(res['status'], 'success')
             
-        # Final clue scan (Level 6)
-        res_final = process_qr_scan(team, "test-clue-6", "pass6", req)
+        # Final clue scan (Level 7)
+        res_final = process_qr_scan(team, "test-clue-7", "pass6", req)
         self.assertEqual(res_final['status'], 'completed_hunt')
         self.assertTrue(team.round2_completed)
         self.assertIsNotNone(team.round2_completion_time)

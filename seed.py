@@ -79,32 +79,35 @@ def run_seed():
             print(f"Seeded Task {index}: {title}")
     db.session.commit()
 
-    # 5. Seed 6 Round 2 Clue Levels (Level 1 & 2: house-specific, Level 3: Red/Blue & Green/Yellow shared, Level 4-6: single shared)
+    # 5. Seed 7 Round 2 Clue Levels (Level 1 & 2: house-specific, Level 3: Red/Blue & Green/Yellow shared, Level 4-7: single shared)
     qr_data = [
         # Level 1: Separate for each house
-        (1, "r2-red-l1", "Behind the central lawn sun dial.", "uuid-l1-red", "Red"),
-        (1, "r2-green-l1", "On the glass panel of the IT department server room.", "uuid-l1-green", "Green"),
-        (1, "r2-blue-l1", "Under the water cooler in the Mechanical block ground floor.", "uuid-l1-blue", "Blue"),
-        (1, "r2-yellow-l1", "Back of the seminar hall podium structure.", "uuid-l1-yellow", "Yellow"),
+        (1, "r2-red-l1", "Behind the central lawn sun dial.", "uuid-l1-red", "Red", "Red 1.jpg"),
+        (1, "r2-green-l1", "On the glass panel of the IT department server room.", "uuid-l1-green", "Green", "Green 1.jpg"),
+        (1, "r2-blue-l1", "Under the water cooler in the Mechanical block ground floor.", "uuid-l1-blue", "Blue", "BLUE 1.jpg"),
+        (1, "r2-yellow-l1", "Back of the seminar hall podium structure.", "uuid-l1-yellow", "Yellow", "YELLOW 1.jpg"),
         
         # Level 2: Separate for each house
-        (2, "r2-red-l2", "Behind the central lawn sun dial (Red/Blue Area).", "uuid-l2-red", "Red"),
-        (2, "r2-green-l2", "Attached to the solar panel charging station near the gym (Green/Yellow Area).", "uuid-l2-green", "Green"),
-        (2, "r2-blue-l2", "Behind the central lawn sun dial (Red/Blue Area).", "uuid-l2-blue", "Blue"),
-        (2, "r2-yellow-l2", "Attached to the solar panel charging station near the gym (Green/Yellow Area).", "uuid-l2-yellow", "Yellow"),
+        (2, "r2-red-l2", "Behind the central lawn sun dial (Red/Blue Area).", "uuid-l2-red", "Red", "Red 2.jpg"),
+        (2, "r2-green-l2", "Attached to the solar panel charging station near the gym (Green/Yellow Area).", "uuid-l2-green", "Green", "Green 2.jpg"),
+        (2, "r2-blue-l2", "Behind the central lawn sun dial (Red/Blue Area).", "uuid-l2-blue", "Blue", "BLUE 2.jpg"),
+        (2, "r2-yellow-l2", "Attached to the solar panel charging station near the gym (Green/Yellow Area).", "uuid-l2-yellow", "Yellow", "YELLOW 2.jpg"),
         
         # Level 3: Red and Blue same, Yellow and Green same
-        (3, "r2-shared-rb-l3", "Under the reception desk in the main administrative building.", "uuid-l3-redblue", "Red,Blue"),
-        (3, "r2-shared-gy-l3", "Under the reception desk in the main administrative building.", "uuid-l3-greenyellow", "Green,Yellow"),
+        (3, "r2-shared-rb-l3", "Under the reception desk in the main administrative building.", "uuid-l3-redblue", "Red,Blue", "PURPLE.jpg"),
+        (3, "r2-shared-gy-l3", "Under the reception desk in the main administrative building.", "uuid-l3-greenyellow", "Green,Yellow", "ORANGE.jpg"),
         
         # Level 4: One single clue for all houses
-        (4, "r2-shared-l4", "Under the stone bench near the cafeteria gazebo.", "uuid-l4-shared", None),
+        (4, "r2-shared-l4", "Under the stone bench near the cafeteria gazebo.", "uuid-l4-shared", None, "BLACK 1.jpg"),
         
         # Level 5: One single clue for all houses
-        (5, "r2-shared-l5", "Congratulations! Report to the House Manager to claim your treasure.", "uuid-l5-shared", None),
+        (5, "r2-shared-l5", "Search near the IT department block.", "uuid-l5-shared", None, "BLACK 2.jpg"),
         
-        # Level 6: One single clue for all houses (Final)
-        (6, "r2-final-l6", "Completed! Report to your House Manager.", "uuid-l6-shared", None)
+        # Level 6: One single clue for all houses
+        (6, "r2-shared-l6", "Search near the central plaza.", "uuid-l6-shared", None, "BLACK 3.jpg"),
+
+        # Level 7: One single clue for all houses (Final)
+        (7, "r2-final-l7", "Completed! Report to your House Manager.", "uuid-l7-shared", None, "BLACK FINAL.jpg")
     ]
 
     base_dir = os.path.abspath(os.path.dirname(__file__))
@@ -112,7 +115,7 @@ def run_seed():
     os.makedirs(qr_folder, exist_ok=True)
     base_url = os.environ.get('RENDER_EXTERNAL_URL', 'http://localhost:5000')
 
-    for num, pwd, hint, fixed_uuid, allowed in qr_data:
+    for num, pwd, hint, fixed_uuid, allowed, img_path in qr_data:
         qr = QRCode.query.filter_by(uuid=fixed_uuid).first()
         if not qr:
             qr = QRCode(
@@ -121,7 +124,8 @@ def run_seed():
                 password=pwd,
                 hint=hint,
                 is_dummy=False,
-                allowed_houses=allowed
+                allowed_houses=allowed,
+                image_path=img_path
             )
             db.session.add(qr)
             print(f"Seeded QR Level {num} ({allowed or 'All'}): {pwd}")
@@ -148,11 +152,12 @@ def run_seed():
                 clue_number=99,
                 password=d_pwd,
                 hint=d_hint,
-                is_dummy=True
+                is_dummy=True,
+                image_path="DUMMY.jpg"
             )
             db.session.add(qr)
             print(f"Seeded Dummy QR: {d_uuid}")
-
+        
         # Always generate PNG for local loading
         scan_url = f"{base_url.rstrip('/')}/scan/{d_uuid}"
         img = qrcode.make(scan_url)

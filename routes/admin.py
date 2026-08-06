@@ -495,29 +495,22 @@ def export_qrs_pdf():
         'DocTitle',
         parent=styles['Heading1'],
         fontName='Helvetica-Bold',
-        fontSize=24,
-        leading=28,
-        textColor=colors.HexColor('#0d6efd'),
+        fontSize=48,
+        leading=56,
+        textColor=colors.HexColor('#000000'),
         alignment=1, # Center
-        spaceAfter=15
+        spaceAfter=0
     )
     
-    label_style = ParagraphStyle(
-        'LabelStyle',
+    subtitle_style = ParagraphStyle(
+        'DocSubtitle',
         parent=styles['Normal'],
         fontName='Helvetica-Bold',
-        fontSize=14,
-        leading=18,
-        spaceAfter=10
-    )
-    
-    hint_style = ParagraphStyle(
-        'HintStyle',
-        parent=styles['Normal'],
-        fontName='Helvetica-Oblique',
-        fontSize=12,
-        leading=16,
-        spaceAfter=10
+        fontSize=24,
+        leading=28,
+        textColor=colors.HexColor('#666666'),
+        alignment=1, # Center
+        spaceAfter=0
     )
     
     elements = []
@@ -528,39 +521,26 @@ def export_qrs_pdf():
         if not os.path.exists(filepath):
             generate_qr_image(qr.uuid)
             
-        elements.append(Paragraph(f"Treasure Hunt Clue Sheet", title_style))
-        elements.append(Spacer(1, 0.25*inch))
+        # Large heading style
+        heading_text = f"CLUE #{qr.clue_number}" if not qr.is_dummy else "CLUE"
         
-        # Build information table
-        clue_type = "DUMMY CLUE" if qr.is_dummy else f"Clue #{qr.clue_number}"
-        table_data = [
-            [Paragraph(f"<b>Type:</b> {clue_type}", label_style)],
-            [Paragraph(f"<b>UUID Token:</b> {qr.uuid}", styles['Normal'])],
-            [Paragraph(f"<b>Unlock Password:</b> {qr.password}", styles['Normal'])],
-            [Paragraph(f"<b>Hint Text:</b> {qr.hint}", hint_style)]
-        ]
+        elements.append(Paragraph(heading_text, title_style))
+        elements.append(Spacer(1, 0.4*inch))
         
-        info_table = Table(table_data, colWidths=[4*inch])
-        info_table.setStyle(TableStyle([
-            ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8f9fa')),
-            ('PADDING', (0,0), (-1,-1), 12),
-            ('BOX', (0,0), (-1,-1), 1, colors.HexColor('#dee2e6')),
-            ('VALIGN', (0,0), (-1,-1), 'MIDDLE')
-        ]))
-        
-        # QR Code Image rendering
-        qr_image = Image(filepath, width=2.5*inch, height=2.5*inch)
-        
-        # Combine side-by-side
-        main_table = Table([[info_table, qr_image]], colWidths=[4.2*inch, 2.8*inch])
-        main_table.setStyle(TableStyle([
-            ('VALIGN', (0,0), (-1,-1), 'TOP'),
-            ('PADDING', (0,0), (-1,-1), 5)
-        ]))
-        
-        elements.append(main_table)
+        # "Scan Here" instruction
+        elements.append(Paragraph("SCAN HERE", subtitle_style))
         elements.append(Spacer(1, 0.5*inch))
-        elements.append(Paragraph("Instructions: Cut along the border and post at the target destination. Ensure the QR remains flat and easily scannable.", styles['Normal']))
+        
+        # Giant QR Code Image centered
+        qr_image = Image(filepath, width=5.5*inch, height=5.5*inch)
+        qr_table = Table([[qr_image]], colWidths=[7.5*inch])
+        qr_table.setStyle(TableStyle([
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+            ('TOPPADDING', (0,0), (-1,-1), 0)
+        ]))
+        elements.append(qr_table)
         
         # Page break except for the last clue sheet
         if idx < len(qrs) - 1:

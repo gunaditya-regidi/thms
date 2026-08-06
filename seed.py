@@ -92,7 +92,7 @@ def run_seed():
     base_dir = os.path.abspath(os.path.dirname(__file__))
     qr_folder = os.path.join(base_dir, 'generated_qr')
     os.makedirs(qr_folder, exist_ok=True)
-    base_url = os.environ.get('RENDER_EXTERNAL_URL', 'http://localhost:5000')
+    base_url = os.environ.get('BASE_URL', os.environ.get('RENDER_EXTERNAL_URL', 'http://localhost:5000'))
 
     for num, pwd, hint, fixed_uuid in qr_data:
         qr = QRCode.query.filter_by(clue_number=num, is_dummy=False).first()

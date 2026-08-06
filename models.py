@@ -63,7 +63,7 @@ class Team(db.Model):
     house_id = db.Column(db.Integer, db.ForeignKey('houses.id'), nullable=False)
     
     current_round = db.Column(db.Integer, default=1) # 1 or 2
-    round1_status = db.Column(db.String(30), default='active') # 'active', 'requested', 'verified', 'approved'
+    round1_status = db.Column(db.String(30), default='pending_start') # 'pending_start', 'active', 'requested', 'verified', 'approved'
     round2_current_clue = db.Column(db.Integer, default=1) # 1 to 7. Clue 7 is the final clue.
     round2_completed = db.Column(db.Boolean, default=False)
     round2_completion_time = db.Column(db.DateTime, nullable=True)
@@ -126,11 +126,12 @@ class QRCode(db.Model):
     __tablename__ = 'qr_codes'
     id = db.Column(db.Integer, primary_key=True)
     uuid = db.Column(db.String(50), unique=True, nullable=False) # Unique scan token
-    clue_number = db.Column(db.Integer, nullable=False) # Clue index (1 to 7)
+    clue_number = db.Column(db.Integer, nullable=False) # Clue level (1 to 6)
     password = db.Column(db.String(80), nullable=False)
     hint = db.Column(db.Text, nullable=False)
     image_path = db.Column(db.String(255), nullable=True) # relative path to clue image
     is_dummy = db.Column(db.Boolean, default=False)
+    allowed_houses = db.Column(db.String(100), nullable=True) # Comma-separated house names (e.g. "Red,Blue")
 
 
 class Round2Progress(db.Model):

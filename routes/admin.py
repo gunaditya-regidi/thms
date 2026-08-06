@@ -148,6 +148,48 @@ def approve_r1(team_id):
 
     return redirect(url_for('admin.teams_list'))
 
+@admin_bp.route('/admin/approve-start/<int:team_id>', methods=['POST'])
+@check_admin_role
+def approve_start(team_id):
+    team = Team.query.get_or_404(team_id)
+    if team.round1_status != 'pending_start':
+        flash("Team is already started or past starting phase.", "warning")
+        return redirect(url_for('admin.teams_list'))
+
+    try:
+        from datetime import datetime
+        now = datetime.utcnow()
+        team.round1_status = 'active'
+        team.created_at = now
+        
+        log = SystemLog(
+            action='r1_started',
+            details=f"Admin '{current_user.username}' approved Team '{team.team_name}' to start Round 1.",
+            user_id=current_user.id,
+            team_id=team_id,
+            ip_address=request.remote_addr,
+            browser=request.user_agent.string
+        )
+        db.session.add(log)
+        db.session.commit()
+
+        socketio = current_app.extensions.get('socketio')
+        if socketio:
+            socketio.emit('team_started', {
+                'team_id': team_id,
+                'team_name': team.team_name,
+                'house': team.house.name,
+                'timestamp': now.strftime('%Y-%m-%d %H:%M:%S')
+            })
+
+        flash(f"Team {team.team_name} approved to start Round 1.", "success")
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error in starting team: {str(e)}")
+        flash("An error occurred. Please try again.", "danger")
+
+    return redirect(url_for('admin.teams_list'))
+
 @admin_bp.route('/admin/promote-r2/<int:team_id>', methods=['POST'])
 @check_admin_role
 def promote_r2(team_id):
@@ -230,7 +272,7 @@ def reset_team(team_id):
         
         # Reset team attributes
         team.current_round = 1
-        team.round1_status = 'active'
+        team.round1_status = 'pending_start'
         team.round2_current_clue = 1
         team.round2_completed = False
         team.round2_completion_time = None
@@ -317,7 +359,7 @@ def reset_all_teams():
         teams = Team.query.all()
         for team in teams:
             team.current_round = 1
-            team.round1_status = 'active'
+            team.round1_status = 'pending_start'
             team.round2_current_clue = 1
             team.round2_completed = False
             team.round2_completion_time = None
@@ -522,7 +564,12 @@ def export_qrs_pdf():
             generate_qr_image(qr.uuid)
             
         # Large heading style
-        heading_text = f"CLUE #{qr.clue_number}" if not qr.is_dummy else "CLUE"
+        if qr.is_dummy:
+            heading_text = "CLUE"
+        elif qr.allowed_houses:
+            heading_text = f"CLUE #{qr.clue_number} ({qr.allowed_houses.upper()})"
+        else:
+            heading_text = f"CLUE #{qr.clue_number}"
         
         elements.append(Paragraph(heading_text, title_style))
         elements.append(Spacer(1, 0.4*inch))
@@ -909,9 +956,9 @@ def get_report_data(report_type):
                 if r1_app and r1_app.approved_at:
                     comp_time = f"R1 Appr: {r1_app.approved_at.strftime('%Y-%m-%d %H:%M:%S')}"
                     
-            qr_prog = f"{t.round2_current_clue - 1} / 7 solved" if t.current_round == 2 else "Not started"
+            qr_prog = f"{t.round2_current_clue - 1} / 6 solved" if t.current_round == 2 else "Not started"
             if t.round2_completed:
-                qr_prog = "7 / 7 solved"
+                qr_prog = "6 / 6 solved"
                 
             data.append([
                 rank,
@@ -959,7 +1006,7 @@ def get_report_data(report_type):
         teams = Team.query.all()
         for t in teams:
             r1_done = f"{len(t.task_completions)} / 10"
-            r2_prog = f"{t.round2_current_clue - 1} / 7" if t.current_round == 2 else "Locked"
+            r2_prog = f"{t.round2_current_clue - 1} / 6" if t.current_round == 2 else "Locked"
             if t.round2_completed:
                 r2_prog = "Completed"
                 

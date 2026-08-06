@@ -50,7 +50,11 @@ def dashboard():
     # Retrieve all tasks for verification checkboxes
     tasks = Task.query.order_by(Task.task_number).all()
     
-    first_clue = QRCode.query.filter_by(clue_number=1, is_dummy=False).first()
+    first_clue = QRCode.query.filter(
+        QRCode.clue_number == 1,
+        QRCode.is_dummy == False,
+        QRCode.allowed_houses.like(f"%{house.name}%")
+    ).first()
 
     return render_template('manager/dashboard.html',
                            house=house,

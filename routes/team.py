@@ -33,23 +33,28 @@ def dashboard():
     r1_progress_percent = int((completed_tasks_count / 10) * 100) if tasks else 0
 
     # Get active clues details for Round 2
-    current_clue = None    # Round 2 details
     next_clue_hint = "No active clues."
     current_clue_passcode = "N/A"
+    current_clue = None
     if team.current_round == 2 and team.round1_status == 'approved':
-        if team.round2_current_clue <= 7:
-            # The team is currently looking for clue 'team.round2_current_clue'
-            # Let's see what hint we can display.
-            # To get to clue X, they must have scanned clue X-1.
-            current_clue = QRCode.query.filter_by(clue_number=team.round2_current_clue, is_dummy=False).first()
+        if team.round2_current_clue <= 6:
+            # Query the clue level dynamically based on level and house restriction
+            active_qrs = QRCode.query.filter_by(clue_number=team.round2_current_clue, is_dummy=False).all()
+            for aq in active_qrs:
+                if not aq.allowed_houses:
+                    current_clue = aq
+                    break
+                allowed_list = [h.strip().lower() for h in aq.allowed_houses.split(',')]
+                if team.house.name.lower() in allowed_list:
+                    current_clue = aq
+                    break
+
             if team.round2_current_clue == 1:
                 next_clue_hint = "First Clue: Report to your House Manager to receive your first clue location and passcode."
                 current_clue_passcode = "Get passcode from House Manager"
             else:
-                prev_clue = QRCode.query.filter_by(clue_number=team.round2_current_clue - 1, is_dummy=False).first()
-                if prev_clue:
-                    next_clue_hint = prev_clue.hint
                 if current_clue:
+                    next_clue_hint = current_clue.hint
                     current_clue_passcode = current_clue.password
 
     # Pop preloaded scan result from session
@@ -58,6 +63,9 @@ def dashboard():
 
     # Get latest scan log
     latest_scan = QRScanLog.query.filter_by(team_id=team.id).order_by(QRScanLog.timestamp.desc()).first()
+
+    # Progress map for timeline display
+    progress_map = {p.clue_number: p.completed_at for p in team.round2_progresses}
 
     # Pass ISO timestamps for client stopwatch
     r1_app = Round1Approval.query.filter_by(team_id=team.id).first()
@@ -78,6 +86,7 @@ def dashboard():
                            created_iso=created_iso,
                            approved_iso=approved_iso,
                            finished_iso=finished_iso,
+                           progress_map=progress_map,
                            preloaded_scan_result=preloaded_scan_result)
 
 @team_bp.route('/team/request-r1', methods=['POST'])
@@ -254,6 +263,44 @@ def process_qr_scan(team, token, passcode, req):
             })
             
         return {'status': 'invalid', 'message': 'Invalid QR Code scanned!'}
+
+    # 2.5. Check if clue is restricted to specific houses
+    if qr.allowed_houses:
+        allowed_list = [h.strip().lower() for h in qr.allowed_houses.split(',')]
+        if team.house.name.lower() not in allowed_list:
+            log = QRScanLog(
+                team_id=team.id,
+                qr_code_id=qr.id,
+                scanned_token=token,
+                timestamp=timestamp,
+                is_correct=False,
+                is_repeated=False,
+                is_dummy=False,
+                ip_address=ip,
+                browser=ua
+            )
+            db.session.add(log)
+            
+            sys_log = SystemLog(
+                action='scan_failed_house_restriction',
+                details=f"Team '{team.team_name}' scanned house-restricted Clue {qr.clue_number} (Allowed: {qr.allowed_houses}) which doesn't match their house.",
+                team_id=team.id,
+                ip_address=ip,
+                browser=ua
+            )
+            db.session.add(sys_log)
+            db.session.commit()
+            
+            socketio = current_app.extensions.get('socketio')
+            if socketio:
+                socketio.emit('qr_scanned', {
+                    'team_name': team.team_name,
+                    'house': team.house.name,
+                    'type': 'wrong_house',
+                    'timestamp': timestamp.strftime('%Y-%m-%d %H:%M:%S')
+                })
+                
+            return {'status': 'wrong_house', 'message': 'Wrong Clue! This station belongs to another house.'}
 
     # 3. Verify passcode (Case-insensitive check for user convenience)
     if not passcode or qr.password.strip().lower() != passcode.strip().lower():
@@ -451,15 +498,15 @@ def process_qr_scan(team, token, passcode, req):
         # Update team expected clue
         team.round2_current_clue = team.round2_current_clue + 1
         
-        # Check if they have scanned clue 7 (completion of Hunt)
-        is_final = (qr.clue_number == 7)
+        # Check if they have scanned clue 6 (completion of Hunt)
+        is_final = (qr.clue_number == 6)
         if is_final:
             team.round2_completed = True
             team.round2_completion_time = timestamp
             
             sys_log = SystemLog(
                 action='hunt_completed',
-                details=f"Team '{team.team_name}' successfully completed all Round 2 clues and finished the Hunt!",
+                details=f"Team '{team.team_name}' successfully completed all 6 levels and finished the Hunt!",
                 team_id=team.id,
                 ip_address=ip,
                 browser=ua
@@ -468,7 +515,7 @@ def process_qr_scan(team, token, passcode, req):
         else:
             sys_log = SystemLog(
                 action='scan_correct',
-                details=f"Team '{team.team_name}' scanned Clue {qr.clue_number} correctly.",
+                details=f"Team '{team.team_name}' scanned Level {qr.clue_number} correctly.",
                 team_id=team.id,
                 ip_address=ip,
                 browser=ua
@@ -499,19 +546,29 @@ def process_qr_scan(team, token, passcode, req):
         if is_final:
             return {
                 'status': 'completed_hunt',
-                'message': 'Congratulations! You found all 7 clues. Please report to your House Manager.',
-                'clue_number': 7,
+                'message': 'Congratulations! You completed all 6 levels of the hunt. Please report to your House Manager.',
+                'clue_number': 6,
                 'password': 'N/A',
                 'hint': 'None. You completed the Hunt!',
                 'image': qr.image_path
             }
         else:
-            # Query the next clue to fetch its passcode!
-            next_qr = QRCode.query.filter_by(clue_number=qr.clue_number + 1, is_dummy=False).first()
+            # Query the next clue dynamically based on level and house restriction
+            next_qrs = QRCode.query.filter_by(clue_number=qr.clue_number + 1, is_dummy=False).all()
+            next_qr = None
+            for nq in next_qrs:
+                if not nq.allowed_houses:
+                    next_qr = nq
+                    break
+                allowed_list = [h.strip().lower() for h in nq.allowed_houses.split(',')]
+                if team.house.name.lower() in allowed_list:
+                    next_qr = nq
+                    break
+                    
             next_pwd = next_qr.password if next_qr else 'N/A'
             return {
                 'status': 'success',
-                'message': f"Clue {qr.clue_number} solved! Check details for your next destination.",
+                'message': f"Level {qr.clue_number} solved! Check details for your next destination.",
                 'clue_number': qr.clue_number,
                 'password': next_pwd,
                 'hint': qr.hint,

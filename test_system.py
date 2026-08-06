@@ -28,10 +28,15 @@ class THMSTestSuite(unittest.TestCase):
             self.houses.append(house)
         db.session.commit()
         
-        # Seed basic clues (1 to 7) and a Dummy Clue
+        # Seed basic clues (1 to 6) with house restrictions and a Dummy Clue
         self.clues = []
-        for i in range(1, 8):
-            qr = QRCode(uuid=f"test-clue-{i}", clue_number=i, password=f"pass{i}", hint=f"hint{i}", is_dummy=False)
+        for i in range(1, 7):
+            allowed = None
+            if i in [1, 2]:
+                allowed = "Red"
+            elif i == 3:
+                allowed = "Red,Blue"
+            qr = QRCode(uuid=f"test-clue-{i}", clue_number=i, password=f"pass{i}", hint=f"hint{i}", is_dummy=False, allowed_houses=allowed)
             db.session.add(qr)
             self.clues.append(qr)
             
@@ -151,13 +156,13 @@ class THMSTestSuite(unittest.TestCase):
         self.assertEqual(res_rep['status'], 'repeated')
         self.assertEqual(team.round2_current_clue, 2, "Progress changed on repeated scan")
         
-        # 5. Scan sequentially to completion
-        for i in range(2, 7):
+        # 5. Scan sequentially to completion (Level 2 to 5)
+        for i in range(2, 6):
             res = process_qr_scan(team, f"test-clue-{i}", f"pass{i}", req)
             self.assertEqual(res['status'], 'success')
             
-        # Final clue scan (Clue 7)
-        res_final = process_qr_scan(team, "test-clue-7", "pass7", req)
+        # Final clue scan (Level 6)
+        res_final = process_qr_scan(team, "test-clue-6", "pass6", req)
         self.assertEqual(res_final['status'], 'completed_hunt')
         self.assertTrue(team.round2_completed)
         self.assertIsNotNone(team.round2_completion_time)

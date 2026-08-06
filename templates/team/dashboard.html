@@ -27,6 +27,7 @@
                       data-created="{{ created_iso }}"
                       data-approved="{{ approved_iso }}"
                       data-finished="{{ finished_iso }}"
+                      data-status="{{ team.round1_status }}"
                       style="font-size: 11px; height: 32px;">
                     <i class="bi bi-stopwatch-fill text-danger me-1"></i>00:00:00
                 </span>
@@ -71,7 +72,23 @@
             
             <!-- Round 1: Tasks (If current round is 1) -->
             {% if team.current_round == 1 %}
-            <div class="glass-card mb-4">
+                {% if team.round1_status == 'pending_start' %}
+                    <div class="glass-card mb-4 text-center p-5">
+                        <div class="py-4">
+                            <div class="spinner-grow text-warning mb-3" style="width: 3rem; height: 3rem;" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <h4 class="fw-bold text-dark mt-2">Awaiting Start Approval</h4>
+                            <p class="text-secondary small max-width-300 mx-auto mb-4">
+                                Welcome, <strong>{{ team.team_name }}</strong>! Your registration is complete. Please wait for the event administrator to approve and start the game.
+                            </p>
+                            <div class="bg-light p-3 rounded-4 border d-inline-block small text-muted">
+                                <i class="bi bi-info-circle me-1"></i>House Assignment: <strong>{{ team.house.name }} House</strong>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="glass-card mb-4">
                 <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
                     <h5 class="fw-bold mb-0 text-primary"><i class="bi bi-1-circle-fill me-2"></i>Round 1: Tasks</h5>
                     <span class="badge bg-primary rounded-pill">{{ completed_tasks_count }} / 10 Completed</span>
@@ -135,6 +152,7 @@
                 </div>
             </div>
             {% endif %}
+            {% endif %}
 
             <!-- Round 2: QR Clues (If Round 2 is active or R1 approved) -->
             {% if team.current_round == 2 or team.round1_status == 'approved' %}
@@ -144,7 +162,7 @@
                     {% if team.round2_completed %}
                         <span class="badge bg-success rounded-pill">Completed</span>
                     {% else %}
-                        <span class="badge bg-warning text-dark rounded-pill">Clue {{ team.round2_current_clue }} / 7</span>
+                        <span class="badge bg-warning text-dark rounded-pill">Level {{ team.round2_current_clue }} / 6</span>
                     {% endif %}
                 </div>
 
@@ -167,7 +185,7 @@
                         <div class="py-4">
                             <i class="bi bi-trophy-fill text-warning fs-1 block mb-3"></i>
                             <h4 class="fw-bold text-success">Hunt Completed!</h4>
-                            <p class="text-secondary small mb-3">Congratulations, you found all 7 clues. Please report to the House Manager immediately to register your finish.</p>
+                            <p class="text-secondary small mb-3">Congratulations, you completed all 6 levels of the hunt. Please report to your House Manager immediately to claim your treasure.</p>
                             {% if team.round2_completion_time %}
                                 <div class="bg-light p-3 rounded-4 border d-inline-block small text-muted">
                                     <i class="bi bi-clock-fill me-1"></i>Finish Time: {{ team.round2_completion_time.strftime('%Y-%m-%d %I:%M:%S %p') }}
@@ -224,6 +242,63 @@
                 </div>
             </div>
             {% endif %}
+
+            <!-- Hunt Progression Timeline -->
+            <div class="glass-card p-3 mb-4">
+                <h5 class="fw-bold mb-3 text-primary"><i class="bi bi-clock-history me-2"></i>Hunt Progression Timeline</h5>
+                
+                <div class="position-relative ps-4 border-start border-2 border-primary border-opacity-30 ms-2 py-2 small">
+                    <!-- Event Registration -->
+                    <div class="mb-3 position-relative">
+                        <div class="position-absolute bg-primary rounded-circle" style="width: 12px; height: 12px; left: -22px; top: 4px;"></div>
+                        <h6 class="fw-bold mb-0 text-dark">Team Registered</h6>
+                        <span class="text-muted font-monospace" style="font-size: 10px;">{{ team.created_at.strftime('%Y-%m-%d %I:%M:%S %p') }}</span>
+                    </div>
+
+                    <!-- Round 1 Start (Approved to play) -->
+                    <div class="mb-3 position-relative">
+                        {% if team.round1_status != 'pending_start' %}
+                            <div class="position-absolute bg-primary rounded-circle" style="width: 12px; height: 12px; left: -22px; top: 4px;"></div>
+                            <h6 class="fw-bold mb-0 text-dark">Round 1 Started</h6>
+                            <span class="text-muted font-monospace" style="font-size: 10px;">{{ team.created_at.strftime('%Y-%m-%d %I:%M:%S %p') }}</span>
+                        {% else %}
+                            <div class="position-absolute bg-secondary rounded-circle" style="width: 12px; height: 12px; left: -22px; top: 4px;"></div>
+                            <h6 class="fw-bold mb-0 text-secondary">Round 1 Start Pending</h6>
+                            <span class="text-muted font-monospace" style="font-size: 10px;">Awaiting Admin Approval</span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Round 1 Completion -->
+                    <div class="mb-3 position-relative">
+                        {% set r1_app = team.round1_approvals[0] if team.round1_approvals else None %}
+                        {% if r1_app and r1_app.approved_at %}
+                            <div class="position-absolute bg-primary rounded-circle" style="width: 12px; height: 12px; left: -22px; top: 4px;"></div>
+                            <h6 class="fw-bold mb-0 text-dark">Round 1 Completed & Approved</h6>
+                            <span class="text-muted font-monospace" style="font-size: 10px;">{{ r1_app.approved_at.strftime('%Y-%m-%d %I:%M:%S %p') }}</span>
+                        {% else %}
+                            <div class="position-absolute bg-secondary rounded-circle" style="width: 12px; height: 12px; left: -22px; top: 4px;"></div>
+                            <h6 class="fw-bold mb-0 text-secondary">Round 1 Completion</h6>
+                            <span class="text-muted font-monospace" style="font-size: 10px;">{% if team.round1_status == 'requested' %}Verification Requested{% elif team.round1_status == 'verified' %}Verified by Manager{% else %}In Progress{% endif %}</span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Round 2 Levels -->
+                    {% for lvl in range(1, 7) %}
+                        {% set comp_at = progress_map.get(lvl) %}
+                        <div class="mb-3 position-relative">
+                            {% if comp_at %}
+                                <div class="position-absolute bg-success rounded-circle" style="width: 12px; height: 12px; left: -22px; top: 4px;"></div>
+                                <h6 class="fw-bold mb-0 text-success">Level {{ lvl }} Solved</h6>
+                                <span class="text-muted font-monospace" style="font-size: 10px;">{{ comp_at.strftime('%Y-%m-%d %I:%M:%S %p') }}</span>
+                            {% else %}
+                                <div class="position-absolute bg-secondary rounded-circle" style="width: 12px; height: 12px; left: -22px; top: 4px;"></div>
+                                <h6 class="fw-bold mb-0 text-secondary">Level {{ lvl }}</h6>
+                                <span class="text-muted font-monospace" style="font-size: 10px;">Locked</span>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
 
         </div>
 
@@ -504,6 +579,12 @@ document.addEventListener('DOMContentLoaded', () => {
 function startTeamStopwatch() {
     const stopwatchEl = document.getElementById('teamStopwatch');
     if (!stopwatchEl) return;
+    
+    const status = stopwatchEl.getAttribute('data-status');
+    if (status === 'pending_start') {
+        stopwatchEl.innerHTML = '<i class="bi bi-play-circle-fill text-secondary me-1"></i>00:00:00';
+        return;
+    }
     
     const createdStr = stopwatchEl.getAttribute('data-created');
     const approvedStr = stopwatchEl.getAttribute('data-approved');

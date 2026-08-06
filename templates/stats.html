@@ -74,8 +74,8 @@
                             {% elif t.current_round == 2 or t.round1_status == 'approved' %}
                                 {% set badge_class = 'bg-info text-dark' %}
                                 {% set status_text = 'R2 ACTIVE' %}
-                                {% set progress_val = ((t.round2_current_clue - 1) * 100 // 7)|int %}
-                                {% set progress_label = 'R2 Clues: ' ~ (t.round2_current_clue - 1) ~ '/7 solved (' ~ progress_val ~ '%)' %}
+                                {% set progress_val = ((t.round2_current_clue - 1) * 100 // 6)|int %}
+                                {% set progress_label = 'R2 Levels: ' ~ (t.round2_current_clue - 1) ~ '/6 solved (' ~ progress_val ~ '%)' %}
                             {% elif t.round1_status == 'verified' %}
                                 {% set badge_class = 'bg-danger' %}
                                 {% set status_text = 'R1 VERIFIED' %}
@@ -86,6 +86,11 @@
                                 {% set status_text = 'R1 REQUESTED' %}
                                 {% set progress_val = 100 %}
                                 {% set progress_label = 'R1 Request Sent (100%)' %}
+                            {% elif t.round1_status == 'pending_start' %}
+                                {% set badge_class = 'bg-secondary' %}
+                                {% set status_text = 'PENDING START' %}
+                                {% set progress_val = 0 %}
+                                {% set progress_label = 'Awaiting Start Approval (0%)' %}
                             {% else %}
                                 {% set badge_class = 'bg-secondary' %}
                                 {% set status_text = 'R1 ACTIVE' %}
@@ -319,7 +324,7 @@ function updateStatsView(data) {
             badgeClass = 'bg-info text-dark';
             statusText = 'R2 ACTIVE';
             progressVal = round2Pct;
-            progressLabel = `R2 Clues: ${round2Clue - 1}/7 solved (${round2Pct}%)`;
+            progressLabel = `R2 Levels: ${round2Clue - 1}/6 solved (${round2Pct}%)`;
         } else if (round1Status === 'verified') {
             badgeClass = 'bg-danger';
             statusText = 'R1 VERIFIED';
@@ -330,6 +335,11 @@ function updateStatsView(data) {
             statusText = 'R1 REQUESTED';
             progressVal = 100;
             progressLabel = `R1 Request Sent (100%)`;
+        } else if (round1Status === 'pending_start') {
+            badgeClass = 'bg-secondary';
+            statusText = 'PENDING START';
+            progressVal = 0;
+            progressLabel = `Awaiting Start Approval (0%)`;
         }
         
         const tr = document.createElement('tr');

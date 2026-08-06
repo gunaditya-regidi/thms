@@ -185,8 +185,17 @@
             socket.on('team_finished', (data) => {
                 showLiveToast(
                     'HUNT COMPLETED!',
-                    `CONGRATULATIONS: Team "${data.team_name}" (${data.house} House) has found all 7 clues and completed the Hunt!`,
+                    `CONGRATULATIONS: Team "${data.team_name}" (${data.house} House) has completed all 6 levels and finished the Hunt!`,
                     'bi-trophy-fill'
+                );
+                if (typeof refreshDashboardData === 'function') refreshDashboardData();
+            });
+            
+            socket.on('team_started', (data) => {
+                showLiveToast(
+                    'TEAM STARTED!',
+                    `Team "${data.team_name}" (${data.house} House) has been approved to start Round 1!`,
+                    'bi-play-circle-fill'
                 );
                 if (typeof refreshDashboardData === 'function') refreshDashboardData();
             });

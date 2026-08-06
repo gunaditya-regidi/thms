@@ -6,6 +6,7 @@ from models import db, User, House, Manager, Admin, Task, QRCode
 
 def run_seed():
     print("Recreating database tables...")
+    db.drop_all()
     db.create_all()
 
     # 1. Seed Houses
@@ -78,15 +79,32 @@ def run_seed():
             print(f"Seeded Task {index}: {title}")
     db.session.commit()
 
-    # 5. Seed 7 Round 2 QR codes (Shifted hints: QRCode X has hint for Clue X+1)
+    # 5. Seed 6 Round 2 Clue Levels (Level 1 & 2: house-specific, Level 3: Red/Blue & Green/Yellow shared, Level 4-6: single shared)
     qr_data = [
-        (1, "r2-alpha-99", "Behind the central lawn sun dial.", "c1-uuid-1111"),
-        (2, "r2-beta-88", "On the glass panel of the IT department server room.", "c2-uuid-2222"),
-        (3, "r2-gamma-77", "Under the water cooler in the Mechanical block ground floor.", "c3-uuid-3333"),
-        (4, "r2-delta-66", "Back of the seminar hall podium structure.", "c4-uuid-4444"),
-        (5, "r2-epsilon-55", "Attached to the solar panel charging station near the gym.", "c5-uuid-5555"),
-        (6, "r2-zeta-44", "Under the reception desk in the main administrative building.", "c6-uuid-6666"),
-        (7, "r2-omega-final", "Congratulations! Report to the House Manager to claim your treasure.", "c7-uuid-7777")
+        # Level 1: Separate for each house
+        (1, "r2-red-l1", "Behind the central lawn sun dial.", "uuid-l1-red", "Red"),
+        (1, "r2-green-l1", "On the glass panel of the IT department server room.", "uuid-l1-green", "Green"),
+        (1, "r2-blue-l1", "Under the water cooler in the Mechanical block ground floor.", "uuid-l1-blue", "Blue"),
+        (1, "r2-yellow-l1", "Back of the seminar hall podium structure.", "uuid-l1-yellow", "Yellow"),
+        
+        # Level 2: Separate for each house
+        (2, "r2-red-l2", "Behind the central lawn sun dial (Red/Blue Area).", "uuid-l2-red", "Red"),
+        (2, "r2-green-l2", "Attached to the solar panel charging station near the gym (Green/Yellow Area).", "uuid-l2-green", "Green"),
+        (2, "r2-blue-l2", "Behind the central lawn sun dial (Red/Blue Area).", "uuid-l2-blue", "Blue"),
+        (2, "r2-yellow-l2", "Attached to the solar panel charging station near the gym (Green/Yellow Area).", "uuid-l2-yellow", "Yellow"),
+        
+        # Level 3: Red and Blue same, Yellow and Green same
+        (3, "r2-shared-rb-l3", "Under the reception desk in the main administrative building.", "uuid-l3-redblue", "Red,Blue"),
+        (3, "r2-shared-gy-l3", "Under the reception desk in the main administrative building.", "uuid-l3-greenyellow", "Green,Yellow"),
+        
+        # Level 4: One single clue for all houses
+        (4, "r2-shared-l4", "Under the stone bench near the cafeteria gazebo.", "uuid-l4-shared", None),
+        
+        # Level 5: One single clue for all houses
+        (5, "r2-shared-l5", "Congratulations! Report to the House Manager to claim your treasure.", "uuid-l5-shared", None),
+        
+        # Level 6: One single clue for all houses (Final)
+        (6, "r2-final-l6", "Completed! Report to your House Manager.", "uuid-l6-shared", None)
     ]
 
     base_dir = os.path.abspath(os.path.dirname(__file__))
@@ -94,18 +112,19 @@ def run_seed():
     os.makedirs(qr_folder, exist_ok=True)
     base_url = os.environ.get('RENDER_EXTERNAL_URL', 'http://localhost:5000')
 
-    for num, pwd, hint, fixed_uuid in qr_data:
-        qr = QRCode.query.filter_by(clue_number=num, is_dummy=False).first()
+    for num, pwd, hint, fixed_uuid, allowed in qr_data:
+        qr = QRCode.query.filter_by(uuid=fixed_uuid).first()
         if not qr:
             qr = QRCode(
                 uuid=fixed_uuid,
                 clue_number=num,
                 password=pwd,
                 hint=hint,
-                is_dummy=False
+                is_dummy=False,
+                allowed_houses=allowed
             )
             db.session.add(qr)
-            print(f"Seeded QR Clue {num}: {pwd}")
+            print(f"Seeded QR Level {num} ({allowed or 'All'}): {pwd}")
         
         # Always generate PNG for local loading
         scan_url = f"{base_url.rstrip('/')}/scan/{fixed_uuid}"
@@ -144,7 +163,7 @@ def run_seed():
     print("Database seeding completed successfully!")
 
 def seed_database():
-    app = create_app()
+    app = create_app({'TESTING': True})
     with app.app_context():
         run_seed()
 

@@ -33,8 +33,9 @@ def dashboard():
     r1_progress_percent = int((completed_tasks_count / 10) * 100) if tasks else 0
 
     # Get active clues details for Round 2
-    current_clue = None
-    next_clue_hint = None
+    current_clue = None    # Round 2 details
+    next_clue_hint = "No active clues."
+    current_clue_passcode = "N/A"
     if team.current_round == 2 and team.round1_status == 'approved':
         if team.round2_current_clue <= 7:
             # The team is currently looking for clue 'team.round2_current_clue'
@@ -42,11 +43,18 @@ def dashboard():
             # To get to clue X, they must have scanned clue X-1.
             current_clue = QRCode.query.filter_by(clue_number=team.round2_current_clue, is_dummy=False).first()
             if team.round2_current_clue == 1:
-                next_clue_hint = "Look under the stone bench near the cafeteria gazebo."
+                next_clue_hint = "First Clue: Report to your House Manager to receive your first clue location and passcode."
+                current_clue_passcode = "Get passcode from House Manager"
             else:
                 prev_clue = QRCode.query.filter_by(clue_number=team.round2_current_clue - 1, is_dummy=False).first()
                 if prev_clue:
                     next_clue_hint = prev_clue.hint
+                if current_clue:
+                    current_clue_passcode = current_clue.password
+
+    # Pop preloaded scan result from session
+    from flask import session as flask_session
+    preloaded_scan_result = flask_session.pop('direct_scan_result', None)
 
     # Get latest scan log
     latest_scan = QRScanLog.query.filter_by(team_id=team.id).order_by(QRScanLog.timestamp.desc()).first()
@@ -65,10 +73,12 @@ def dashboard():
                            r1_progress_percent=r1_progress_percent,
                            current_clue=current_clue,
                            next_clue_hint=next_clue_hint,
+                           current_clue_passcode=current_clue_passcode,
                            latest_scan=latest_scan,
                            created_iso=created_iso,
                            approved_iso=approved_iso,
-                           finished_iso=finished_iso)
+                           finished_iso=finished_iso,
+                           preloaded_scan_result=preloaded_scan_result)
 
 @team_bp.route('/team/request-r1', methods=['POST'])
 @check_team_role
@@ -127,12 +137,11 @@ def request_r1():
 
     return redirect(url_for('team.dashboard'))
 
-@team_bp.route('/scan/<uuid>')
+@team_bp.route('/scan/<uuid>', methods=['GET', 'POST'])
 def direct_scan(uuid):
     """Direct route for standard QR code reader apps scanning a URL."""
     if not current_user.is_authenticated or current_user.role != 'team_leader':
         # Store scanned code in session so they can submit after logging in
-        session = request.environ.get('beaker.session') # standard flask session
         from flask import session as flask_session
         flask_session['pending_scan_token'] = uuid
         flash("Scan detected! Please log in as your Team Leader to register the clue.", "info")
@@ -143,21 +152,41 @@ def direct_scan(uuid):
         flash("Logged in user does not represent a Team.", "danger")
         return redirect(url_for('auth.logout'))
 
-    # Run the QR scan engine
-    result = process_qr_scan(team, uuid, request)
-    
-    if result['status'] == 'success':
-        flash(f"Success: {result['message']}", "success")
-    elif result['status'] == 'completed_hunt':
-        flash(f"CONGRATULATIONS: {result['message']}", "success")
-    elif result['status'] == 'dummy':
-        flash(f"DUMMY CLUE: {result['message']}", "warning")
-    elif result['status'] == 'repeated':
-        flash(f"INFO: {result['message']}", "info")
-    else:
-        flash(f"ERROR: {result['message']}", "danger")
+    qr = QRCode.query.filter_by(uuid=uuid).first()
+    if not qr:
+        flash("Invalid QR Code scanned!", "danger")
+        return redirect(url_for('team.dashboard'))
 
-    return redirect(url_for('team.dashboard'))
+    if request.method == 'POST':
+        passcode = request.form.get('passcode', '').strip()
+        result = process_qr_scan(team, uuid, passcode, request)
+        
+        if result['status'] == 'success':
+            from flask import session as flask_session
+            flask_session['direct_scan_result'] = result
+            flash(f"Success: {result['message']}", "success")
+            return redirect(url_for('team.dashboard'))
+        elif result['status'] == 'completed_hunt':
+            flash(f"CONGRATULATIONS: {result['message']}", "success")
+            return redirect(url_for('team.dashboard'))
+        elif result['status'] == 'dummy':
+            from flask import session as flask_session
+            flask_session['direct_scan_result'] = result
+            flash(f"DUMMY CLUE: {result['message']}", "warning")
+            return redirect(url_for('team.dashboard'))
+        elif result['status'] == 'repeated':
+            from flask import session as flask_session
+            flask_session['direct_scan_result'] = result
+            flash(f"INFO: {result['message']}", "info")
+            return redirect(url_for('team.dashboard'))
+        elif result['status'] == 'wrong_password':
+            flash(f"Error: {result['message']}", "danger")
+            return render_template('team/scan_verify.html', uuid=uuid)
+        else:
+            flash(f"Error: {result['message']}", "danger")
+            return redirect(url_for('team.dashboard'))
+
+    return render_template('team/scan_verify.html', uuid=uuid)
 
 @team_bp.route('/api/scan_qr', methods=['POST'])
 @login_required
@@ -172,14 +201,15 @@ def api_scan_qr():
 
     data = request.get_json() or {}
     token = data.get('token', '').strip()
+    passcode = data.get('passcode', '').strip()
     
     if not token:
         return jsonify({'status': 'error', 'message': 'No QR code token provided.'}), 400
 
-    result = process_qr_scan(team, token, request)
+    result = process_qr_scan(team, token, passcode, request)
     return jsonify(result)
 
-def process_qr_scan(team, token, req):
+def process_qr_scan(team, token, passcode, req):
     """Core QR verification logic."""
     timestamp = datetime.datetime.utcnow()
     ip = req.remote_addr
@@ -224,6 +254,43 @@ def process_qr_scan(team, token, req):
             })
             
         return {'status': 'invalid', 'message': 'Invalid QR Code scanned!'}
+
+    # 3. Verify passcode (Case-insensitive check for user convenience)
+    if not passcode or qr.password.strip().lower() != passcode.strip().lower():
+        # Log wrong password scan
+        log = QRScanLog(
+            team_id=team.id,
+            qr_code_id=qr.id,
+            scanned_token=token,
+            timestamp=timestamp,
+            is_correct=False,
+            is_repeated=False,
+            is_dummy=qr.is_dummy,
+            ip_address=ip,
+            browser=ua
+        )
+        db.session.add(log)
+        
+        sys_log = SystemLog(
+            action='scan_failed_passcode',
+            details=f"Team '{team.team_name}' entered incorrect passcode '{passcode}' for Clue {qr.clue_number if not qr.is_dummy else 'Dummy'}.",
+            team_id=team.id,
+            ip_address=ip,
+            browser=ua
+        )
+        db.session.add(sys_log)
+        db.session.commit()
+        
+        socketio = current_app.extensions.get('socketio')
+        if socketio:
+            socketio.emit('qr_scanned', {
+                'team_name': team.team_name,
+                'house': team.house.name,
+                'type': 'failed_passcode',
+                'timestamp': timestamp.strftime('%Y-%m-%d %H:%M:%S')
+            })
+            
+        return {'status': 'wrong_password', 'message': 'Incorrect passcode for this clue station.'}
 
     # 3. Check if Dummy Clue
     if qr.is_dummy:
@@ -434,16 +501,19 @@ def process_qr_scan(team, token, req):
                 'status': 'completed_hunt',
                 'message': 'Congratulations! You found all 7 clues. Please report to your House Manager.',
                 'clue_number': 7,
-                'password': qr.password,
-                'hint': qr.hint,
+                'password': 'N/A',
+                'hint': 'None. You completed the Hunt!',
                 'image': qr.image_path
             }
         else:
+            # Query the next clue to fetch its passcode!
+            next_qr = QRCode.query.filter_by(clue_number=qr.clue_number + 1, is_dummy=False).first()
+            next_pwd = next_qr.password if next_qr else 'N/A'
             return {
                 'status': 'success',
                 'message': f"Clue {qr.clue_number} solved! Check details for your next destination.",
                 'clue_number': qr.clue_number,
-                'password': qr.password,
+                'password': next_pwd,
                 'hint': qr.hint,
                 'image': qr.image_path
             }

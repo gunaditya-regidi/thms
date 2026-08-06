@@ -132,32 +132,32 @@ class THMSTestSuite(unittest.TestCase):
         req = MockRequest()
         
         # 1. Scan Clue 2 first (out of order, should fail)
-        res1 = process_qr_scan(team, "test-clue-2", req)
+        res1 = process_qr_scan(team, "test-clue-2", "pass2", req)
         self.assertEqual(res1['status'], 'out_of_order')
         self.assertEqual(team.round2_current_clue, 1, "Progress advanced on out of order scan")
         
         # 2. Scan Dummy clue (decoy, should show details but not advance)
-        res_dummy = process_qr_scan(team, "test-dummy", req)
+        res_dummy = process_qr_scan(team, "test-dummy", "dummy", req)
         self.assertEqual(res_dummy['status'], 'dummy')
         self.assertEqual(team.round2_current_clue, 1, "Progress advanced on dummy scan")
         
         # 3. Scan Clue 1 (correct, should succeed)
-        res2 = process_qr_scan(team, "test-clue-1", req)
+        res2 = process_qr_scan(team, "test-clue-1", "pass1", req)
         self.assertEqual(res2['status'], 'success')
         self.assertEqual(team.round2_current_clue, 2, "Progress did not advance on correct scan")
         
         # 4. Scan Clue 1 again (repeated, should log but not advance)
-        res_rep = process_qr_scan(team, "test-clue-1", req)
+        res_rep = process_qr_scan(team, "test-clue-1", "pass1", req)
         self.assertEqual(res_rep['status'], 'repeated')
         self.assertEqual(team.round2_current_clue, 2, "Progress changed on repeated scan")
         
         # 5. Scan sequentially to completion
         for i in range(2, 7):
-            res = process_qr_scan(team, f"test-clue-{i}", req)
+            res = process_qr_scan(team, f"test-clue-{i}", f"pass{i}", req)
             self.assertEqual(res['status'], 'success')
             
         # Final clue scan (Clue 7)
-        res_final = process_qr_scan(team, "test-clue-7", req)
+        res_final = process_qr_scan(team, "test-clue-7", "pass7", req)
         self.assertEqual(res_final['status'], 'completed_hunt')
         self.assertTrue(team.round2_completed)
         self.assertIsNotNone(team.round2_completion_time)

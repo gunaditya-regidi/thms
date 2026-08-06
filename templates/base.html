@@ -106,6 +106,10 @@
                 console.log('Connected to THMS Real-Time Socket Gateway.');
             });
 
+            socket.on('global_reset', () => {
+                window.location.reload();
+            });
+
             socket.on('register_team', (data) => {
                 showLiveToast(
                     'New Team Registered!',

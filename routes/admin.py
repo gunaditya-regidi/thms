@@ -75,6 +75,7 @@ def dashboard():
     recent_teams = Team.query.order_by(Team.created_at.desc()).limit(5).all()
     recent_scans = QRScanLog.query.order_by(QRScanLog.timestamp.desc()).limit(5).all()
 
+    users = User.query.all()
     return render_template('admin/dashboard.html',
                            total_teams=total_teams,
                            total_managers=total_managers,
@@ -87,7 +88,8 @@ def dashboard():
                            r2_active=r2_active,
                            r2_completed=r2_completed,
                            recent_teams=recent_teams,
-                           recent_scans=recent_scans)
+                           recent_scans=recent_scans,
+                           users=users)
 
 @admin_bp.route('/admin/teams')
 @check_admin_role
@@ -300,6 +302,49 @@ def reset_qr_progress(team_id):
         flash("An error occurred.", "danger")
 
     return redirect(url_for('admin.teams_list'))
+
+@admin_bp.route('/admin/reset-all', methods=['POST'])
+@check_admin_role
+def reset_all_teams():
+    try:
+        # Delete task completions, approvals, progresses, and scan logs
+        TaskCompletion.query.delete()
+        Round1Approval.query.delete()
+        Round2Progress.query.delete()
+        QRScanLog.query.delete()
+        
+        # Reset all team status values
+        teams = Team.query.all()
+        for team in teams:
+            team.current_round = 1
+            team.round1_status = 'active'
+            team.round2_current_clue = 1
+            team.round2_completed = False
+            team.round2_completion_time = None
+            
+        # Log system event
+        sys_log = SystemLog(
+            action='system_reset_all',
+            details=f"Admin '{current_user.username}' reset ALL teams and clue progress to zero.",
+            user_id=current_user.id,
+            ip_address=request.remote_addr,
+            browser=request.user_agent.string
+        )
+        db.session.add(sys_log)
+        db.session.commit()
+        
+        # Emit SocketIO global reset signal so all dashboards reload/update
+        socketio = current_app.extensions.get('socketio')
+        if socketio:
+            socketio.emit('global_reset', {})
+            
+        flash("All teams, tasks, and clue progress have been completely reset to zero.", "success")
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error executing global reset: {str(e)}")
+        flash("An error occurred during global reset.", "danger")
+        
+    return redirect(url_for('admin.dashboard'))
 
 @admin_bp.route('/admin/qrs', methods=['GET', 'POST'])
 @check_admin_role

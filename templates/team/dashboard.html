@@ -153,6 +153,11 @@
                         <div class="alert alert-info border-0 rounded-4 text-start p-3 mb-4">
                             <h6 class="fw-bold mb-2"><i class="bi bi-compass-fill me-2"></i>Next Clue Hint</h6>
                             <p class="mb-0 text-dark" id="currentHint">{{ next_clue_hint }}</p>
+                            
+                            <hr class="my-2 border-info">
+                            
+                            <h6 class="fw-bold mb-2"><i class="bi bi-key-fill me-2"></i>Expected Passcode</h6>
+                            <p class="mb-0 text-dark font-monospace fw-semibold" id="expectedPasscode">{{ current_clue_passcode }}</p>
                         </div>
 
                         <button type="button" class="btn btn-primary w-100 py-3 rounded-3 fw-bold mb-3 pulse" data-bs-toggle="modal" data-bs-target="#scannerModal">
@@ -365,13 +370,19 @@ function processScannedToken(scannedText) {
     
     console.log("Parsed Token:", token);
     
+    // Prompt for passcode
+    const passcode = prompt("Clue station scanned successfully! Enter the passcode to verify this station:");
+    if (passcode === null) {
+        return; // User cancelled
+    }
+    
     // Send to AJAX verification
     fetch('/api/scan_qr', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ token: token })
+        body: JSON.stringify({ token: token, passcode: passcode })
     })
     .then(response => {
         if (!response.ok) {
@@ -427,7 +438,7 @@ function displayScanResults(result) {
     } 
     else if (result.status === 'dummy') {
         title.innerText = "Decoy Clue Scanned!";
-        icon.innerHTML = `<i class="bi bi-exclamation-triangle-fill text-warning fs-1"></i>`;
+        icon.innerHTML = `<div style="font-size: 50px; line-height: 1;">🤡</div>`;
         statusText.innerText = "Wrong Clue (Decoy)";
         statusText.className = "fw-bold mb-2 text-warning";
         message.innerText = result.message;
@@ -458,6 +469,14 @@ function displayScanResults(result) {
             imgWrapper.innerHTML = '';
         }
     } 
+    else if (result.status === 'wrong_password') {
+        title.innerText = "Verification Failed";
+        icon.innerHTML = `<i class="bi bi-shield-x-fill text-danger fs-1"></i>`;
+        statusText.innerText = "Incorrect Passcode";
+        statusText.className = "fw-bold mb-2 text-danger";
+        message.innerText = result.message;
+        clueDetail.classList.add('d-none');
+    }
     else {
         title.innerText = "Scan Failed";
         icon.innerHTML = `<i class="bi bi-x-circle-fill text-danger fs-1"></i>`;
@@ -477,6 +496,9 @@ function closeResultCard() {
 // Stopwatch ticking logic
 document.addEventListener('DOMContentLoaded', () => {
     startTeamStopwatch();
+    {% if preloaded_scan_result %}
+    displayScanResults({{ preloaded_scan_result|tojson }});
+    {% endif %}
 });
 
 function startTeamStopwatch() {

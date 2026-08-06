@@ -49,6 +49,8 @@ def dashboard():
 
     # Retrieve all tasks for verification checkboxes
     tasks = Task.query.order_by(Task.task_number).all()
+    
+    first_clue = QRCode.query.filter_by(clue_number=1, is_dummy=False).first()
 
     return render_template('manager/dashboard.html',
                            house=house,
@@ -60,7 +62,8 @@ def dashboard():
                            live_scan_count=live_scan_count,
                            teams=teams,
                            tasks=tasks,
-                           recent_activity=recent_activity)
+                           recent_activity=recent_activity,
+                           first_clue=first_clue)
 
 @manager_bp.route('/manager/verify-task/<int:team_id>/<int:task_id>', methods=['POST'])
 @check_manager_role

@@ -157,6 +157,59 @@
     </div>
 </div>
 
+<div class="row g-3 mb-4">
+    <!-- Left Column: System Accounts Directory -->
+    <div class="col-md-8">
+        <div class="glass-card p-3 h-100">
+            <h6 class="fw-bold text-secondary mb-2"><i class="bi bi-key-fill text-warning me-1"></i>System Accounts Directory</h6>
+            <p class="text-muted small mb-2" style="font-size: 11px;">Active accounts registered in the database. (Showing default starting passwords):</p>
+            <div class="list-group rounded-3 border-0" style="max-height: 180px; overflow-y: auto; font-size: 11px;">
+                {% for u in users %}
+                    <div class="list-group-item bg-transparent d-flex justify-content-between align-items-center py-2 border-bottom border-dashed border-light">
+                        <div>
+                            <span class="fw-bold text-dark">{{ u.username }}</span>
+                            {% if u.role == 'admin' %}
+                                <span class="badge bg-danger ms-1" style="font-size: 8px;">ADMIN</span>
+                            {% elif u.role == 'manager' %}
+                                <span class="badge bg-success ms-1" style="font-size: 8px;">{{ u.manager_profile.house.name|upper }} MANAGER</span>
+                            {% elif u.role == 'team_leader' %}
+                                <span class="badge bg-info text-dark ms-1" style="font-size: 8px;">{{ u.team_profile.house.name|upper }} TEAM</span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            {% if u.username == 'admin@nstl' %}
+                                <code class="text-primary bg-light px-2 py-0.5 rounded border border-light font-monospace">treasure@lrdc2026</code>
+                            {% elif u.role == 'manager' %}
+                                <code class="text-primary bg-light px-2 py-0.5 rounded border border-light font-monospace">{{ u.username }}</code>
+                            {% else %}
+                                <span class="text-muted font-monospace" style="font-size: 10px;">[Encrypted Hash]</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Global Administrative Actions -->
+    <div class="col-md-4">
+        <div class="glass-card p-3 h-100 d-flex flex-column justify-content-between">
+            <div>
+                <h6 class="fw-bold text-danger mb-2"><i class="bi bi-shield-exclamation me-1"></i>Emergency Controls</h6>
+                <p class="text-muted small" style="font-size: 11px; line-height: 1.4;">
+                    Reset all system progress to zero. This deletes all task completions, clue approvals, QR scan logs, and restarts the event for all teams.
+                </p>
+            </div>
+            
+            <form method="POST" action="{{ url_for('admin.reset_all_teams') }}" onsubmit="return confirm('WARNING: Are you sure you want to completely reset ALL teams, tasks, scans, and clue progression to zero? This action cannot be undone.');">
+                <button type="submit" class="btn btn-danger w-100 py-2.5 rounded-3 fw-bold">
+                    <i class="bi bi-trash3-fill me-2"></i>Reset All Teams to Zero
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
 function refreshDashboardData() {
     setTimeout(() => window.location.reload(), 1000);

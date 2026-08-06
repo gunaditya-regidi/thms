@@ -71,6 +71,30 @@
         </div>
     </div>
 
+    <!-- First Clue Passcode & Location Helper Card -->
+    {% if first_clue %}
+    <div class="glass-card p-3 mb-4 border border-primary border-opacity-30">
+        <h6 class="fw-bold text-primary mb-2"><i class="bi bi-compass-fill me-1"></i>Round 2 Startup Clue (For Teams)</h6>
+        <p class="text-muted small mb-2" style="font-size: 11px; line-height: 1.4;">
+            Teams will be instructed to report to you to receive their first clue location and passcode. Please provide them with the following details:
+        </p>
+        <div class="row g-2 text-start">
+            <div class="col-12 col-md-6">
+                <div class="bg-light p-2 rounded-3 border">
+                    <span class="text-secondary small d-block font-monospace" style="font-size: 10px;">FIRST CLUE LOCATION HINT</span>
+                    <strong class="text-dark small">Under the stone bench near the cafeteria gazebo.</strong>
+                </div>
+            </div>
+            <div class="col-12 col-md-6">
+                <div class="bg-light p-2 rounded-3 border">
+                    <span class="text-secondary small d-block font-monospace" style="font-size: 10px;">FIRST CLUE PASSCODE</span>
+                    <strong class="text-primary font-monospace" style="font-size: 13px;">{{ first_clue.password }}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Navigation Tabs -->
     <ul class="nav nav-pills nav-fill bg-light p-1 rounded-4 mb-4" id="managerTabs" role="tablist">
         <li class="nav-item" role="presentation">

@@ -226,3 +226,135 @@ def logout():
     logout_user()
     flash("You have been logged out.", "info")
     return redirect(url_for('auth.login'))
+
+# ==========================================
+# REFRESHING QR CODE LOGIN ENDPOINTS
+# ==========================================
+import uuid
+import datetime
+
+# Temporary memory registry for QR login tokens
+# Format: { token: { "status": "pending"|"approved", "user_id": None|int, "created_at": datetime } }
+qr_login_sessions = {}
+
+@auth_bp.route('/qr-login/init', methods=['GET'])
+def qr_login_init():
+    # Clean up expired tokens (older than 2 minutes)
+    now = datetime.datetime.utcnow()
+    expired = [t for t, data in qr_login_sessions.items() if (now - data['created_at']).total_seconds() > 120]
+    for t in expired:
+        qr_login_sessions.pop(t, None)
+
+    token = str(uuid.uuid4())
+    qr_login_sessions[token] = {
+        'status': 'pending',
+        'user_id': None,
+        'created_at': now
+    }
+    return {'status': 'success', 'token': token}
+
+@auth_bp.route('/qr-login/status/<token>', methods=['GET'])
+def qr_login_status(token):
+    session_data = qr_login_sessions.get(token)
+    if not session_data:
+        return {'status': 'expired', 'message': 'Login session expired or invalid.'}
+    
+    # Check if token is older than 2 minutes
+    now = datetime.datetime.utcnow()
+    if (now - session_data['created_at']).total_seconds() > 120:
+        qr_login_sessions.pop(token, None)
+        return {'status': 'expired', 'message': 'Login session expired.'}
+        
+    return {'status': session_data['status']}
+
+@auth_bp.route('/scan-login/<token>', methods=['GET'])
+def scan_login_page(token):
+    session_data = qr_login_sessions.get(token)
+    if not session_data:
+        flash("QR code has expired. Please refresh the login page and scan again.", "danger")
+        return redirect(url_for('auth.login'))
+        
+    # Check if token is expired
+    now = datetime.datetime.utcnow()
+    if (now - session_data['created_at']).total_seconds() > 120:
+        qr_login_sessions.pop(token, None)
+        flash("QR code has expired. Please refresh the login page and scan again.", "danger")
+        return redirect(url_for('auth.login'))
+
+    # If the user is NOT logged in on their mobile device, redirect to login
+    # and pass the scan URL as the next redirect target
+    if not current_user.is_authenticated:
+        flash("Please sign in first to authorize this device.", "info")
+        return redirect(url_for('auth.login', next=url_for('auth.scan_login_page', token=token)))
+        
+    # Render the authorization prompt screen
+    return render_template('auth/qr_authorize.html', token=token, user=current_user)
+
+@auth_bp.route('/scan-login/approve/<token>', methods=['POST'])
+@login_required
+def scan_login_approve(token):
+    session_data = qr_login_sessions.get(token)
+    if not session_data:
+        return {'status': 'error', 'message': 'QR code has expired.'}
+        
+    now = datetime.datetime.utcnow()
+    if (now - session_data['created_at']).total_seconds() > 120:
+        qr_login_sessions.pop(token, None)
+        return {'status': 'error', 'message': 'QR code has expired.'}
+        
+    # Approve the session
+    session_data['status'] = 'approved'
+    session_data['user_id'] = current_user.id
+    
+    # Emit SocketIO event to the room: login_<token>
+    socketio = current_app.extensions.get('socketio')
+    if socketio:
+        socketio.emit('login_approved', {
+            'status': 'approved',
+            'token': token
+        }, room=f"login_{token}")
+        
+    return {'status': 'success', 'message': 'Login authorized!'}
+
+@auth_bp.route('/qr-login/finalize/<token>', methods=['POST'])
+def qr_login_finalize(token):
+    session_data = qr_login_sessions.get(token)
+    if not session_data or session_data['status'] != 'approved' or not session_data['user_id']:
+        return {'status': 'error', 'message': 'Session not authorized or expired.'}
+        
+    now = datetime.datetime.utcnow()
+    if (now - session_data['created_at']).total_seconds() > 120:
+        qr_login_sessions.pop(token, None)
+        return {'status': 'error', 'message': 'Session expired.'}
+        
+    # Log the user in on this browser session!
+    user = User.query.get(session_data['user_id'])
+    if not user:
+        return {'status': 'error', 'message': 'Authorized user not found.'}
+        
+    login_user(user)
+    
+    # Remove the token from our session store
+    qr_login_sessions.pop(token, None)
+    
+    # Audit log
+    team_id = user.team_profile.id if user.role == 'team_leader' else None
+    log = SystemLog(
+        action='login_qr',
+        details=f"User '{user.username}' logged in via QR Code.",
+        user_id=user.id,
+        team_id=team_id,
+        ip_address=request.remote_addr,
+        browser=request.user_agent.string
+    )
+    db.session.add(log)
+    db.session.commit()
+    
+    # Determine redirect target based on role
+    redirect_url = url_for('team.dashboard')
+    if user.role == 'admin':
+        redirect_url = url_for('admin.dashboard')
+    elif user.role == 'manager':
+        redirect_url = url_for('manager.dashboard')
+        
+    return {'status': 'success', 'redirect_url': redirect_url}

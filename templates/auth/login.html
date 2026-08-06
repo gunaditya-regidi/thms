@@ -30,23 +30,69 @@
         {% endif %}
     {% endwith %}
 
-    <form method="POST" action="{{ url_for('auth.login') }}">
-        <!-- Username input -->
-        <div class="form-floating mb-3">
-            <input type="text" class="form-control" id="username" name="username" placeholder="Team Name or Manager ID" required>
-            <label for="username"><i class="bi bi-person me-2"></i>Username / Team Name</label>
+    <ul class="nav nav-pills nav-fill mb-4 bg-light p-1 rounded-3" id="loginModeTab" role="tablist" style="border: 1px solid rgba(0,0,0,0.05);">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active rounded-3 py-2 small fw-bold" id="credentials-tab" data-bs-toggle="pill" data-bs-target="#credentials-login" type="button" role="tab" style="font-size: 12px;">
+                <i class="bi bi-keyboard-fill me-1"></i>Password
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link rounded-3 py-2 small fw-bold" id="qr-tab" data-bs-toggle="pill" data-bs-target="#qr-login" type="button" role="tab" onclick="initQrLogin()" style="font-size: 12px;">
+                <i class="bi bi-qr-code-scan me-1"></i>QR Code
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="loginModeTabContent">
+        <!-- Credentials Login -->
+        <div class="tab-pane fade show active" id="credentials-login" role="tabpanel">
+            <form method="POST" action="{{ url_for('auth.login') }}">
+                <div class="mb-3">
+                    <label for="username" class="form-label small text-secondary">Username (e.g. aditya_nstl or admin@nstl)</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light text-secondary border-end-0"><i class="bi bi-person"></i></span>
+                        <input type="text" class="form-control border-start-0 ps-0" id="username" name="username" required>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="password" class="form-label small text-secondary">Password</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light text-secondary border-end-0"><i class="bi bi-lock"></i></span>
+                        <input type="password" class="form-control border-start-0 ps-0" id="password" name="password" required>
+                    </div>
+                </div>
+
+                <!-- Next redirect input if redirected from auth wall -->
+                {% if request.args.get('next') %}
+                    <input type="hidden" name="next" value="{{ request.args.get('next') }}">
+                {% endif %}
+
+                <button type="submit" class="btn btn-primary w-100 py-2.5 rounded-3 fw-bold mt-2">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+                </button>
+            </form>
         </div>
 
-        <!-- Password input -->
-        <div class="form-floating mb-4">
-            <input type="password" class="form-control" id="password" name="password" placeholder="Password" required>
-            <label for="password"><i class="bi bi-lock me-2"></i>Password</label>
+        <!-- QR Code Login -->
+        <div class="tab-pane fade" id="qr-login" role="tabpanel">
+            <div class="text-center py-2">
+                <div class="d-inline-block border p-3 rounded-4 bg-white shadow-sm mb-3 position-relative" style="width: 232px; height: 232px;">
+                    <canvas id="loginQrCanvas" style="width: 200px; height: 200px; display: block;"></canvas>
+                    <div id="qrOverlay" class="position-absolute top-50 start-50 translate-middle d-none w-100 h-100 rounded-4 d-flex flex-column align-items-center justify-content-center bg-white bg-opacity-95 p-3" style="cursor: pointer;" onclick="initQrLogin()">
+                        <i class="bi bi-arrow-clockwise text-primary fs-2 mb-2"></i>
+                        <span class="small fw-bold text-secondary">QR Code Expired</span>
+                        <span class="text-muted small" style="font-size: 10px;">Click anywhere to refresh</span>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <span id="qrTimerBadge" class="badge bg-secondary font-monospace">Refreshing in 45s</span>
+                </div>
+                <h6 class="fw-bold mb-1 text-dark">Scan to Log In</h6>
+                <p class="text-secondary small mb-0 px-3" style="font-size: 11px; line-height: 1.4;">Scan this code using an already logged-in phone (like a Team Leader or Manager phone) to authorize and sign in on this screen instantly.</p>
+            </div>
         </div>
-
-        <button type="submit" class="btn btn-primary w-100 py-3 rounded-3 fw-semibold mb-3">
-            <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
-        </button>
-    </form>
+    </div>
 
     <div class="text-center mt-3 border-top pt-3">
         <p class="text-secondary small mb-1">Registering a new team?</p>
@@ -68,5 +114,133 @@
     .light-mode-hidden { display: none; }
     .dark-mode .dark-mode-hidden { display: none; }
     .dark-mode .light-mode-hidden { display: inline-block; }
+    
+    .dark-mode .nav-link:not(.active) {
+        color: #94a3b8 !important;
+    }
 </style>
+{% endblock %}
+
+{% block extra_js %}
+<!-- QRious QR Code Generator Library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+<script>
+let qrTimer = null;
+let qrStatusInterval = null;
+let currentQrToken = null;
+let qrTimeLeft = 45;
+
+function initQrLogin() {
+    // Clear previous timers and states
+    clearInterval(qrTimer);
+    clearInterval(qrStatusInterval);
+    document.getElementById('qrOverlay').classList.add('d-none');
+    
+    // Fetch a new QR login session token from the backend
+    fetch('/qr-login/init')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                currentQrToken = data.token;
+                
+                // Build the absolute scan URL
+                const scanUrl = window.location.origin + '/scan-login/' + currentQrToken;
+                
+                // Render the QR code on the canvas
+                new QRious({
+                    element: document.getElementById('loginQrCanvas'),
+                    value: scanUrl,
+                    size: 200,
+                    background: '#ffffff',
+                    foreground: '#0f172a',
+                    level: 'H'
+                });
+                
+                // Join the Socket.io room for this token
+                if (window.socket) {
+                    window.socket.emit('join', { room: 'login_' + currentQrToken });
+                }
+                
+                // Start status polling as fallback
+                startQrPolling(currentQrToken);
+                
+                // Start refresh countdown timer
+                qrTimeLeft = 45;
+                document.getElementById('qrTimerBadge').innerText = `Refreshing in ${qrTimeLeft}s`;
+                qrTimer = setInterval(() => {
+                    qrTimeLeft--;
+                    if (qrTimeLeft <= 0) {
+                        clearInterval(qrTimer);
+                        clearInterval(qrStatusInterval);
+                        document.getElementById('qrOverlay').classList.remove('d-none');
+                    } else {
+                        document.getElementById('qrTimerBadge').innerText = `Refreshing in ${qrTimeLeft}s`;
+                    }
+                }, 1000);
+            }
+        })
+        .catch(err => {
+            console.error('Error initializing QR Login:', err);
+        });
+}
+
+function startQrPolling(token) {
+    qrStatusInterval = setInterval(() => {
+        fetch('/qr-login/status/' + token)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'approved') {
+                    finalizeQrLogin(token);
+                } else if (data.status === 'expired') {
+                    clearInterval(qrTimer);
+                    clearInterval(qrStatusInterval);
+                    document.getElementById('qrOverlay').classList.remove('d-none');
+                }
+            })
+            .catch(err => console.error(err));
+    }, 3000);
+}
+
+function finalizeQrLogin(token) {
+    clearInterval(qrTimer);
+    clearInterval(qrStatusInterval);
+    
+    // Set a loading text on the badge
+    document.getElementById('qrTimerBadge').innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Logging in...';
+    
+    fetch('/qr-login/finalize/' + token, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === 'success') {
+            window.location.href = data.redirect_url;
+        } else {
+            alert('Login failed: ' + data.message);
+            initQrLogin();
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        initQrLogin();
+    });
+}
+
+// Bind socket connection
+document.addEventListener('DOMContentLoaded', () => {
+    // Check if Socket.io connection is available in base template
+    setTimeout(() => {
+        if (window.socket) {
+            window.socket.on('login_approved', (data) => {
+                if (data.token === currentQrToken) {
+                    finalizeQrLogin(currentQrToken);
+                }
+            });
+        }
+    }, 150);
+});
+</script>
 {% endblock %}

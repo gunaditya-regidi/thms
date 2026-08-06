@@ -76,7 +76,8 @@
 
         // 2. Real-Time Toast Alerts via Socket.io
         document.addEventListener('DOMContentLoaded', () => {
-            const socket = io();
+            window.socket = io();
+            const socket = window.socket;
             
             function showLiveToast(title, body, iconClass = 'bi-bell-fill') {
                 const toastEl = document.getElementById('liveToast');

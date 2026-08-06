@@ -10,6 +10,14 @@ from models import db, User, Team, House, Task, QRCode, QRScanLog, TaskCompletio
 
 socketio = SocketIO()
 
+from flask_socketio import join_room
+
+@socketio.on('join')
+def on_join(data):
+    room = data.get('room')
+    if room:
+        join_room(room)
+
 def create_app(config_override=None):
     app = Flask(__name__)
     app.config.from_object(Config)

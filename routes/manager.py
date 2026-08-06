@@ -1,7 +1,7 @@
 import datetime
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, current_app
 from flask_login import login_required, current_user
-from models import db, Team, Task, TaskCompletion, Round1Approval, Manager, House, SystemLog, QRScanLog
+from models import db, Team, Task, TaskCompletion, Round1Approval, Manager, House, SystemLog, QRScanLog, QRCode
 
 manager_bp = Blueprint('manager', __name__)
 

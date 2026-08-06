@@ -12,33 +12,9 @@ A mobile-first, production-ready real-time web application designed to manage co
 
 ---
 
-## Local Setup & Run
+## Deployment Architecture
 
-Follow these commands to get the application running on your local machine:
-
-1. **Clone or extract** the repository into your project folder.
-2. **Create a Python Virtual Environment:**
-   ```bash
-   python -m venv venv
-   ```
-3. **Activate the Virtual Environment:**
-   * **Windows (Command Prompt):** `venv\Scripts\activate`
-   * **Windows (PowerShell):** `.\venv\Scripts\Activate.ps1`
-   * **macOS / Linux:** `source venv/bin/activate`
-4. **Install Dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-5. **Initialize and Seed the Database:**
-   This command creates the SQLite `database.db` file and populates it with default managers, tasks, sequential clues, and dummy scan codes.
-   ```bash
-   python seed.py
-   ```
-6. **Start the Development Server:**
-   ```bash
-   python app.py
-   ```
-7. Open `http://localhost:5000` in your web browser. Simulating mobile layouts in Chrome DevTools (using iPhone 12/13/14 widths of 390px) is highly recommended.
+The system is configured to run as a single-process WSGI container using `gunicorn` with `eventlet` asynchronous workers. This setup guarantees that Socket.io real-time statistics broadcasts, state tracking, and countdown overlays operate reliably without needing a separate Redis message broker.
 
 ---
 

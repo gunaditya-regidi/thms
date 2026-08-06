@@ -2,8 +2,7 @@ services:
   - type: web
     name: treasure-hunt-system
     env: python
-    # Build command installs packages and runs database seeding
-    buildCommand: pip install -r requirements.txt && python seed.py
+    buildCommand: pip install -r requirements.txt
     # Run command starts gunicorn worker class eventlet for SocketIO WebSockets
     startCommand: gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:$PORT "app:create_app()"
     envVars:

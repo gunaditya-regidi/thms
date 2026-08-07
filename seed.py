@@ -4,10 +4,14 @@ import qrcode
 from app import create_app
 from models import db, User, House, Manager, Admin, Task, QRCode
 
-def run_seed():
-    print("Recreating database tables...")
-    db.drop_all()
-    db.create_all()
+def run_seed(drop_tables=True):
+    if drop_tables:
+        print("Recreating database tables...")
+        db.drop_all()
+        db.create_all()
+    else:
+        print("Ensuring database tables exist...")
+        db.create_all()
 
     # 1. Seed Houses
     houses = ['Red', 'Green', 'Blue', 'Yellow']

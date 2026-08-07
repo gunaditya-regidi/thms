@@ -39,7 +39,7 @@ def create_app(config_override=None):
                     pass
                 
                 from seed import run_seed
-                run_seed()
+                run_seed(drop_tables=False)
             except Exception as e:
                 app.logger.warning(f"Self-healing database setup failed: {str(e)}")
     

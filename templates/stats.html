@@ -534,7 +534,7 @@ function runStatsStopwatches() {
 // Initial stats fetch & clock start
 function initStatsPage() {
     fetchStatsData();
-    startLocalClock();
+    startEventStopwatch();
 }
 
 if (document.readyState === 'loading') {
@@ -543,17 +543,36 @@ if (document.readyState === 'loading') {
     initStatsPage();
 }
 
-// Running local time ticking logic
-function startLocalClock() {
-    setInterval(() => {
+let eventStopwatchInterval = null;
+
+function startEventStopwatch() {
+    if (eventStopwatchInterval) return;
+    
+    eventStopwatchInterval = setInterval(() => {
         const timerEl = document.getElementById('gameTimer');
-        if (timerEl) {
-            const now = new Date();
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            const seconds = String(now.getSeconds()).padStart(2, '0');
-            timerEl.innerHTML = `<i class="bi bi-clock-fill me-2"></i>${hours}:${minutes}:${seconds}`;
+        if (!timerEl) return;
+        
+        const startStr = window.eventStopwatchStart;
+        if (!startStr || startStr === '' || startStr === 'None') {
+            timerEl.className = "badge bg-secondary fs-6 rounded-pill px-3 py-2 font-monospace me-3 d-flex align-items-center";
+            timerEl.innerHTML = `<i class="bi bi-play-circle-fill text-white me-2"></i>00:00:00`;
+            return;
         }
+        
+        const clientNow = new Date();
+        const serverTimeOffset = window.eventServerNow ? (new Date(window.eventServerNow) - clientNow) : 0;
+        
+        const startTime = new Date(startStr);
+        const endTime = new Date(Date.now() + serverTimeOffset);
+        
+        const diffMs = Math.max(0, endTime - startTime);
+        const diffSecs = Math.floor(diffMs / 1000);
+        const hours = String(Math.floor(diffSecs / 3600)).padStart(2, '0');
+        const minutes = String(Math.floor((diffSecs % 3600) / 60)).padStart(2, '0');
+        const seconds = String(diffSecs % 60).padStart(2, '0');
+        
+        timerEl.className = "badge bg-danger fs-6 rounded-pill px-3 py-2 font-monospace me-3 d-flex align-items-center";
+        timerEl.innerHTML = `<i class="bi bi-stopwatch-fill me-2"></i>${hours}:${minutes}:${seconds}`;
     }, 1000);
 }
 
@@ -572,6 +591,10 @@ function fetchStatsData() {
 }
 
 function updateStatsView(data) {
+    // Save event stopwatch details
+    window.eventStopwatchStart = data.earliest_start_iso;
+    window.eventServerNow = data.server_now_iso;
+
     // 0. Update Pre-game House Readiness Banner
     const preGameBanner = document.getElementById('preGameBanner');
     if (preGameBanner) {
@@ -962,6 +985,14 @@ function initializeCharts(data) {
         });
     }
 }
+
+// Self-healing polling fallback when Socket.io is offline or disconnected
+setInterval(() => {
+    if (typeof window.socket === 'undefined' || !window.socket || !window.socket.connected) {
+        console.log("Socket offline. Polling stats dashboard...");
+        fetchStatsData();
+    }
+}, 3000);
 </script>
 
 <style>

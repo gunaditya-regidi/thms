@@ -223,6 +223,17 @@ def create_app(config_override=None):
         # Check if any team has started Round 1 yet
         game_started = Team.query.filter(Team.round1_status != 'pending_start').count() > 0
         
+        # Find earliest start time among teams
+        earliest_start = None
+        for t in all_teams:
+            if t.round1_status != 'pending_start':
+                r1_app = Round1Approval.query.filter_by(team_id=t.id).first()
+                start_time = r1_app.approved_at if (r1_app and r1_app.approved_at) else t.created_at
+                if start_time:
+                    if earliest_start is None or start_time < earliest_start:
+                        earliest_start = start_time
+        earliest_start_iso = earliest_start.isoformat() + "Z" if earliest_start else ""
+        
         # House status list
         house_status = {}
         for h in houses:
@@ -236,6 +247,7 @@ def create_app(config_override=None):
             'game_started': game_started,
             'house_status': house_status,
             'server_now_iso': datetime.datetime.utcnow().isoformat() + "Z",
+            'earliest_start_iso': earliest_start_iso,
             'house_dist': house_dist,
             'round_stats': {
                 'R1 Active': r1_active,

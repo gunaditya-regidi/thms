@@ -196,11 +196,20 @@
     <!-- Left Column: System Accounts Directory -->
     <div class="col-md-8">
         <div class="glass-card p-3 h-100">
-            <h6 class="fw-bold text-secondary mb-2"><i class="bi bi-key-fill text-warning me-1"></i>System Accounts Directory</h6>
-            <p class="text-muted small mb-2" style="font-size: 11px;">Active accounts registered in the database. (Showing default starting passwords):</p>
-            <div class="list-group rounded-3 border-0" style="max-height: 180px; overflow-y: auto; font-size: 11px;">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="fw-bold text-secondary mb-0"><i class="bi bi-key-fill text-warning me-1"></i>System Accounts Directory</h6>
+            </div>
+            
+            <!-- Real-time search bar -->
+            <div class="mb-2 position-relative">
+                <i class="bi bi-search position-absolute text-muted" style="left: 12px; top: 8px; font-size: 11px;"></i>
+                <input type="text" id="accountSearchInput" class="form-control form-control-sm rounded-pill ps-4 py-1.5" placeholder="Search team names, managers, roles, or passwords..." onkeyup="filterAccountsDirectory()" style="font-size: 11px;">
+            </div>
+            
+            <p class="text-muted small mb-2" style="font-size: 10px;">Active accounts registered in the database. (Plaintext passwords shown):</p>
+            <div class="list-group rounded-3 border-0" id="accountsListContainer" style="max-height: 180px; overflow-y: auto; font-size: 11px;">
                 {% for u in users %}
-                    <div class="list-group-item bg-transparent d-flex justify-content-between align-items-center py-2 border-bottom border-dashed border-light">
+                    <div class="account-directory-item list-group-item bg-transparent d-flex justify-content-between align-items-center py-2 border-bottom border-dashed border-light">
                         <div>
                             <span class="fw-bold text-dark">{{ u.username }}</span>
                             {% if u.role == 'admin' %}
@@ -211,16 +220,55 @@
                                 <span class="badge bg-info text-dark ms-1" style="font-size: 8px;">{{ u.team_profile.house.name|upper }} TEAM</span>
                             {% endif %}
                         </div>
-                        <div>
+                        <div class="d-flex align-items-center">
                             {% if u.username == 'admin@nstl' %}
-                                <code class="text-primary bg-light px-2 py-0.5 rounded border border-light font-monospace">treasure@lrdc2026</code>
+                                <code class="text-primary bg-light px-2 py-0.5 rounded border border-light font-monospace">{{ u.plain_password or 'treasure@lrdc2026' }}</code>
                             {% elif u.role == 'manager' %}
-                                <code class="text-primary bg-light px-2 py-0.5 rounded border border-light font-monospace">{{ u.username }}</code>
+                                <code class="text-primary bg-light px-2 py-0.5 rounded border border-light font-monospace">{{ u.plain_password or u.username }}</code>
+                                <button type="button" class="btn btn-link btn-sm text-warning p-0 ms-2" data-bs-toggle="modal" data-bs-target="#editManagerModal_{{ u.id }}" title="Edit Credentials">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                            {% elif u.role == 'team_leader' %}
+                                <code class="text-primary bg-light px-2 py-0.5 rounded border border-light font-monospace">{{ u.plain_password or '[None]' }}</code>
                             {% else %}
                                 <span class="text-muted font-monospace" style="font-size: 10px;">[Encrypted Hash]</span>
                             {% endif %}
                         </div>
                     </div>
+
+                    {% if u.role == 'manager' %}
+                    <!-- Edit Manager Modal -->
+                    <div class="modal fade" id="editManagerModal_{{ u.id }}" tabindex="-1" aria-labelledby="editManagerModalLabel_{{ u.id }}" aria-hidden="true" style="font-size: 14px;">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content border-0 rounded-4 shadow-lg text-start">
+                                <div class="modal-header bg-dark text-white rounded-top-4 border-0 py-3">
+                                    <h6 class="modal-title fw-bold" id="editManagerModalLabel_{{ u.id }}">
+                                        <i class="bi bi-pencil-square text-warning me-2"></i>Edit {{ u.manager_profile.house.name }} House Manager
+                                    </h6>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <form method="POST" action="{{ url_for('admin.edit_manager', user_id=u.id) }}">
+                                    <div class="modal-body p-4">
+                                        <div class="mb-3">
+                                            <label for="username_{{ u.id }}" class="form-label fw-semibold text-secondary">Manager Name (Username)</label>
+                                            <input type="text" class="form-control rounded-3" id="username_{{ u.id }}" name="username" value="{{ u.username }}" required>
+                                            <small class="text-muted" style="font-size: 11px;">This is the name and login username of the House Manager.</small>
+                                        </div>
+                                        <div class="mb-2">
+                                            <label for="password_{{ u.id }}" class="form-label fw-semibold text-secondary">New Password (Optional)</label>
+                                            <input type="text" class="form-control rounded-3 font-monospace text-primary" id="password_{{ u.id }}" name="password" placeholder="Leave blank to keep current password">
+                                            <small class="text-muted" style="font-size: 11px;">Type a new plain password to reset the manager's access credentials.</small>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer border-0 p-3 bg-light rounded-bottom-4">
+                                        <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-warning rounded-pill px-4 fw-bold">Save Changes</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
                 {% endfor %}
             </div>
         </div>
@@ -248,6 +296,21 @@
 <script>
 function refreshDashboardData() {
     setTimeout(() => window.location.reload(), 1000);
+}
+
+function filterAccountsDirectory() {
+    const input = document.getElementById('accountSearchInput');
+    const filter = input.value.toLowerCase();
+    const items = document.querySelectorAll('#accountsListContainer .account-directory-item');
+    
+    items.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        if (text.includes(filter)) {
+            item.classList.remove('d-none');
+        } else {
+            item.classList.add('d-none');
+        }
+    });
 }
 </script>
 

@@ -93,11 +93,65 @@ def dashboard():
                            recent_scans=recent_scans,
                            users=users)
 
+@admin_bp.route('/admin/edit-manager/<int:user_id>', methods=['POST'])
+@check_admin_role
+def edit_manager(user_id):
+    from models import User
+    user = User.query.get_or_404(user_id)
+    if user.role != 'manager':
+        flash("User is not a manager.", "danger")
+        return redirect(url_for('admin.dashboard'))
+        
+    new_username = request.form.get('username', '').strip()
+    new_password = request.form.get('password', '').strip()
+    
+    if not new_username:
+        flash("Manager name cannot be empty.", "danger")
+        return redirect(url_for('admin.dashboard'))
+        
+    # Check if username is already taken by another user
+    existing = User.query.filter(User.username == new_username, User.id != user_id).first()
+    if existing:
+        flash(f"The name '{new_username}' is already taken.", "danger")
+        return redirect(url_for('admin.dashboard'))
+        
+    old_username = user.username
+    user.username = new_username
+    if new_password:
+        user.set_password(new_password)
+        details = f"Admin updated manager '{old_username}' to name '{new_username}' and updated password."
+    else:
+        details = f"Admin updated manager '{old_username}' name to '{new_username}'."
+        
+    # Log the action
+    log = SystemLog(
+        action='edit_manager',
+        details=details,
+        user_id=current_user.id,
+        ip_address=request.remote_addr,
+        browser=request.user_agent.string
+    )
+    db.session.add(log)
+    db.session.commit()
+    
+    # Broadcast to all clients to update dashboards
+    socketio = current_app.extensions.get('socketio')
+    if socketio:
+        socketio.emit('manager_updated', {
+            'manager_id': user.id,
+            'new_username': new_username
+        })
+        
+    flash(f"Manager '{new_username}' updated successfully!", "success")
+    return redirect(url_for('admin.dashboard'))
+
 @admin_bp.route('/admin/teams')
 @check_admin_role
 def teams_list():
+    import datetime
     teams = Team.query.order_by(Team.created_at.desc()).all()
-    return render_template('admin/teams.html', teams=teams)
+    server_now_iso = datetime.datetime.utcnow().isoformat() + "Z"
+    return render_template('admin/teams.html', teams=teams, server_now_iso=server_now_iso)
 
 @admin_bp.route('/admin/approve-r1/<int:team_id>', methods=['POST'])
 @check_admin_role

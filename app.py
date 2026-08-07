@@ -203,6 +203,7 @@ def create_app(config_override=None):
             else:
                 last_act = t.created_at.strftime('%Y-%m-%d %H:%M:%S')
                 
+            r1_app = Round1Approval.query.filter_by(team_id=t.id).first()
             teams_list_data.append({
                 'id': t.id,
                 'team_name': t.team_name,
@@ -213,7 +214,10 @@ def create_app(config_override=None):
                 'round2_pct': r2_pct,
                 'round2_clue': t.round2_current_clue,
                 'round2_completed': t.round2_completed,
-                'last_active': last_act
+                'last_active': last_act,
+                'created_iso': t.created_at.isoformat() + "Z" if t.created_at else "",
+                'approved_iso': r1_app.approved_at.isoformat() + "Z" if (r1_app and r1_app.approved_at) else "",
+                'finished_iso': t.round2_completion_time.isoformat() + "Z" if t.round2_completion_time else ""
             })
             
         # Check if any team has started Round 1 yet
@@ -231,6 +235,7 @@ def create_app(config_override=None):
         return jsonify({
             'game_started': game_started,
             'house_status': house_status,
+            'server_now_iso': datetime.datetime.utcnow().isoformat() + "Z",
             'house_dist': house_dist,
             'round_stats': {
                 'R1 Active': r1_active,

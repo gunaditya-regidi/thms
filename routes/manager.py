@@ -56,6 +56,9 @@ def dashboard():
         QRCode.allowed_houses.like(f"%{house.name}%")
     ).first()
 
+    import datetime
+    server_now_iso = datetime.datetime.utcnow().isoformat() + "Z"
+
     return render_template('manager/dashboard.html',
                            house=house,
                            total_teams=total_teams,
@@ -67,7 +70,8 @@ def dashboard():
                            teams=teams,
                            tasks=tasks,
                            recent_activity=recent_activity,
-                           first_clue=first_clue)
+                           first_clue=first_clue,
+                           server_now_iso=server_now_iso)
 
 @manager_bp.route('/manager/verify-task/<int:team_id>/<int:task_id>', methods=['POST'])
 @check_manager_role

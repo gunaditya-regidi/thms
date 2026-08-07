@@ -383,7 +383,7 @@
                 <h5 class="fw-bold mb-3 text-primary"><i class="bi bi-key-fill me-2"></i>Account Password</h5>
                 <p class="text-secondary small mb-2">Use this password to log in to your team dashboard:</p>
                 <div class="d-flex align-items-center justify-content-between bg-light p-3 rounded-4 border">
-                    <code class="text-primary font-monospace fs-6 fw-bold" id="accountPasswordVal" data-password="{{ current_user.plain_password or 'N/A' }}">••••••••</code>
+                    <code class="text-primary font-monospace fs-6 fw-bold" id="accountPasswordVal" data-password="{{ current_user.plain_password or 'N/A' }}" data-visible="false">••••••••</code>
                     <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill border-0 px-2 py-1" onclick="toggleAccountPassword()">
                         <i class="bi bi-eye" id="accountPasswordEye"></i>
                     </button>

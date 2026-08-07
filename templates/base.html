@@ -74,19 +74,24 @@
         
         initTheme();
 
-        // Account Password Viewer Utility
         function toggleAccountPassword() {
             const pwdVal = document.getElementById('accountPasswordVal');
             const eyeIcon = document.getElementById('accountPasswordEye');
             if (!pwdVal || !eyeIcon) return;
             
+            const isVisible = pwdVal.getAttribute('data-visible') === 'true';
             const plainPwd = pwdVal.getAttribute('data-password');
-            if (pwdVal.innerText === '••••••••') {
+            
+            if (!isVisible) {
                 pwdVal.innerText = plainPwd;
-                eyeIcon.classList.replace('bi-eye', 'bi-eye-slash');
+                pwdVal.setAttribute('data-visible', 'true');
+                eyeIcon.classList.remove('bi-eye');
+                eyeIcon.classList.add('bi-eye-slash');
             } else {
                 pwdVal.innerText = '••••••••';
-                eyeIcon.classList.replace('bi-eye-slash', 'bi-eye');
+                pwdVal.setAttribute('data-visible', 'false');
+                eyeIcon.classList.remove('bi-eye-slash');
+                eyeIcon.classList.add('bi-eye');
             }
         }
 

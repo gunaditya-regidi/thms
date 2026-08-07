@@ -27,14 +27,43 @@
 
     <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-people-fill me-2"></i>Registered Teams ({{ teams|length }})</h6>
 
+    <!-- Bulk Action Panel -->
+    <div class="glass-card p-3 mb-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="selectAllTeams" onchange="toggleSelectAllTeams(this.checked)">
+            <label class="form-check-label small fw-semibold text-secondary" for="selectAllTeams">Select All</label>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-warning rounded-pill px-3 fw-bold" style="font-size: 11px;" onclick="bulkAction('suspend')">
+                <i class="bi bi-pause-fill me-1"></i>Suspend
+            </button>
+            <button class="btn btn-sm btn-outline-success rounded-pill px-3 fw-bold" style="font-size: 11px;" onclick="bulkAction('unsuspend')">
+                <i class="bi bi-play-fill me-1"></i>Unsuspend
+            </button>
+            <button class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold" style="font-size: 11px;" onclick="bulkAction('delete')">
+                <i class="bi bi-trash-fill me-1"></i>Delete
+            </button>
+        </div>
+    </div>
+
     {% for team in teams %}
-        <div class="glass-card mb-3 p-3">
+        <div class="glass-card mb-3 p-3" id="teamRow_{{ team.id }}" style="{% if not team.user.is_active %}opacity: 0.75; border-left: 4px solid var(--bs-warning);{% endif %}">
             <div class="d-flex justify-content-between align-items-start mb-2">
-                <div>
-                    <h6 class="fw-bold mb-1">{{ team.team_name }}</h6>
-                    <span class="house-badge {{ team.house.name.lower() }} mb-2">
-                        <i class="bi bi-flag-fill"></i>{{ team.house.name }}
-                    </span>
+                <div class="d-flex align-items-start">
+                    <div class="form-check me-2 pt-1">
+                        <input class="form-check-input team-select-checkbox" type="checkbox" value="{{ team.id }}" id="selectTeam_{{ team.id }}">
+                    </div>
+                    <div>
+                        <h6 class="fw-bold mb-1 d-inline-block">{{ team.team_name }}</h6>
+                        {% if not team.user.is_active %}
+                            <span class="badge bg-danger ms-1" style="font-size: 8px;">SUSPENDED</span>
+                        {% endif %}
+                        <div class="mt-1">
+                            <span class="house-badge {{ team.house.name.lower() }} mb-2">
+                                <i class="bi bi-flag-fill"></i>{{ team.house.name }}
+                            </span>
+                        </div>
+                    </div>
                 </div>
                 <div class="text-end">
                     {% if team.round2_completed %}
@@ -117,8 +146,24 @@
                 </div>
             {% endif %}
 
+            <!-- Account Access Status Actions -->
+            <div class="d-flex gap-2 mb-2 border-top pt-3">
+                {% if team.user.is_active %}
+                    <button type="button" class="btn btn-sm btn-outline-warning w-50 py-1.5 rounded-3 fw-bold" onclick="singleAction('suspend', {{ team.id }}, '{{ team.team_name }}')" style="font-size: 11px;">
+                        <i class="bi bi-pause-fill me-1"></i>Suspend Team
+                    </button>
+                {% else %}
+                    <button type="button" class="btn btn-sm btn-outline-success w-50 py-1.5 rounded-3 fw-bold" onclick="singleAction('unsuspend', {{ team.id }}, '{{ team.team_name }}')" style="font-size: 11px;">
+                        <i class="bi bi-play-fill me-1"></i>Unsuspend Team
+                    </button>
+                {% endif %}
+                <button type="button" class="btn btn-sm btn-outline-danger w-50 py-1.5 rounded-3 fw-bold" onclick="singleAction('delete', {{ team.id }}, '{{ team.team_name }}')" style="font-size: 11px;">
+                    <i class="bi bi-trash-fill me-1"></i>Delete Team
+                </button>
+            </div>
+
             <!-- Team Control Actions -->
-            <div class="border-top pt-3 d-flex gap-2">
+            <div class="d-flex gap-2">
                 <button type="button" class="btn btn-sm btn-outline-danger w-50 py-2 rounded-3" data-bs-toggle="modal" data-bs-target="#resetTeamModal_{{ team.id }}">
                     <i class="bi bi-trash3 me-1"></i>Reset Team
                 </button>
@@ -235,6 +280,70 @@ function startAllStopwatches() {
             el.innerHTML = `${displayPrefix}${hours}:${minutes}:${seconds}`;
         });
     }, 1000);
+}
+
+function toggleSelectAllTeams(checked) {
+    document.querySelectorAll('.team-select-checkbox').forEach(cb => {
+        cb.checked = checked;
+    });
+}
+
+function singleAction(action, teamId, teamName) {
+    if (action === 'delete') {
+        if (!confirm(`Are you absolutely sure you want to permanently delete Team "${teamName}"? This action is irreversible.`)) {
+            return;
+        }
+    } else {
+        if (!confirm(`Are you sure you want to ${action} Team "${teamName}"?`)) {
+            return;
+        }
+    }
+    
+    executeTeamsAction(action, [teamId]);
+}
+
+function bulkAction(action) {
+    const selectedCbs = document.querySelectorAll('.team-select-checkbox:checked');
+    if (selectedCbs.length === 0) {
+        alert("Please select at least one team first.");
+        return;
+    }
+    
+    const teamIds = Array.from(selectedCbs).map(cb => parseInt(cb.value, 10));
+    
+    if (action === 'delete') {
+        if (!confirm(`Are you absolutely sure you want to delete ${teamIds.length} selected teams? This action is irreversible.`)) {
+            return;
+        }
+    } else {
+        if (!confirm(`Are you sure you want to ${action} ${teamIds.length} selected teams?`)) {
+            return;
+        }
+    }
+    
+    executeTeamsAction(action, teamIds);
+}
+
+function executeTeamsAction(action, teamIds) {
+    fetch('/admin/bulk-teams-action', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ action: action, team_ids: teamIds })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === 'success') {
+            window.location.reload();
+        } else {
+            alert("Error: " + data.message);
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Failed to submit action to server.");
+    });
 }
 </script>
 

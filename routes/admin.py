@@ -145,6 +145,65 @@ def edit_manager(user_id):
     flash(f"Manager '{new_username}' updated successfully!", "success")
     return redirect(url_for('admin.dashboard'))
 
+@admin_bp.route('/admin/bulk-teams-action', methods=['POST'])
+@check_admin_role
+def bulk_teams_action():
+    data = request.get_json() or {}
+    action = data.get('action')
+    team_ids = data.get('team_ids', [])
+    
+    if not action or not team_ids:
+        return jsonify({'status': 'error', 'message': 'Missing action or team IDs.'}), 400
+        
+    from models import Team, User, db, SystemLog
+    
+    try:
+        teams = Team.query.filter(Team.id.in_(team_ids)).all()
+        if not teams:
+            return jsonify({'status': 'error', 'message': 'No teams found for the provided IDs.'}), 404
+            
+        user_ids = [t.user_id for t in teams]
+        users = User.query.filter(User.id.in_(user_ids)).all()
+        
+        count = 0
+        if action == 'suspend':
+            for u in users:
+                u.is_active = False
+            details = f"Admin suspended teams: {', '.join([t.team_name for t in teams])}"
+            count = len(users)
+        elif action == 'unsuspend':
+            for u in users:
+                u.is_active = True
+            details = f"Admin unsuspended teams: {', '.join([t.team_name for t in teams])}"
+            count = len(users)
+        elif action == 'delete':
+            for u in users:
+                db.session.delete(u)
+            details = f"Admin deleted teams: {', '.join([t.team_name for t in teams])}"
+            count = len(users)
+        else:
+            return jsonify({'status': 'error', 'message': 'Invalid action.'}), 400
+            
+        log = SystemLog(
+            action=f'bulk_{action}',
+            details=details,
+            user_id=current_user.id,
+            ip_address=request.remote_addr,
+            browser=request.user_agent.string
+        )
+        db.session.add(log)
+        db.session.commit()
+        
+        socketio = current_app.extensions.get('socketio')
+        if socketio:
+            socketio.emit('team_reset', {})
+            
+        return jsonify({'status': 'success', 'message': f'Successfully performed {action} on {count} teams.'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
 @admin_bp.route('/admin/teams')
 @check_admin_role
 def teams_list():

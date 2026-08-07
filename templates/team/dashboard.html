@@ -1,0 +1,748 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - {{ team.team_name }}{% endblock %}
+{% block container_class %}mobile-container{% endblock %}
+
+{% block content %}
+<!-- Premium Header with House Theme -->
+<div class="premium-header house-{{ team.house.name.lower() }} mx-2 mt-2 position-relative">
+    <div class="d-flex justify-content-between align-items-start">
+        <div>
+            <span class="badge bg-white text-dark mb-2 small fw-bold">Team Leader Profile</span>
+            <h3 class="fw-bold mb-1">{{ team.team_name }}</h3>
+            <p class="mb-0 small"><i class="bi bi-shield-fill-check me-1"></i>House: <strong>{{ team.house.name }}</strong></p>
+        </div>
+        <div class="d-flex flex-column align-items-end gap-1">
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('auth.change_password') }}" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-semibold">
+                    <i class="bi bi-key-fill me-1"></i>Password
+                </a>
+                <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-light rounded-pill px-3 fw-semibold">
+                    <i class="bi bi-box-arrow-right me-1"></i>Logout
+                </a>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <!-- Live Event Timer stopwatch -->
+                <span id="teamStopwatch" class="badge bg-white text-dark font-monospace fw-bold px-2 py-1.5 d-flex align-items-center"
+                      data-created="{{ created_iso }}"
+                      data-approved="{{ approved_iso }}"
+                      data-finished="{{ finished_iso }}"
+                      data-status="{{ team.round1_status }}"
+                      data-server-now="{{ server_now_iso }}"
+                      style="font-size: 11px; height: 32px;">
+                    <i class="bi bi-stopwatch-fill text-danger me-1"></i>00:00:00
+                </span>
+                <button class="btn btn-sm btn-outline-light rounded-circle" onclick="toggleTheme()" type="button" style="width: 32px; height: 32px; padding: 0;">
+                    <i class="bi bi-sun-fill dark-mode-hidden"></i>
+                    <i class="bi bi-moon-fill light-mode-hidden"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Area -->
+<div class="px-2 mt-4">
+    <!-- Flask Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show rounded-3 small py-2 px-3 mb-3" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Navigation Tabs -->
+    <ul class="nav nav-pills nav-fill bg-light p-1 rounded-4 mb-4" id="dashboardTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active rounded-3 py-2 fw-semibold" id="progress-tab" data-bs-toggle="pill" data-bs-target="#progress-pane" type="button" role="tab"><i class="bi bi-activity me-1"></i>Hunt</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link rounded-3 py-2 fw-semibold" id="info-tab" data-bs-toggle="pill" data-bs-target="#info-pane" type="button" role="tab"><i class="bi bi-people me-1"></i>Team</button>
+        </li>
+    </ul>
+
+    <!-- Tab Contents -->
+    <div class="tab-content" id="dashboardTabsContent">
+        
+        <!-- Tab 1: Progress and Challenges -->
+        <div class="tab-pane fade show active" id="progress-pane" role="tabpanel" tabindex="0">
+            
+            <!-- Round 1: Tasks (If current round is 1) -->
+            {% if team.current_round == 1 %}
+                {% if team.round1_status == 'pending_start' %}
+                    <div class="glass-card mb-4 text-center p-5">
+                        <div class="py-4">
+                            <div class="spinner-grow text-warning mb-3" style="width: 3rem; height: 3rem;" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <h4 class="fw-bold text-dark mt-2">Awaiting Start Approval</h4>
+                            <p class="text-secondary small max-width-300 mx-auto mb-4">
+                                Welcome, <strong>{{ team.team_name }}</strong>! Your registration is complete. Please wait for the event administrator to approve and start the game.
+                            </p>
+                            <div class="bg-light p-3 rounded-4 border d-inline-block small text-muted">
+                                <i class="bi bi-info-circle me-1"></i>House Assignment: <strong>{{ team.house.name }} House</strong>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="glass-card mb-4">
+                <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0 text-primary"><i class="bi bi-1-circle-fill me-2"></i>Round 1: Tasks</h5>
+                    <span class="badge bg-primary rounded-pill">{{ completed_tasks_count }} / 10 Completed</span>
+                </div>
+                
+                <div class="p-3">
+                    <div class="progress mb-3" style="height: 10px; border-radius: 50px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: {{ r1_progress_percent }}%;" aria-valuenow="{{ r1_progress_percent }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <p class="text-secondary small mb-3"><i class="bi bi-info-circle me-1"></i>Perform tasks physically. Your House Manager (Manager: <strong>{{ team.house.managers[0].user.username if team.house.managers else 'Not Assigned' }}</strong>) must verify and check them off.</p>
+                    
+                    <!-- Task List -->
+                    <div class="list-group list-group-flush rounded-4 overflow-hidden border">
+                        {% for task in tasks %}
+                            {% set tc = completions.get(task.id) %}
+                            <div class="list-group-item d-flex align-items-start gap-3 py-3 px-3">
+                                <div class="mt-1">
+                                    {% if tc %}
+                                        <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                                    {% else %}
+                                        <i class="bi bi-circle text-muted fs-5"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="fw-bold mb-1 {% if tc %}text-decoration-line-through text-muted{% endif %}">Task {{ task.task_number }}: {{ task.title }}</h6>
+                                    <p class="mb-0 text-secondary small">{{ task.description }}</p>
+                                    {% if tc %}
+                                        <small class="text-muted block mt-1"><i class="bi bi-clock me-1"></i>Done: <span class="local-time-text">{{ tc.completed_at.strftime('%Y-%m-%d %H:%M:%S') }}</span></small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Round 1 Verification Request Button -->
+                <div class="p-3 border-top bg-light">
+                    {% if team.round1_status == 'active' %}
+                        {% if completed_tasks_count == 10 %}
+                            <form method="POST" action="{{ url_for('team.request_r1') }}">
+                                <button type="submit" class="btn btn-primary w-100 py-3 rounded-3 fw-bold pulse">
+                                    <i class="bi bi-send-fill me-2"></i>Submit Completion Request
+                                </button>
+                            </form>
+                        {% else %}
+                            <button class="btn btn-secondary w-100 py-3 rounded-3 fw-semibold" disabled>
+                                Complete All 10 Tasks to Request Approval
+                            </button>
+                        {% endif %}
+                    {% elif team.round1_status == 'requested' %}
+                        <div class="alert alert-warning mb-0 text-center rounded-3 py-3">
+                            <h6 class="alert-heading fw-bold mb-1"><i class="bi bi-hourglass-split me-1"></i>Waiting for Verification</h6>
+                            <p class="mb-0 small">Please report to House Manager physically to verify your Round 1 completions.</p>
+                        </div>
+                    {% elif team.round1_status == 'verified' %}
+                        <div class="alert alert-info mb-0 text-center rounded-3 py-3">
+                            <h6 class="alert-heading fw-bold mb-1"><i class="bi bi-clock-history me-1"></i>Verified by Manager</h6>
+                            <p class="mb-0 small">House Manager approved. Awaiting final Admin review to unlock Round 2.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            {% endif %}
+
+            <!-- Round 2: QR Clues (If Round 2 is active or R1 approved) -->
+            {% if team.current_round == 2 or team.round1_status == 'approved' %}
+            <div class="glass-card mb-4">
+                <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0 text-primary"><i class="bi bi-2-circle-fill me-2"></i>Round 2: QR Hunt</h5>
+                    {% if team.round2_completed %}
+                        <span class="badge bg-success rounded-pill">Completed</span>
+                    {% else %}
+                        <span class="badge bg-warning text-dark rounded-pill">Level {{ team.round2_current_clue }} / 7</span>
+                    {% endif %}
+                </div>
+
+                <div class="p-3">
+                    {% if team.round2_completed %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-trophy-fill text-warning fs-1 block mb-3 animate__animated animate__bounceIn"></i>
+                            <h4 class="fw-bold text-success">Hunt Completed!</h4>
+                            <p class="text-secondary small mb-3">Congratulations, you completed all 7 levels of the hunt. Please report to your House Manager immediately to claim your treasure.</p>
+                            {% if team.round2_completion_time %}
+                                <div class="bg-light p-3 rounded-4 border d-inline-block small text-muted">
+                                    <i class="bi bi-clock-fill me-1"></i>Finish Time: <span class="local-time-text">{{ team.round2_completion_time.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
+                    <!-- Clues List (1 to 7) -->
+                    <div class="d-flex flex-column gap-3 mt-2">
+                        {% for lvl in range(1, 8) %}
+                            {% set is_unlocked = (team.round2_current_clue > lvl or team.round2_completed) %}
+                            {% set is_active = (team.round2_current_clue == lvl and not team.round2_completed) %}
+                            
+                            {% if is_unlocked %}
+                                <!-- Unlocked Clue Card -->
+                                <div class="card border-success bg-success bg-opacity-5 rounded-4 shadow-sm overflow-hidden">
+                                    <div class="card-header bg-success bg-opacity-10 border-success border-opacity-20 d-flex justify-content-between align-items-center py-2.5 px-3">
+                                        <h6 class="fw-bold mb-0 text-success"><i class="bi bi-check-circle-fill me-2"></i>Clue #{{ lvl }} (Unlocked)</h6>
+                                        <span class="badge bg-success small rounded-pill">Solved</span>
+                                    </div>
+                                    <div class="card-body p-3">
+                                        <div class="text-center mb-3">
+                                            <img src="/team/clue-image/{{ lvl }}" class="img-fluid rounded border shadow-sm animate__animated animate__fadeIn" style="max-height: 250px; cursor: zoom-in;" onclick="window.open('/team/clue-image/{{ lvl }}', '_blank')" alt="Clue {{ lvl }}">
+                                        </div>
+                                    </div>
+                                </div>
+                            {% elif is_active %}
+                                <!-- Active Clue Card -->
+                                <div class="card border-primary bg-primary bg-opacity-5 rounded-4 shadow-sm overflow-hidden">
+                                    <div class="card-header bg-primary bg-opacity-10 border-primary border-opacity-20 d-flex justify-content-between align-items-center py-2.5 px-3">
+                                        <h6 class="fw-bold mb-0 text-primary"><i class="bi bi-hourglass-split me-2"></i>Clue #{{ lvl }} (Active)</h6>
+                                        <span class="badge bg-primary small rounded-pill">In Progress</span>
+                                    </div>
+                                    <div class="card-body p-3">
+                                        <div class="alert alert-info border-0 rounded-4 text-start p-3 mb-3">
+                                            <h6 class="fw-bold mb-1"><i class="bi bi-compass-fill me-2"></i>Location Hint</h6>
+                                            <p class="mb-0 text-dark" id="currentHint">{{ next_clue_hint }}</p>
+                                            
+                                            <hr class="my-2 border-info">
+                                            
+                                            <h6 class="fw-bold mb-1"><i class="bi bi-key-fill me-2"></i>Required Passcode</h6>
+                                            <p class="mb-0 text-dark font-monospace fw-semibold" id="expectedPasscode">{{ current_clue_passcode }}</p>
+                                        </div>
+
+                                        <button type="button" class="btn btn-primary w-100 py-3 rounded-3 fw-bold pulse" data-bs-toggle="modal" data-bs-target="#scannerModal">
+                                            <i class="bi bi-qr-code-scan me-2"></i>Scan Clue QR Code
+                                        </button>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <!-- Locked Clue Card -->
+                                <div class="card border-secondary bg-light bg-opacity-50 rounded-4 shadow-sm opacity-75">
+                                    <div class="card-header border-bottom-0 d-flex justify-content-between align-items-center py-2.5 px-3">
+                                        <h6 class="fw-bold mb-0 text-muted"><i class="bi bi-lock-fill me-2"></i>Clue #{{ lvl }} (Locked)</h6>
+                                        <span class="badge bg-secondary small rounded-pill">Locked</span>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+            </div>
+            {% endif %}
+
+            <!-- Dynamic Scan Result Card -->
+            <div class="glass-card mb-4 d-none" id="scanResultCard">
+                <div class="p-3 border-bottom bg-light">
+                    <h6 class="fw-bold mb-0 text-primary" id="resultCardTitle">Scan Results</h6>
+                </div>
+                <div class="p-3 text-center">
+                    <div id="resultStatusIcon" class="mb-2"></div>
+                    <h5 class="fw-bold mb-2" id="resultStatusText">Clue Unlocked!</h5>
+                    <p class="text-secondary small mb-3" id="resultMessage"></p>
+                    
+                    <div class="bg-light p-3 rounded-4 border text-start mb-3" id="clueDetailContainer">
+                        <div class="mb-2" id="clueImageWrapper">
+                            <!-- Image will load dynamically -->
+                        </div>
+                        <p class="mb-1 small"><strong>Clue Password:</strong> <span class="badge bg-success" id="cluePassword"></span></p>
+                        <p class="mb-0 small"><strong>Next Hint:</strong> <span id="clueHint"></span></p>
+                    </div>
+                    
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-4" onclick="closeResultCard()">Dismiss</button>
+                </div>
+            </div>
+
+            <!-- Dashboard Stats card -->
+            {% if latest_scan %}
+            <div class="glass-card p-3 mb-4">
+                <h6 class="fw-bold text-secondary mb-2"><i class="bi bi-clock-history me-2"></i>Last Activity</h6>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="mb-0 small fw-semibold">
+                            {% if latest_scan.is_correct %}
+                                <span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>Solved Clue {{ latest_scan.qr_code.clue_number }}</span>
+                            {% elif latest_scan.is_dummy %}
+                                <span class="text-warning"><i class="bi bi-exclamation-triangle-fill me-1"></i>Scanned Dummy Clue</span>
+                            {% elif latest_scan.is_repeated %}
+                                <span class="text-info"><i class="bi bi-info-circle-fill me-1"></i>Repeated Clue Scan</span>
+                            {% else %}
+                                <span class="text-danger"><i class="bi bi-x-circle-fill me-1"></i>Incorrect Scan</span>
+                            {% endif %}
+                        </p>
+                        <small class="text-muted"><span class="local-time-text">{{ latest_scan.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</span></small>
+                    </div>
+                    <span class="badge bg-light text-dark border rounded-pill py-2 px-3 small">Scan Attempt</span>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Hunt Progression Timeline -->
+            <div class="glass-card p-3 mb-4">
+                <h5 class="fw-bold mb-3 text-primary"><i class="bi bi-clock-history me-2"></i>Hunt Progression Timeline</h5>
+                
+                <div class="position-relative ps-4 border-start border-2 border-primary border-opacity-30 ms-2 py-2 small">
+                    <!-- Event Registration -->
+                    <div class="mb-3 position-relative">
+                        <div class="position-absolute bg-primary rounded-circle" style="width: 12px; height: 12px; left: -22px; top: 4px;"></div>
+                        <h6 class="fw-bold mb-0 text-dark">Team Registered</h6>
+                        <span class="text-muted font-monospace local-time-text" style="font-size: 10px;">{{ team.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                    </div>
+
+                    <!-- Round 1 Start (Approved to play) -->
+                    <div class="mb-3 position-relative">
+                        {% if team.round1_status != 'pending_start' %}
+                            <div class="position-absolute bg-primary rounded-circle" style="width: 12px; height: 12px; left: -22px; top: 4px;"></div>
+                            <h6 class="fw-bold mb-0 text-dark">Round 1 Started</h6>
+                            <span class="text-muted font-monospace local-time-text" style="font-size: 10px;">{{ team.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                        {% else %}
+                            <div class="position-absolute bg-secondary rounded-circle" style="width: 12px; height: 12px; left: -22px; top: 4px;"></div>
+                            <h6 class="fw-bold mb-0 text-secondary">Round 1 Start Pending</h6>
+                            <span class="text-muted font-monospace" style="font-size: 10px;">Awaiting Admin Approval</span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Round 1 Completion -->
+                    <div class="mb-3 position-relative">
+                        {% set r1_app = team.round1_approvals[0] if team.round1_approvals else None %}
+                        {% if r1_app and r1_app.approved_at %}
+                            <div class="position-absolute bg-primary rounded-circle" style="width: 12px; height: 12px; left: -22px; top: 4px;"></div>
+                            <h6 class="fw-bold mb-0 text-dark">Round 1 Completed & Approved</h6>
+                            <span class="text-muted font-monospace local-time-text" style="font-size: 10px;">{{ r1_app.approved_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                        {% else %}
+                            <div class="position-absolute bg-secondary rounded-circle" style="width: 12px; height: 12px; left: -22px; top: 4px;"></div>
+                            <h6 class="fw-bold mb-0 text-secondary">Round 1 Completion</h6>
+                            <span class="text-muted font-monospace" style="font-size: 10px;">{% if team.round1_status == 'requested' %}Verification Requested{% elif team.round1_status == 'verified' %}Verified by Manager{% else %}In Progress{% endif %}</span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Round 2 Levels -->
+                    {% for lvl in range(1, 8) %}
+                        {% set comp_at = progress_map.get(lvl) %}
+                        <div class="mb-3 position-relative">
+                            {% if comp_at %}
+                                <div class="position-absolute bg-success rounded-circle" style="width: 12px; height: 12px; left: -22px; top: 4px;"></div>
+                                <h6 class="fw-bold mb-0 text-success">Level {{ lvl }} Solved</h6>
+                                <span class="text-muted font-monospace local-time-text" style="font-size: 10px;">{{ comp_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                            {% else %}
+                                <div class="position-absolute bg-secondary rounded-circle" style="width: 12px; height: 12px; left: -22px; top: 4px;"></div>
+                                <h6 class="fw-bold mb-0 text-secondary">Level {{ lvl }}</h6>
+                                <span class="text-muted font-monospace" style="font-size: 10px;">Locked</span>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Tab 2: Team Members Info -->
+        <div class="tab-pane fade" id="info-pane" role="tabpanel" tabindex="0">
+            <div class="glass-card p-3 mb-4">
+                <h5 class="fw-bold mb-3 text-primary"><i class="bi bi-people-fill me-2"></i>Team Members</h5>
+                <div class="list-group list-group-flush border rounded-4 overflow-hidden">
+                    <!-- Leader Info -->
+                    <div class="list-group-item py-3 px-3 bg-light">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="fw-bold mb-0">{{ team.leader_name }}</h6>
+                                <small class="text-secondary">Team Leader (Main Account)</small>
+                            </div>
+                            <span class="badge bg-primary rounded-pill">{{ team.leader_phone }}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Member List -->
+                    {% for member in team.members %}
+                        <div class="list-group-item py-3 px-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="fw-bold mb-0">{{ member.name }}</h6>
+                                    <small class="text-secondary">Member {{ member.member_index }}</small>
+                                </div>
+                                <span class="badge bg-secondary rounded-pill">{{ member.phone }}</span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                    
+                    {% if not team.members %}
+                        <div class="list-group-item text-center text-secondary py-3">
+                            No secondary team members registered.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Account Password Card -->
+            <div class="glass-card p-3 mb-4 mt-3">
+                <h5 class="fw-bold mb-3 text-primary"><i class="bi bi-key-fill me-2"></i>Account Password</h5>
+                <p class="text-secondary small mb-2">Use this password to log in to your team dashboard:</p>
+                <div class="d-flex align-items-center justify-content-between bg-light p-3 rounded-4 border">
+                    <code class="text-primary font-monospace fs-6 fw-bold" id="accountPasswordVal" data-password="{{ current_user.plain_password or 'N/A' }}" data-visible="false">••••••••</code>
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill border-0 px-2 py-1" onclick="toggleAccountPassword()">
+                        <i class="bi bi-eye" id="accountPasswordEye"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Camera Scanner Modal -->
+<div class="modal fade" id="scannerModal" tabindex="-1" aria-labelledby="scannerModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card border-0">
+            <div class="modal-header border-bottom-0 bg-light rounded-top-4">
+                <h5 class="modal-title fw-bold" id="scannerModalLabel"><i class="bi bi-qr-code-scan me-2"></i>Scanner</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="stopScanner()"></button>
+            </div>
+            <div class="modal-body p-3 text-center">
+                <!-- QR Code scanning widget -->
+                <div id="reader" class="mb-3"></div>
+                
+                <div class="text-secondary small mb-3">Point your camera at the clue QR code, or upload an image file if camera doesn't start.</div>
+                
+                <!-- File Input Fallback -->
+                <div class="mb-2">
+                    <label for="qrFile" class="btn btn-outline-secondary w-100 rounded-3 py-2">
+                        <i class="bi bi-image me-1"></i>Upload QR Image File
+                    </label>
+                    <input type="file" id="qrFile" accept="image/*" class="d-none" onchange="scanFromFile(this)">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Load html5-qrcode library from CDN -->
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<script>
+let html5QrCode;
+
+// Trigger scanner initialization when modal opens
+document.getElementById('scannerModal').addEventListener('shown.bs.modal', function () {
+    startScanner();
+});
+
+function startScanner() {
+    html5QrCode = new Html5Qrcode("reader");
+    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+    
+    // Choose back camera
+    html5QrCode.start(
+        { facingMode: "environment" },
+        config,
+        onScanSuccess
+    ).catch(err => {
+        console.error("Camera startup failed. Falling back to file upload.", err);
+        document.getElementById("reader").innerHTML = `<div class="p-4 text-warning small"><i class="bi bi-exclamation-triangle-fill fs-3 block mb-2"></i>Camera permissions block or camera not found.<br>Use the File Upload fallback below.</div>`;
+    });
+}
+
+function stopScanner() {
+    if (html5QrCode && html5QrCode.isScanning) {
+        html5QrCode.stop().then(() => {
+            console.log("Scanner stopped.");
+        }).catch(err => console.error("Error stopping scanner", err));
+    }
+}
+
+// Success callback for camera scanning
+function onScanSuccess(decodedText, decodedResult) {
+    // Stop scanner and close modal
+    stopScanner();
+    const modal = bootstrap.Modal.getInstance(document.getElementById('scannerModal'));
+    modal.hide();
+    
+    processScannedToken(decodedText);
+}
+
+// Fallback: Scan from file
+function scanFromFile(input) {
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        const html5QrCodeLocal = new Html5Qrcode("reader");
+        
+        html5QrCodeLocal.scanFile(file, true)
+            .then(decodedText => {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('scannerModal'));
+                modal.hide();
+                processScannedToken(decodedText);
+            })
+            .catch(err => {
+                alert("Could not detect a QR Code in this image. Try another photo.");
+                console.error(err);
+            });
+    }
+}
+
+// Extract UUID from QR code scanned text and post to API
+function processScannedToken(scannedText) {
+    console.log("Scanned Content:", scannedText);
+    
+    let token = scannedText.trim();
+    if (token.includes('/scan/')) {
+        const parts = token.split('/scan/');
+        token = parts[parts.length - 1];
+    }
+    // Strip trailing slashes, query variables, or subpaths
+    token = token.split('/')[0].split('?')[0].trim();
+    
+    console.log("Parsed Token:", token);
+    
+    // Prompt for passcode
+    const passcode = prompt("Clue station scanned successfully! Enter the passcode to verify this station:");
+    if (passcode === null) {
+        return; // User cancelled
+    }
+    
+    // Send to AJAX verification
+    fetch('/api/scan_qr', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ token: token, passcode: passcode })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error("HTTP error status: " + response.status);
+        }
+        return response.json();
+    })
+    .then(data => {
+        displayScanResults(data);
+    })
+    .catch(err => {
+        console.error("Verification Request failed", err);
+        alert("Server communication error. Please scan again or verify your connection.");
+    });
+}
+
+function displayScanResults(result) {
+    const card = document.getElementById('scanResultCard');
+    const title = document.getElementById('resultCardTitle');
+    const icon = document.getElementById('resultStatusIcon');
+    const statusText = document.getElementById('resultStatusText');
+    const message = document.getElementById('resultMessage');
+    const clueDetail = document.getElementById('clueDetailContainer');
+    const cluePassword = document.getElementById('cluePassword');
+    const clueHint = document.getElementById('clueHint');
+    const imgWrapper = document.getElementById('clueImageWrapper');
+    
+    card.classList.remove('d-none');
+    // Scroll to results
+    card.scrollIntoView({ behavior: 'smooth' });
+
+    if (result.status === 'success' || result.status === 'completed_hunt') {
+        title.innerText = "Correct Clue Found!";
+        icon.innerHTML = `<i class="bi bi-check-circle-fill text-success fs-1"></i>`;
+        statusText.innerText = result.status === 'completed_hunt' ? "Hunt Completed!" : `Clue #${result.clue_number} Solved`;
+        statusText.className = "fw-bold mb-2 text-success";
+        message.innerText = result.message;
+        
+        clueDetail.classList.remove('d-none');
+        cluePassword.innerText = result.password;
+        clueHint.innerText = result.hint;
+        
+        if (result.image) {
+            imgWrapper.innerHTML = `<img src="${result.image}" class="img-fluid rounded-3 border mb-2" style="max-height: 200px; width: 100%; object-fit: cover;">`;
+        } else {
+            imgWrapper.innerHTML = '';
+        }
+        
+        // Update local clue states
+        if (result.status === 'completed_hunt') {
+            setTimeout(() => window.location.reload(), 3000);
+        }
+    } 
+    else if (result.status === 'dummy') {
+        title.innerText = "Decoy Clue Scanned!";
+        icon.innerHTML = `<div style="font-size: 50px; line-height: 1;">🤡</div>`;
+        statusText.innerText = "Wrong Clue (Decoy)";
+        statusText.className = "fw-bold mb-2 text-warning";
+        message.innerText = result.message;
+        
+        clueDetail.classList.remove('d-none');
+        cluePassword.innerText = result.password; // Dummy fake password
+        clueHint.innerText = result.hint;
+        
+        if (result.image) {
+            imgWrapper.innerHTML = `<img src="${result.image}" class="img-fluid rounded-3 border mb-2" style="max-height: 200px; width: 100%; object-fit: cover;">`;
+        } else {
+            imgWrapper.innerHTML = '';
+        }
+    } 
+    else if (result.status === 'repeated') {
+        title.innerText = "Already Solved";
+        icon.innerHTML = `<i class="bi bi-info-circle-fill text-info fs-1"></i>`;
+        statusText.innerText = `Clue #${result.clue_number} (Solved)`;
+        statusText.className = "fw-bold mb-2 text-info";
+        message.innerText = result.message;
+        
+        clueDetail.classList.remove('d-none');
+        cluePassword.innerText = result.password;
+        clueHint.innerText = result.hint;
+        if (result.image) {
+            imgWrapper.innerHTML = `<img src="${result.image}" class="img-fluid rounded-3 border mb-2" style="max-height: 200px; width: 100%; object-fit: cover;">`;
+        } else {
+            imgWrapper.innerHTML = '';
+        }
+    } 
+    else if (result.status === 'wrong_password') {
+        title.innerText = "Verification Failed";
+        icon.innerHTML = `<i class="bi bi-shield-x-fill text-danger fs-1"></i>`;
+        statusText.innerText = "Incorrect Passcode";
+        statusText.className = "fw-bold mb-2 text-danger";
+        message.innerText = result.message;
+        clueDetail.classList.add('d-none');
+    }
+    else {
+        title.innerText = "Scan Failed";
+        icon.innerHTML = `<i class="bi bi-x-circle-fill text-danger fs-1"></i>`;
+        statusText.innerText = "Wrong Station";
+        statusText.className = "fw-bold mb-2 text-danger";
+        message.innerText = result.message;
+        clueDetail.classList.add('d-none');
+    }
+}
+
+function closeResultCard() {
+    document.getElementById('scanResultCard').classList.add('d-none');
+    // Refresh page details dynamically to update the hints/rounds without full reload
+    window.location.reload();
+}
+
+// Stopwatch ticking logic
+document.addEventListener('DOMContentLoaded', () => {
+    startTeamStopwatch();
+    setupDashboardSocketListeners();
+    {% if preloaded_scan_result %}
+    displayScanResults({{ preloaded_scan_result|tojson }});
+    {% endif %}
+});
+
+// Setup socket listeners for player page auto-reload on start/approvals
+function setupDashboardSocketListeners() {
+    if (window.socket) {
+        window.socket.on('team_started', (data) => {
+            if (data && data.team_id == {{ team.id }}) {
+                window.location.reload();
+            }
+        });
+        window.socket.on('r1_approved', (data) => {
+            if (data && data.team_id == {{ team.id }}) {
+                window.location.reload();
+            }
+        });
+        window.socket.on('team_reset', (data) => {
+            if (data && data.team_id == {{ team.id }}) {
+                window.location.reload();
+            }
+        });
+        window.socket.on('team_qr_reset', (data) => {
+            if (data && data.team_id == {{ team.id }}) {
+                window.location.reload();
+            }
+        });
+    } else {
+        setTimeout(setupDashboardSocketListeners, 100);
+    }
+}
+
+function pollStartStatus() {
+    fetch('/team/api/status')
+        .then(res => res.json())
+        .then(data => {
+            if (data) {
+                const stopwatchEl = document.getElementById('teamStopwatch');
+                if (stopwatchEl) {
+                    const currentStatus = stopwatchEl.getAttribute('data-status');
+                    const currentRound = {{ team.current_round }};
+                    if (data.round1_status !== currentStatus || data.current_round !== currentRound) {
+                        window.location.reload();
+                    } else {
+                        setTimeout(pollStartStatus, 3000);
+                    }
+                }
+            }
+        })
+        .catch(err => {
+            setTimeout(pollStartStatus, 5000);
+        });
+}
+
+function startTeamStopwatch() {
+    const stopwatchEl = document.getElementById('teamStopwatch');
+    if (!stopwatchEl) return;
+    
+    const status = stopwatchEl.getAttribute('data-status');
+    const currentRound = {{ team.current_round }};
+    
+    if (status === 'pending_start') {
+        stopwatchEl.innerHTML = '<i class="bi bi-play-circle-fill text-secondary me-1"></i>00:00:00';
+        setTimeout(pollStartStatus, 3000);
+        return;
+    } else if (currentRound === 1 && (status === 'requested' || status === 'verified')) {
+        setTimeout(pollStartStatus, 3000);
+    }
+    
+    const createdStr = stopwatchEl.getAttribute('data-created');
+    const approvedStr = stopwatchEl.getAttribute('data-approved');
+    const finishedStr = stopwatchEl.getAttribute('data-finished');
+    const serverNowStr = stopwatchEl.getAttribute('data-server-now');
+    
+    // Align browser's client time to server time to handle client clock drift/offset
+    const clientNow = new Date();
+    const serverTimeOffset = serverNowStr ? (new Date(serverNowStr) - clientNow) : 0;
+    
+    function updateTimer() {
+        let startTime;
+        let endTime = new Date(Date.now() + serverTimeOffset);
+        let displayPrefix = '<i class="bi bi-stopwatch-fill text-danger me-1"></i>';
+        
+        if (finishedStr) {
+            // Completed Round 2. Total time since R2 started.
+            startTime = new Date(approvedStr || createdStr);
+            endTime = new Date(finishedStr);
+            displayPrefix = '<i class="bi bi-trophy-fill text-warning me-1"></i>';
+        } else if (approvedStr) {
+            // Playing Round 2. Elapsed time since approved.
+            startTime = new Date(approvedStr);
+            displayPrefix = '<i class="bi bi-hourglass-split text-info me-1"></i>';
+        } else {
+            // Playing Round 1. Elapsed time since registration (created).
+            startTime = new Date(createdStr);
+            displayPrefix = '<i class="bi bi-activity text-primary me-1"></i>';
+        }
+        
+        const diffMs = Math.max(0, endTime - startTime);
+        const diffSecs = Math.floor(diffMs / 1000);
+        const hours = String(Math.floor(diffSecs / 3600)).padStart(2, '0');
+        const minutes = String(Math.floor((diffSecs % 3600) / 60)).padStart(2, '0');
+        const seconds = String(diffSecs % 60).padStart(2, '0');
+        
+        stopwatchEl.innerHTML = `${displayPrefix}${hours}:${minutes}:${seconds}`;
+    }
+    
+    updateTimer();
+    if (!finishedStr) {
+        setInterval(updateTimer, 1000);
+    }
+}
+</script>
+
+<style>
+    .dark-mode-hidden { display: inline-block; }
+    .light-mode-hidden { display: none; }
+    .dark-mode .dark-mode-hidden { display: none; }
+    .dark-mode .light-mode-hidden { display: inline-block; }
+</style>
+{% endblock %}

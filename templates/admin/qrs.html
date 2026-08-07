@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Manage QRs - Admin{% endblock %}
+{% block container_class %}mobile-container{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 px-2 pt-3">
+    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+        <i class="bi bi-chevron-left me-1"></i>Back
+    </a>
+    <h5 class="mb-0 fw-bold">QR Clue Editor</h5>
+    <div style="width: 55px;"></div>
+</div>
+
+<div class="px-2">
+    <!-- Flask Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show rounded-3 small py-2 px-3 mb-3" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Generate QR Form Panel -->
+    <div class="glass-card p-3 mb-4">
+        <h6 class="fw-bold text-primary mb-3"><i class="bi bi-plus-circle-fill me-2"></i>Create Clue / QR</h6>
+        <form method="POST" action="{{ url_for('admin.manage_qrs') }}" enctype="multipart/form-data">
+            
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label for="clue_number" class="form-label small text-secondary">Clue Number</label>
+                    <select class="form-select form-select-sm" id="clue_number" name="clue_number" required>
+                        <option value="" disabled selected>Select</option>
+                        {% for i in range(1, 8) %}
+                            <option value="{{ i }}">Clue {{ i }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-6">
+                    <label for="password" class="form-label small text-secondary">Verify Password</label>
+                    <input type="text" class="form-control form-control-sm" id="password" name="password" placeholder="e.g. key-alpha" required>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="hint" class="form-label small text-secondary">Location Hint</label>
+                <textarea class="form-control form-control-sm" id="hint" name="hint" rows="2" placeholder="e.g. Check under the banyan tree" required></textarea>
+            </div>
+
+            <div class="mb-3">
+                <label for="image" class="form-label small text-secondary">Clue Image (Optional)</label>
+                <input class="form-control form-control-sm" type="file" id="image" name="image" accept="image/*">
+            </div>
+
+            <!-- Dummy Code checkbox -->
+            <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" role="switch" id="is_dummy_switch" onchange="toggleDummyState(this.checked)">
+                <input type="hidden" name="is_dummy" id="is_dummy_val" value="false">
+                <label class="form-check-label small text-dark fw-semibold" for="is_dummy_switch">
+                    <i class="bi bi-shield-slash text-warning me-1"></i>Mark as Dummy Clue (Decoy)
+                </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-sm w-100 py-2 rounded-3 fw-bold">
+                <i class="bi bi-qr-code me-2"></i>Generate Clue QR Code
+            </button>
+        </form>
+    </div>
+
+    <!-- Export Buttons -->
+    <div class="glass-card p-3 mb-4">
+        <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-download me-2"></i>Bulk Exports</h6>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('admin.export_qrs_pdf') }}" class="btn btn-danger btn-sm w-50 py-2 rounded-3 fw-semibold">
+                <i class="bi bi-file-earmark-pdf-fill me-1"></i>Print sheets PDF
+            </a>
+            <a href="{{ url_for('admin.export_qrs_zip') }}" class="btn btn-dark btn-sm w-50 py-2 rounded-3 fw-semibold">
+                <i class="bi bi-file-zip-fill me-1"></i>PNG files ZIP
+            </a>
+        </div>
+    </div>
+
+    <!-- Clues Grid -->
+    <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-card-list me-2"></i>Active QR Codes ({{ qrs|length }})</h6>
+    
+    {% for qr in qrs %}
+        <div class="glass-card mb-3 p-3">
+            <div class="d-flex align-items-center gap-3">
+                <!-- QR Image thumbnail -->
+                <div class="border rounded p-1 bg-white">
+                    <img src="/static/qrs/qr_{{ qr.uuid }}.png" style="width: 75px; height: 75px; object-fit: contain;" alt="QR Clue">
+                </div>
+                
+                <!-- Info details -->
+                <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <h6 class="fw-bold mb-1">
+                            {% if qr.is_dummy %}
+                                <span class="text-warning"><i class="bi bi-shield-slash-fill me-1"></i>Dummy Decoy</span>
+                            {% else %}
+                                <span class="text-primary">Clue #{{ qr.clue_number }}</span>
+                            {% endif %}
+                        </h6>
+                        <form method="POST" action="{{ url_for('admin.delete_qr', qr_id=qr.id) }}" onsubmit="return confirm('Delete this QR clue?');">
+                            <button type="submit" class="btn btn-link text-danger p-0 border-0" title="Delete">
+                                <i class="bi bi-trash fs-5"></i>
+                            </button>
+                        </form>
+                    </div>
+                    <p class="mb-0 text-secondary small font-monospace">UUID: {{ qr.uuid[:12] }}...</p>
+                    <p class="mb-0 text-secondary small"><strong>Pwd:</strong> <span class="badge bg-light text-dark border">{{ qr.password }}</span></p>
+                    <p class="mb-0 text-secondary small text-truncate" style="max-width: 220px;"><strong>Hint:</strong> {{ qr.hint }}</p>
+                    {% if qr.image_path %}
+                        <small class="text-success"><i class="bi bi-image me-1"></i>Has Image Attachment</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+    
+    {% if not qrs %}
+        <div class="text-center text-secondary py-5 glass-card">
+            <i class="bi bi-qr-code fs-1 block mb-2"></i>
+            <p class="mb-0">No QR clues generated yet.</p>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+function toggleDummyState(isChecked) {
+    const clueDropdown = document.getElementById('clue_number');
+    const dummyVal = document.getElementById('is_dummy_val');
+    
+    if (isChecked) {
+        dummyVal.value = "true";
+        clueDropdown.value = "";
+        clueDropdown.disabled = true;
+        clueDropdown.required = false;
+    } else {
+        dummyVal.value = "false";
+        clueDropdown.disabled = false;
+        clueDropdown.required = true;
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Managers - Admin{% endblock %}
+{% block container_class %}mobile-container{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 px-2 pt-3">
+    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+        <i class="bi bi-chevron-left me-1"></i>Back
+    </a>
+    <h5 class="mb-0 fw-bold">House Managers</h5>
+    <div style="width: 55px;"></div>
+</div>
+
+<div class="px-2">
+    <!-- Flask Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show rounded-3 small py-2 px-3 mb-3" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Create Manager Form Panel -->
+    <div class="glass-card p-3 mb-4">
+        <h6 class="fw-bold text-primary mb-3"><i class="bi bi-person-plus-fill me-2"></i>Create House Manager</h6>
+        <form method="POST" action="{{ url_for('admin.manage_managers') }}">
+            <div class="form-floating mb-3">
+                <input type="text" class="form-control form-control-sm" id="username" name="username" placeholder="Username" required>
+                <label for="username">Manager Username</label>
+            </div>
+            
+            <div class="form-floating mb-3">
+                <input type="password" class="form-control form-control-sm" id="password" name="password" placeholder="Password" required>
+                <label for="password">Password</label>
+            </div>
+
+            <div class="mb-3">
+                <label for="house_id" class="form-label small text-secondary">House Assignment</label>
+                <select class="form-select" id="house_id" name="house_id" required>
+                    <option value="" disabled selected>Choose a House</option>
+                    {% for h in houses %}
+                        <option value="{{ h.id }}">{{ h.name }} House</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-sm w-100 py-2 rounded-3 fw-bold">
+                <i class="bi bi-person-check-fill me-2"></i>Save Manager Profile
+            </button>
+        </form>
+    </div>
+
+    <!-- Managers list -->
+    <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-person-lines-fill me-2"></i>System Managers ({{ managers|length }})</h6>
+    
+    {% for mgr in managers %}
+        {% set is_seeded = mgr.user.username in ['Aditya', 'Shyam', 'Rahul', 'Saranya'] %}
+        <div class="glass-card mb-3 p-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="fw-bold mb-1">
+                        {{ mgr.user.username }} 
+                        {% if is_seeded %}
+                            <span class="badge bg-light text-dark border small rounded-pill ms-1"><i class="bi bi-lock-fill text-muted me-1"></i>System</span>
+                        {% endif %}
+                    </h6>
+                    <small class="text-secondary"><i class="bi bi-flag-fill text-{{ mgr.house.name.lower() }} me-1"></i>{{ mgr.house.name }} House</small>
+                </div>
+                <div>
+                    {% if not is_seeded %}
+                        <form method="POST" action="{{ url_for('admin.delete_manager', mgr_id=mgr.id) }}" onsubmit="return confirm('Remove manager {{ mgr.user.username }}?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                                Remove
+                            </button>
+                        </form>
+                    {% else %}
+                        <button class="btn btn-sm btn-light border rounded-pill px-3" disabled>
+                            Protected
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

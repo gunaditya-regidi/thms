@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}System Logs - Admin{% endblock %}
+{% block container_class %}mobile-container{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 px-2 pt-3">
+    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+        <i class="bi bi-chevron-left me-1"></i>Back
+    </a>
+    <h5 class="mb-0 fw-bold">System Audit Logs</h5>
+    <div style="width: 55px;"></div>
+</div>
+
+<div class="px-2">
+    <!-- Filter Panel -->
+    <div class="glass-card p-3 mb-4 bg-light">
+        <form method="GET" action="{{ url_for('admin.view_logs') }}">
+            <div class="mb-2">
+                <label for="action_filter" class="form-label small text-secondary">Filter by Action</label>
+                <select class="form-select form-select-sm" id="action_filter" name="action_filter">
+                    <option value="">All Actions</option>
+                    {% for act in actions %}
+                        <option value="{{ act }}" {% if current_action == act %}selected{% endif %}>{{ act.upper() }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="mb-3">
+                <label for="search" class="form-label small text-secondary">Search Keyword</label>
+                <div class="input-group input-group-sm">
+                    <input type="text" class="form-control" id="search" name="search" placeholder="e.g. Aditya, Team Red" value="{{ search }}">
+                    <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i></button>
+                </div>
+            </div>
+            
+            {% if current_action or search %}
+                <a href="{{ url_for('admin.view_logs') }}" class="btn btn-sm btn-outline-secondary w-100 rounded-3">
+                    <i class="bi bi-x-circle me-1"></i>Clear Filters
+                </a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Logs list -->
+    <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-clock-history me-2"></i>Audit Trail Entries</h6>
+    
+    {% for log in logs %}
+        <div class="glass-card mb-3 p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge bg-secondary font-monospace">{{ log.action.upper() }}</span>
+                <small class="text-muted"><span class="local-time-text">{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</span></small>
+            </div>
+            <p class="mb-2 text-dark small">{{ log.details }}</p>
+            <div class="d-flex justify-content-between border-top pt-2 mt-2" style="font-size: 11px;">
+                <span class="text-muted"><i class="bi bi-laptop me-1"></i>IP: {{ log.ip_address or 'System' }}</span>
+                <span class="text-muted text-truncate" style="max-width: 180px;" title="{{ log.browser }}"><i class="bi bi-browser-chrome me-1"></i>{{ log.browser or '-' }}</span>
+            </div>
+        </div>
+    {% endfor %}
+
+    {% if not logs %}
+        <div class="text-center text-secondary py-5 glass-card">
+            <i class="bi bi-journal-x fs-1 block mb-2"></i>
+            <p class="mb-0">No logs found matching filter criteria.</p>
+        </div>
+    {% endif %}
+
+    <!-- Pagination -->
+    {% if pagination and pagination.pages > 1 %}
+        <nav aria-label="Logs navigation" class="mt-4 mb-2">
+            <ul class="pagination pagination-sm justify-content-center gap-1">
+                <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                    <a class="page-link rounded-circle border" href="{{ url_for('admin.view_logs', page=pagination.prev_num, action_filter=current_action, search=search) }}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if page_num %}
+                        <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                            <a class="page-link rounded-circle border" href="{{ url_for('admin.view_logs', page=page_num, action_filter=current_action, search=search) }}">{{ page_num }}</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link border-0 bg-transparent">...</span></li>
+                    {% endif %}
+                {% endfor %}
+                <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                    <a class="page-link rounded-circle border" href="{{ url_for('admin.view_logs', page=pagination.next_num, action_filter=current_action, search=search) }}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    {% endif %}
+</div>
+
+<style>
+    .dark-mode .glass-card.bg-light {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+    }
+</style>
+{% endblock %}

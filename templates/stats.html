@@ -1,0 +1,1067 @@
+{% extends "base.html" %}
+
+{% block title %}Live Leaderboard & Statistics{% endblock %}
+{% block container_class %}container-fluid p-0{% endblock %}
+
+{% block content %}
+<!-- Navbar / Status Bar -->
+<div class="navbar navbar-expand-lg bg-dark navbar-dark py-3 px-4 shadow-sm">
+    <div class="container-fluid d-flex justify-content-between align-items-center">
+        <span class="navbar-brand fw-bold mb-0 text-warning"><i class="bi bi-bar-chart-line-fill me-2 text-warning"></i>Live Stats Dashboard</span>
+        <div class="d-flex align-items-center">
+            <!-- Ticking Digital Clock -->
+            <div id="gameTimer" class="badge bg-danger fs-6 rounded-pill px-3 py-2 font-monospace me-3 d-flex align-items-center">
+                <i class="bi bi-clock-fill me-2"></i>00:00:00
+            </div>
+            
+            <a href="{{ url_for('stats_logout') }}" class="btn btn-sm btn-outline-light rounded-pill px-3 me-2">
+                <i class="bi bi-lock-fill me-1"></i>Lock Screen
+            </a>
+            <button class="btn btn-sm btn-outline-light rounded-circle" onclick="toggleTheme()" type="button" style="width: 32px; height: 32px; padding:0;">
+                <i class="bi bi-sun-fill dark-mode-hidden"></i>
+                <i class="bi bi-moon-fill light-mode-hidden"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Pre-game House Readiness Alert (shown only before Round 1 starts) -->
+<div id="preGameBanner" class="container-fluid py-3 px-4 {% if game_started %}d-none{% endif %}">
+    <div class="glass-card p-4 border border-warning border-opacity-25 bg-warning bg-opacity-5 rounded-4 shadow-sm">
+        <h5 class="fw-bold text-warning mb-3 d-flex align-items-center">
+            <i class="bi bi-shield-fill-exclamation me-2 fs-4 animate__animated animate__flash animate__infinite"></i>
+            House Log-in Status (Awaiting Game Start)
+        </h5>
+        
+        <!-- Global readiness bar -->
+        {% set all_ready = true %}
+        {% for h_name, h_info in house_status.items() %}
+            {% if not h_info.logged_in %}
+                {% set all_ready = false %}
+            {% endif %}
+        {% endfor %}
+        
+        <div id="readinessAlert" class="alert {% if all_ready %}alert-success{% else %}alert-warning{% endif %} border-0 rounded-4 p-3 mb-3 d-flex align-items-center">
+            {% if all_ready %}
+                <i class="bi bi-check-circle-fill text-success fs-4 me-3"></i>
+                <div>
+                    <h6 class="fw-bold mb-1 text-success">All Houses Ready!</h6>
+                    <p class="mb-0 text-dark small">Teams from all four houses are successfully logged in. Ready for Admin to launch the game! 🚀</p>
+                </div>
+            {% else %}
+                <i class="bi bi-hourglass-split text-warning fs-4 me-3"></i>
+                <div>
+                    <h6 class="fw-bold mb-1 text-warning">Awaiting House Logins</h6>
+                    <p class="mb-0 text-dark small">Please wait for teams from all four houses to log in before the Administrator starts the round. ⏳</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="row g-3" id="houseStatusCards">
+            {% for h_name, h_info in house_status.items() %}
+                {% set h_lower = h_name.lower() %}
+                {% set badge_color = 'danger' %}
+                {% set text_color = 'danger' %}
+                {% if h_info.logged_in %}
+                    {% set badge_color = 'success' %}
+                    {% set text_color = 'success' %}
+                {% endif %}
+                <div class="col-md-3">
+                    <div class="card h-100 border border-{{ badge_color }} border-opacity-20 bg-{{ badge_color }} bg-opacity-5 rounded-4 p-3 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <span class="fw-bold text-dark fs-6">
+                                    <i class="bi bi-flag-fill text-{{ h_lower }} me-2"></i>{{ h_name }} House
+                                </span>
+                                {% if h_info.logged_in %}
+                                    <span class="badge bg-success rounded-pill small"><i class="bi bi-check-circle me-1"></i>Logged In</span>
+                                {% else %}
+                                    <span class="badge bg-danger rounded-pill small"><i class="bi bi-x-circle me-1"></i>No Log-in</span>
+                                {% endif %}
+                            </div>
+                            
+                            {% if h_info.logged_in %}
+                                <div class="mt-2">
+                                    <span class="text-secondary small d-block mb-1">Teams:</span>
+                                    <div class="d-flex flex-wrap gap-1">
+                                        {% for t_name in h_info.teams %}
+                                            <span class="badge bg-light text-dark border font-monospace small px-2 py-1">{{ t_name }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% else %}
+                                <p class="text-muted small mb-0 mt-2 italic">Waiting for a team from {{ h_name }} House to log in...</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Split Container -->
+<div class="stats-split-container {% if split_enabled %}split{% endif %}" id="statsContainer">
+    
+    <!-- LEFT PANEL: Active Team List Grid (40% or 100%) -->
+    <div class="stats-left-panel">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0 text-primary"><i class="bi bi-people-fill me-2"></i>Active Team Grid</h5>
+            <span class="badge bg-secondary rounded-pill" id="totalTeamsCount">{{ teams|length }} Teams Registered</span>
+        </div>
+        
+        <div class="row g-3" id="housesColumnsContainer">
+            <!-- Red House Column -->
+            <div class="col-xl-3 col-md-6 mb-3">
+                <div class="glass-card p-3 h-100 border-top border-4 border-danger" style="background: rgba(220, 53, 69, 0.015);">
+                    <h6 class="fw-bold mb-3 text-danger d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-flag-fill me-2"></i>Red House</span>
+                        <span class="badge bg-danger rounded-pill" id="count_Red" style="font-size: 11px;">0</span>
+                    </h6>
+                    <div class="d-flex flex-column gap-3" id="list_Red">
+                        {% for t in teams %}
+                            {% if t.house.name.lower() == 'red' %}
+                                <div class="card border rounded-4 p-3 shadow-sm bg-white position-relative">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="fw-bold mb-0 text-dark" style="font-size: 12px;">{{ t.team_name }}</h6>
+                                        {% if t.round2_completed %}
+                                            <span class="badge bg-success" style="font-size: 8px;">FINISHED 🏆</span>
+                                        {% elif t.current_round == 2 or t.round1_status == 'approved' %}
+                                            <span class="badge bg-info text-dark" style="font-size: 8px;">R2 ACTIVE</span>
+                                        {% elif t.round1_status == 'verified' %}
+                                            <span class="badge bg-danger" style="font-size: 8px;">R1 VERIFIED</span>
+                                        {% elif t.round1_status == 'requested' %}
+                                            <span class="badge bg-warning text-dark" style="font-size: 8px;">R1 REQUESTED</span>
+                                        {% elif t.round1_status == 'pending_start' %}
+                                            <span class="badge bg-secondary" style="font-size: 8px;">PENDING START</span>
+                                        {% else %}
+                                            <span class="badge bg-primary" style="font-size: 8px;">R1 ACTIVE</span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    {% if t.round2_completed %}
+                                        {% set progress_val = 100 %}
+                                        {% set progress_label = 'FINISHED 🏆 (100%)' %}
+                                    {% elif t.current_round == 2 or t.round1_status == 'approved' %}
+                                        {% set progress_val = ((t.round2_current_clue - 1) * 100 // 7)|int %}
+                                        {% set progress_label = 'R2 Clues: ' ~ (t.round2_current_clue - 1) ~ '/7 (' ~ progress_val ~ '%)' %}
+                                    {% elif t.round1_status == 'verified' or t.round1_status == 'requested' %}
+                                        {% set progress_val = 100 %}
+                                        {% set progress_label = 'R1 Done (100%)' %}
+                                    {% else %}
+                                        {% set progress_val = (t.task_completions|length) * 10 %}
+                                        {% set progress_label = 'R1 Tasks: ' ~ (t.task_completions|length) ~ '/10 (' ~ progress_val ~ '%)' %}
+                                    {% endif %}
+                                    
+                                    <div class="mb-2">
+                                        <div class="d-flex justify-content-between text-secondary mb-1" style="font-size: 8px;">
+                                            <span>Progress</span>
+                                            <span>{{ progress_label }}</span>
+                                        </div>
+                                        <div class="progress" style="height: 6px; border-radius: 50px;">
+                                            <div class="progress-bar bg-danger progress-bar-striped progress-bar-animated" role="progressbar" style="width: {{ progress_val }}%;" aria-valuenow="{{ progress_val }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between align-items-center mt-2 border-top pt-2" style="font-size: 9px;">
+                                        <span class="font-monospace fw-bold text-secondary" id="statsStopwatch_{{ t.id }}">
+                                            <i class="bi bi-stopwatch-fill me-1"></i>00:00:00
+                                        </span>
+                                        <span class="text-muted">
+                                            <i class="bi bi-clock-history me-1"></i><span class="local-time-text">{{ t.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                                        </span>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Blue House Column -->
+            <div class="col-xl-3 col-md-6 mb-3">
+                <div class="glass-card p-3 h-100 border-top border-4 border-primary" style="background: rgba(13, 110, 253, 0.015);">
+                    <h6 class="fw-bold mb-3 text-primary d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-flag-fill me-2"></i>Blue House</span>
+                        <span class="badge bg-primary rounded-pill" id="count_Blue" style="font-size: 11px;">0</span>
+                    </h6>
+                    <div class="d-flex flex-column gap-3" id="list_Blue">
+                        {% for t in teams %}
+                            {% if t.house.name.lower() == 'blue' %}
+                                <div class="card border rounded-4 p-3 shadow-sm bg-white position-relative">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="fw-bold mb-0 text-dark" style="font-size: 12px;">{{ t.team_name }}</h6>
+                                        {% if t.round2_completed %}
+                                            <span class="badge bg-success" style="font-size: 8px;">FINISHED 🏆</span>
+                                        {% elif t.current_round == 2 or t.round1_status == 'approved' %}
+                                            <span class="badge bg-info text-dark" style="font-size: 8px;">R2 ACTIVE</span>
+                                        {% elif t.round1_status == 'verified' %}
+                                            <span class="badge bg-danger" style="font-size: 8px;">R1 VERIFIED</span>
+                                        {% elif t.round1_status == 'requested' %}
+                                            <span class="badge bg-warning text-dark" style="font-size: 8px;">R1 REQUESTED</span>
+                                        {% elif t.round1_status == 'pending_start' %}
+                                            <span class="badge bg-secondary" style="font-size: 8px;">PENDING START</span>
+                                        {% else %}
+                                            <span class="badge bg-primary" style="font-size: 8px;">R1 ACTIVE</span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    {% if t.round2_completed %}
+                                        {% set progress_val = 100 %}
+                                        {% set progress_label = 'FINISHED 🏆 (100%)' %}
+                                    {% elif t.current_round == 2 or t.round1_status == 'approved' %}
+                                        {% set progress_val = ((t.round2_current_clue - 1) * 100 // 7)|int %}
+                                        {% set progress_label = 'R2 Clues: ' ~ (t.round2_current_clue - 1) ~ '/7 (' ~ progress_val ~ '%)' %}
+                                    {% elif t.round1_status == 'verified' or t.round1_status == 'requested' %}
+                                        {% set progress_val = 100 %}
+                                        {% set progress_label = 'R1 Done (100%)' %}
+                                    {% else %}
+                                        {% set progress_val = (t.task_completions|length) * 10 %}
+                                        {% set progress_label = 'R1 Tasks: ' ~ (t.task_completions|length) ~ '/10 (' ~ progress_val ~ '%)' %}
+                                    {% endif %}
+                                    
+                                    <div class="mb-2">
+                                        <div class="d-flex justify-content-between text-secondary mb-1" style="font-size: 8px;">
+                                            <span>Progress</span>
+                                            <span>{{ progress_label }}</span>
+                                        </div>
+                                        <div class="progress" style="height: 6px; border-radius: 50px;">
+                                            <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" role="progressbar" style="width: {{ progress_val }}%;" aria-valuenow="{{ progress_val }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between align-items-center mt-2 border-top pt-2" style="font-size: 9px;">
+                                        <span class="font-monospace fw-bold text-secondary" id="statsStopwatch_{{ t.id }}">
+                                            <i class="bi bi-stopwatch-fill me-1"></i>00:00:00
+                                        </span>
+                                        <span class="text-muted">
+                                            <i class="bi bi-clock-history me-1"></i><span class="local-time-text">{{ t.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                                        </span>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Green House Column -->
+            <div class="col-xl-3 col-md-6 mb-3">
+                <div class="glass-card p-3 h-100 border-top border-4 border-success" style="background: rgba(25, 135, 84, 0.015);">
+                    <h6 class="fw-bold mb-3 text-success d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-flag-fill me-2"></i>Green House</span>
+                        <span class="badge bg-success rounded-pill" id="count_Green" style="font-size: 11px;">0</span>
+                    </h6>
+                    <div class="d-flex flex-column gap-3" id="list_Green">
+                        {% for t in teams %}
+                            {% if t.house.name.lower() == 'green' %}
+                                <div class="card border rounded-4 p-3 shadow-sm bg-white position-relative">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="fw-bold mb-0 text-dark" style="font-size: 12px;">{{ t.team_name }}</h6>
+                                        {% if t.round2_completed %}
+                                            <span class="badge bg-success" style="font-size: 8px;">FINISHED 🏆</span>
+                                        {% elif t.current_round == 2 or t.round1_status == 'approved' %}
+                                            <span class="badge bg-info text-dark" style="font-size: 8px;">R2 ACTIVE</span>
+                                        {% elif t.round1_status == 'verified' %}
+                                            <span class="badge bg-danger" style="font-size: 8px;">R1 VERIFIED</span>
+                                        {% elif t.round1_status == 'requested' %}
+                                            <span class="badge bg-warning text-dark" style="font-size: 8px;">R1 REQUESTED</span>
+                                        {% elif t.round1_status == 'pending_start' %}
+                                            <span class="badge bg-secondary" style="font-size: 8px;">PENDING START</span>
+                                        {% else %}
+                                            <span class="badge bg-primary" style="font-size: 8px;">R1 ACTIVE</span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    {% if t.round2_completed %}
+                                        {% set progress_val = 100 %}
+                                        {% set progress_label = 'FINISHED 🏆 (100%)' %}
+                                    {% elif t.current_round == 2 or t.round1_status == 'approved' %}
+                                        {% set progress_val = ((t.round2_current_clue - 1) * 100 // 7)|int %}
+                                        {% set progress_label = 'R2 Clues: ' ~ (t.round2_current_clue - 1) ~ '/7 (' ~ progress_val ~ '%)' %}
+                                    {% elif t.round1_status == 'verified' or t.round1_status == 'requested' %}
+                                        {% set progress_val = 100 %}
+                                        {% set progress_label = 'R1 Done (100%)' %}
+                                    {% else %}
+                                        {% set progress_val = (t.task_completions|length) * 10 %}
+                                        {% set progress_label = 'R1 Tasks: ' ~ (t.task_completions|length) ~ '/10 (' ~ progress_val ~ '%)' %}
+                                    {% endif %}
+                                    
+                                    <div class="mb-2">
+                                        <div class="d-flex justify-content-between text-secondary mb-1" style="font-size: 8px;">
+                                            <span>Progress</span>
+                                            <span>{{ progress_label }}</span>
+                                        </div>
+                                        <div class="progress" style="height: 6px; border-radius: 50px;">
+                                            <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" role="progressbar" style="width: {{ progress_val }}%;" aria-valuenow="{{ progress_val }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between align-items-center mt-2 border-top pt-2" style="font-size: 9px;">
+                                        <span class="font-monospace fw-bold text-secondary" id="statsStopwatch_{{ t.id }}">
+                                            <i class="bi bi-stopwatch-fill me-1"></i>00:00:00
+                                        </span>
+                                        <span class="text-muted">
+                                            <i class="bi bi-clock-history me-1"></i><span class="local-time-text">{{ t.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                                        </span>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Yellow House Column -->
+            <div class="col-xl-3 col-md-6 mb-3">
+                <div class="glass-card p-3 h-100 border-top border-4 border-warning" style="background: rgba(255, 193, 7, 0.015);">
+                    <h6 class="fw-bold mb-3 text-warning d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-flag-fill me-2 text-warning"></i>Yellow House</span>
+                        <span class="badge bg-warning text-dark rounded-pill" id="count_Yellow" style="font-size: 11px;">0</span>
+                    </h6>
+                    <div class="d-flex flex-column gap-3" id="list_Yellow">
+                        {% for t in teams %}
+                            {% if t.house.name.lower() == 'yellow' %}
+                                <div class="card border rounded-4 p-3 shadow-sm bg-white position-relative">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="fw-bold mb-0 text-dark" style="font-size: 12px;">{{ t.team_name }}</h6>
+                                        {% if t.round2_completed %}
+                                            <span class="badge bg-success" style="font-size: 8px;">FINISHED 🏆</span>
+                                        {% elif t.current_round == 2 or t.round1_status == 'approved' %}
+                                            <span class="badge bg-info text-dark" style="font-size: 8px;">R2 ACTIVE</span>
+                                        {% elif t.round1_status == 'verified' %}
+                                            <span class="badge bg-danger" style="font-size: 8px;">R1 VERIFIED</span>
+                                        {% elif t.round1_status == 'requested' %}
+                                            <span class="badge bg-warning text-dark" style="font-size: 8px;">R1 REQUESTED</span>
+                                        {% elif t.round1_status == 'pending_start' %}
+                                            <span class="badge bg-secondary" style="font-size: 8px;">PENDING START</span>
+                                        {% else %}
+                                            <span class="badge bg-primary" style="font-size: 8px;">R1 ACTIVE</span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    {% if t.round2_completed %}
+                                        {% set progress_val = 100 %}
+                                        {% set progress_label = 'FINISHED 🏆 (100%)' %}
+                                    {% elif t.current_round == 2 or t.round1_status == 'approved' %}
+                                        {% set progress_val = ((t.round2_current_clue - 1) * 100 // 7)|int %}
+                                        {% set progress_label = 'R2 Clues: ' ~ (t.round2_current_clue - 1) ~ '/7 (' ~ progress_val ~ '%)' %}
+                                    {% elif t.round1_status == 'verified' or t.round1_status == 'requested' %}
+                                        {% set progress_val = 100 %}
+                                        {% set progress_label = 'R1 Done (100%)' %}
+                                    {% else %}
+                                        {% set progress_val = (t.task_completions|length) * 10 %}
+                                        {% set progress_label = 'R1 Tasks: ' ~ (t.task_completions|length) ~ '/10 (' ~ progress_val ~ '%)' %}
+                                    {% endif %}
+                                    
+                                    <div class="mb-2">
+                                        <div class="d-flex justify-content-between text-secondary mb-1" style="font-size: 8px;">
+                                            <span>Progress</span>
+                                            <span>{{ progress_label }}</span>
+                                        </div>
+                                        <div class="progress" style="height: 6px; border-radius: 50px;">
+                                            <div class="progress-bar bg-warning progress-bar-striped progress-bar-animated text-dark" role="progressbar" style="width: {{ progress_val }}%;" aria-valuenow="{{ progress_val }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between align-items-center mt-2 border-top pt-2" style="font-size: 9px;">
+                                        <span class="font-monospace fw-bold text-secondary" id="statsStopwatch_{{ t.id }}">
+                                            <i class="bi bi-stopwatch-fill me-1"></i>00:00:00
+                                        </span>
+                                        <span class="text-muted">
+                                            <i class="bi bi-clock-history me-1"></i><span class="local-time-text">{{ t.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                                        </span>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL: Leaderboard & Charts (60% or Hidden) -->
+    <div class="stats-right-panel" id="rightPanel">
+        
+        <!-- Section 1: Top 10 Leaderboard -->
+        <div class="glass-card p-3 mb-4 border-primary border-opacity-25 shadow-sm">
+            <h6 class="fw-bold text-primary mb-3"><i class="bi bi-trophy-fill me-2"></i>Top 10 Leaderboard</h6>
+            <div class="table-responsive">
+                <table class="table table-striped align-middle mb-0 small">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Rank</th>
+                            <th>Team</th>
+                            <th>House</th>
+                            <th>Round</th>
+                            <th>QR Progress</th>
+                            <th>Completion Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboardTableBody">
+                        <!-- Filled Dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Section 2: Quick Metrics Cards -->
+        <div class="row g-2 mb-4">
+            <div class="col-6 col-md-3">
+                <div class="glass-card p-3 text-center">
+                    <h6 class="text-secondary small mb-1">Total Scans</h6>
+                    <h4 class="fw-bold mb-0 text-primary" id="metricTotalScans">0</h4>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="glass-card p-3 text-center">
+                    <h6 class="text-secondary small mb-1">Fastest Finish</h6>
+                    <h6 class="fw-bold mb-0 text-success text-truncate" id="metricFastestTeam" style="font-size: 13px;">None</h6>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="glass-card p-3 text-center">
+                    <h6 class="text-secondary small mb-1">Most Active</h6>
+                    <h6 class="fw-bold mb-0 text-info text-truncate" id="metricMostActive" style="font-size: 13px;">None</h6>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="glass-card p-3 text-center">
+                    <h6 class="text-secondary small mb-1">House Leader</h6>
+                    <h6 class="fw-bold mb-0 text-warning text-truncate" id="metricHouseLeader" style="font-size: 13px;">None</h6>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3: Analytics Charts -->
+        <div class="row g-3">
+            <!-- Chart 1: House distribution -->
+            <div class="col-12 col-md-6">
+                <div class="glass-card p-3 shadow-sm">
+                    <h6 class="fw-bold text-secondary mb-2">Teams per House</h6>
+                    <div style="height: 200px; position: relative;">
+                        <canvas id="houseChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <!-- Chart 2: Round Status counts -->
+            <div class="col-12 col-md-6">
+                <div class="glass-card p-3 shadow-sm">
+                    <h6 class="fw-bold text-secondary mb-2">Round Completions</h6>
+                    <div style="height: 200px; position: relative;">
+                        <canvas id="roundChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <!-- Chart 3: QR Scan analytics line -->
+            <div class="col-12">
+                <div class="glass-card p-3 shadow-sm">
+                    <h6 class="fw-bold text-secondary mb-2">QR Clue Scans Volume</h6>
+                    <div style="height: 200px; position: relative;">
+                        <canvas id="qrScanChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+// Declare Chart.js variables globally to allow updates
+let houseChartInst = null;
+let roundChartInst = null;
+let qrScanChartInst = null;
+
+let statsStopwatchData = {};
+let statsStopwatchInterval = null;
+
+function runStatsStopwatches() {
+    if (statsStopwatchInterval) return;
+    
+    statsStopwatchInterval = setInterval(() => {
+        const clientNow = new Date();
+        
+        Object.entries(statsStopwatchData).forEach(([teamId, info]) => {
+            const el = document.getElementById(`statsStopwatch_${teamId}`);
+            if (!el) return;
+            
+            if (info.status === 'pending_start') {
+                el.className = 'font-monospace fw-bold text-secondary';
+                el.innerHTML = '<i class="bi bi-play-circle-fill text-secondary me-1"></i>00:00:00';
+                return;
+            }
+            
+            const serverTimeOffset = info.serverNow ? (new Date(info.serverNow) - clientNow) : 0;
+            let startTime;
+            let endTime = new Date(Date.now() + serverTimeOffset);
+            let displayPrefix = '<i class="bi bi-stopwatch-fill me-1"></i>';
+            let colorClass = 'text-danger';
+            
+            if (info.finished && info.finished !== 'None') {
+                startTime = new Date(info.approved || info.created);
+                endTime = new Date(info.finished);
+                displayPrefix = '<i class="bi bi-trophy-fill me-1"></i>';
+                colorClass = 'text-warning';
+            } else if (info.approved && info.approved !== 'None') {
+                startTime = new Date(info.approved);
+                displayPrefix = '<i class="bi bi-hourglass-split me-1"></i>';
+                colorClass = 'text-info';
+            } else {
+                startTime = new Date(info.created);
+                displayPrefix = '<i class="bi bi-activity me-1"></i>';
+                colorClass = 'text-primary';
+            }
+            
+            const diffMs = Math.max(0, endTime - startTime);
+            const diffSecs = Math.floor(diffMs / 1000);
+            const hours = String(Math.floor(diffSecs / 3600)).padStart(2, '0');
+            const minutes = String(Math.floor((diffSecs % 3600) / 60)).padStart(2, '0');
+            const seconds = String(diffSecs % 60).padStart(2, '0');
+            
+            el.className = `font-monospace fw-bold ${colorClass}`;
+            el.innerHTML = `${displayPrefix}${hours}:${minutes}:${seconds}`;
+        });
+    }, 1000);
+}
+
+// Initial stats fetch & clock start
+function initStatsPage() {
+    fetchStatsData();
+    startEventStopwatch();
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initStatsPage);
+} else {
+    initStatsPage();
+}
+
+let eventStopwatchInterval = null;
+
+function startEventStopwatch() {
+    if (eventStopwatchInterval) return;
+    
+    eventStopwatchInterval = setInterval(() => {
+        const timerEl = document.getElementById('gameTimer');
+        if (!timerEl) return;
+        
+        const startStr = window.eventStopwatchStart;
+        if (!startStr || startStr === '' || startStr === 'None') {
+            timerEl.className = "badge bg-secondary fs-6 rounded-pill px-3 py-2 font-monospace me-3 d-flex align-items-center";
+            timerEl.innerHTML = `<i class="bi bi-play-circle-fill text-white me-2"></i>00:00:00`;
+            return;
+        }
+        
+        const clientNow = new Date();
+        const serverTimeOffset = window.eventServerNow ? (new Date(window.eventServerNow) - clientNow) : 0;
+        
+        const startTime = new Date(startStr);
+        const endTime = new Date(Date.now() + serverTimeOffset);
+        
+        const diffMs = Math.max(0, endTime - startTime);
+        const diffSecs = Math.floor(diffMs / 1000);
+        const hours = String(Math.floor(diffSecs / 3600)).padStart(2, '0');
+        const minutes = String(Math.floor((diffSecs % 3600) / 60)).padStart(2, '0');
+        const seconds = String(diffSecs % 60).padStart(2, '0');
+        
+        timerEl.className = "badge bg-danger fs-6 rounded-pill px-3 py-2 font-monospace me-3 d-flex align-items-center";
+        timerEl.innerHTML = `<i class="bi bi-stopwatch-fill me-2"></i>${hours}:${minutes}:${seconds}`;
+    }, 1000);
+}
+
+// Listener for real-time DOM overrides
+function refreshDashboardData() {
+    fetchStatsData();
+}
+
+function fetchStatsData() {
+    fetch('/api/stats/data')
+        .then(response => response.json())
+        .then(data => {
+            updateStatsView(data);
+        })
+        .catch(err => console.error("Error loading stats api:", err));
+}
+
+function updateStatsView(data) {
+    // Save event stopwatch details
+    window.eventStopwatchStart = data.earliest_start_iso;
+    window.eventServerNow = data.server_now_iso;
+
+    // 0. Update Pre-game House Readiness Banner
+    const preGameBanner = document.getElementById('preGameBanner');
+    if (preGameBanner) {
+        if (data.game_started) {
+            preGameBanner.classList.add('d-none');
+        } else {
+            preGameBanner.classList.remove('d-none');
+            
+            // Re-render the readiness alert and cards
+            let allReady = true;
+            let cardsHtml = '';
+            
+            Object.entries(data.house_status).forEach(([hName, hInfo]) => {
+                if (!hInfo.logged_in) {
+                    allReady = false;
+                }
+                
+                const hLower = hName.toLowerCase();
+                const badgeColor = hInfo.logged_in ? 'success' : 'danger';
+                
+                let teamsHtml = '';
+                if (hInfo.logged_in) {
+                    teamsHtml = `
+                        <div class="mt-2">
+                            <span class="text-secondary small d-block mb-1">Teams:</span>
+                            <div class="d-flex flex-wrap gap-1">
+                                ${hInfo.teams.map(tName => `<span class="badge bg-light text-dark border font-monospace small px-2 py-1">${tName}</span>`).join('')}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    teamsHtml = `<p class="text-muted small mb-0 mt-2 italic">Waiting for a team from ${hName} House to log in...</p>`;
+                }
+                
+                cardsHtml += `
+                    <div class="col-md-3">
+                        <div class="card h-100 border border-${badgeColor} border-opacity-20 bg-${badgeColor} bg-opacity-5 rounded-4 p-3 d-flex flex-column justify-content-between">
+                            <div>
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="fw-bold text-dark fs-6">
+                                        <i class="bi bi-flag-fill text-${hLower} me-2"></i>${hName} House
+                                    </span>
+                                    <span class="badge bg-${badgeColor} rounded-pill small">
+                                        <i class="bi bi-${hInfo.logged_in ? 'check-circle' : 'x-circle'} me-1"></i>${hInfo.logged_in ? 'Logged In' : 'No Log-in'}
+                                    </span>
+                                </div>
+                                ${teamsHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            const readinessAlert = document.getElementById('readinessAlert');
+            if (readinessAlert) {
+                if (allReady) {
+                    readinessAlert.className = 'alert alert-success border-0 rounded-4 p-3 mb-3 d-flex align-items-center';
+                    readinessAlert.innerHTML = `
+                        <i class="bi bi-check-circle-fill text-success fs-4 me-3"></i>
+                        <div>
+                            <h6 class="fw-bold mb-1 text-success">All Houses Ready!</h6>
+                            <p class="mb-0 text-dark small">Teams from all four houses are successfully logged in. Ready for Admin to launch the game! 🚀</p>
+                        </div>
+                    `;
+                } else {
+                    readinessAlert.className = 'alert alert-warning border-0 rounded-4 p-3 mb-3 d-flex align-items-center';
+                    readinessAlert.innerHTML = `
+                        <i class="bi bi-hourglass-split text-warning fs-4 me-3"></i>
+                        <div>
+                            <h6 class="fw-bold mb-1 text-warning">Awaiting House Logins</h6>
+                            <p class="mb-0 text-dark small">Please wait for teams from all four houses to log in before the Administrator starts the round. ⏳</p>
+                        </div>
+                    `;
+                }
+            }
+            
+            const houseStatusCards = document.getElementById('houseStatusCards');
+            if (houseStatusCards) {
+                houseStatusCards.innerHTML = cardsHtml;
+            }
+        }
+    }
+
+    // 1. Check if we need to enable Split-Screen Layout
+    const r2_completed_or_started = (data.round_stats['R1 Verified'] > 0 || 
+                                     data.round_stats['R1 Pending'] > 0 ||
+                                     data.round_stats['R2 Active'] > 0 || 
+                                     data.round_stats['R2 Completed'] > 0);
+    
+    const container = document.getElementById('statsContainer');
+    const rightPanel = document.getElementById('rightPanel');
+    
+    if (r2_completed_or_started) {
+        if (!container.classList.contains('split')) {
+            container.classList.add('split');
+            // Give time for layout transition before rendering charts
+            setTimeout(() => initializeCharts(data), 600);
+        } else {
+            initializeCharts(data); // update directly
+        }
+    }
+
+    // 2. Update Left side 4-column House Grid with Progress Cards and Stopwatches
+    const houseLists = {
+        'Red': document.getElementById('list_Red'),
+        'Blue': document.getElementById('list_Blue'),
+        'Green': document.getElementById('list_Green'),
+        'Yellow': document.getElementById('list_Yellow')
+    };
+    const houseCounts = {
+        'Red': 0,
+        'Blue': 0,
+        'Green': 0,
+        'Yellow': 0
+    };
+    
+    // Clear list boxes
+    Object.values(houseLists).forEach(el => {
+        if (el) el.innerHTML = '';
+    });
+    
+    // Reset active stopwatches trackers
+    statsStopwatchData = {};
+    
+    data.teams_progress.forEach(team => {
+        const teamName = team.team_name;
+        const houseName = team.house_name;
+        const currentRound = team.current_round;
+        const round1Status = team.round1_status;
+        const round1Pct = team.round1_pct;
+        const round2Pct = team.round2_pct;
+        const round2Clue = team.round2_clue;
+        const round2Completed = team.round2_completed;
+        const lastActive = team.last_active;
+        
+        let houseClass = houseName.toLowerCase();
+        let progressBarColor = 'bg-primary';
+        
+        if (houseClass === 'red') {
+            progressBarColor = 'bg-danger';
+        } else if (houseClass === 'green') {
+            progressBarColor = 'bg-success';
+        } else if (houseClass === 'yellow') {
+            progressBarColor = 'bg-warning text-dark';
+        }
+        
+        let badgeClass = 'bg-secondary';
+        let statusText = 'R1 ACTIVE';
+        let progressVal = round1Pct;
+        let progressLabel = `R1 Tasks: ${Math.round(round1Pct/10)}/10 (${round1Pct}%)`;
+        
+        if (round2Completed) {
+            badgeClass = 'bg-success';
+            statusText = 'FINISHED 🏆';
+            progressVal = 100;
+            progressLabel = `FINISHED 🏆 (100%)`;
+        } else if (currentRound === 2 || round1Status === 'approved') {
+            badgeClass = 'bg-info text-dark';
+            statusText = 'R2 ACTIVE';
+            progressVal = round2Pct;
+            progressLabel = `R2 Clues: ${round2Clue - 1}/7 (${round2Pct}%)`;
+        } else if (round1Status === 'verified') {
+            badgeClass = 'bg-danger';
+            statusText = 'R1 VERIFIED';
+            progressVal = 100;
+            progressLabel = `R1 Verified (100%)`;
+        } else if (round1Status === 'requested') {
+            badgeClass = 'bg-warning text-dark';
+            statusText = 'R1 REQUESTED';
+            progressVal = 100;
+            progressLabel = `R1 Request Sent (100%)`;
+        } else if (round1Status === 'pending_start') {
+            badgeClass = 'bg-secondary';
+            statusText = 'PENDING START';
+            progressVal = 0;
+            progressLabel = `Awaiting Start Approval (0%)`;
+        }
+        
+        // Save stopwatch properties for global ticks
+        statsStopwatchData[team.id] = {
+            status: round1Status,
+            currentRound: currentRound,
+            created: team.created_iso,
+            approved: team.approved_iso,
+            finished: team.finished_iso,
+            serverNow: data.server_now_iso
+        };
+        
+        // Build card element
+        const card = document.createElement('div');
+        card.className = 'card border rounded-4 p-3 shadow-sm bg-white position-relative';
+        card.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <h6 class="fw-bold mb-0 text-dark" style="font-size: 12px;">${teamName}</h6>
+                <span class="badge ${badgeClass}" style="font-size: 8px;">${statusText}</span>
+            </div>
+            
+            <div class="mb-2">
+                <div class="d-flex justify-content-between text-secondary mb-1" style="font-size: 8px;">
+                    <span>Progress</span>
+                    <span>${progressLabel}</span>
+                </div>
+                <div class="progress" style="height: 6px; border-radius: 50px;">
+                    <div class="progress-bar ${progressBarColor} progress-bar-striped progress-bar-animated" role="progressbar" style="width: ${progressVal}%;" aria-valuenow="${progressVal}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            </div>
+            
+            <div class="d-flex justify-content-between align-items-center mt-2 border-top pt-2" style="font-size: 9px;">
+                <span class="font-monospace fw-bold text-secondary" id="statsStopwatch_${team.id}">
+                    <i class="bi bi-stopwatch-fill me-1"></i>00:00:00
+                </span>
+                <span class="text-muted">
+                    <i class="bi bi-clock-history me-1"></i><span>${convertUTCToLocalText(lastActive)}</span>
+                </span>
+            </div>
+        `;
+        
+        const listEl = houseLists[houseName];
+        if (listEl) {
+            listEl.appendChild(card);
+            houseCounts[houseName]++;
+        }
+    });
+    
+    // Update badge count labels and show empty placeholders
+    Object.entries(houseCounts).forEach(([hName, count]) => {
+        const countBadge = document.getElementById(`count_${hName}`);
+        if (countBadge) countBadge.innerText = count;
+        
+        const listEl = houseLists[hName];
+        if (listEl && count === 0) {
+            listEl.innerHTML = '<div class="text-center text-muted py-4 small italic">No teams registered yet</div>';
+        }
+    });
+    
+    // Fire stopwatch ticking interval
+    runStatsStopwatches();
+
+    // 3. Update Right side Leaderboard Grid (Top 10)
+    const leaderboardBody = document.getElementById('leaderboardTableBody');
+    leaderboardBody.innerHTML = '';
+    
+    const top10 = data.leaderboard.slice(0, 10);
+    top10.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="fw-bold">#${row[0]}</td>
+            <td class="fw-bold">${row[1]}</td>
+            <td><span class="badge bg-light text-dark border font-monospace">${row[2]}</span></td>
+            <td>${row[3]}</td>
+            <td><span class="badge bg-primary">${row[5]}</span></td>
+            <td class="text-muted font-monospace small">${convertUTCToLocalText(row[4])}</td>
+        `;
+        leaderboardBody.appendChild(tr);
+    });
+
+    // 4. Update Quick stats cards
+    document.getElementById('metricTotalScans').innerText = data.metrics.total_scans;
+    document.getElementById('metricFastestTeam').innerText = data.metrics.fastest_team;
+    document.getElementById('metricMostActive').innerText = data.metrics.most_active_team;
+    
+    const hRank = data.metrics.house_rankings;
+    if (hRank && hRank.length > 0) {
+        document.getElementById('metricHouseLeader').innerText = `${hRank[0].name} (${hRank[0].finished} Fin)`;
+    }
+}
+
+function initializeCharts(data) {
+    const isDark = document.documentElement.classList.contains('dark-mode');
+    const labelColor = isDark ? '#f8fafc' : '#1e293b';
+    const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)';
+    
+    // Colors for Houses: Red, Green, Blue, Yellow
+    const houseColors = {
+        'Red': '#ef4444',
+        'Green': '#22c55e',
+        'Blue': '#3b82f6',
+        'Yellow': '#eab308'
+    };
+
+    // A. Chart 1: House Distribution
+    const houseCanvas = document.getElementById('houseChart');
+    if (houseCanvas) {
+        const labels = Object.keys(data.house_dist);
+        const values = Object.values(data.house_dist);
+        const bgColors = labels.map(l => houseColors[l] || '#cccccc');
+        
+        if (houseChartInst) houseChartInst.destroy();
+        houseChartInst = new Chart(houseCanvas, {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: bgColors,
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: labelColor }
+                    }
+                }
+            }
+        });
+    }
+
+    // B. Chart 2: Round completions
+    const roundCanvas = document.getElementById('roundChart');
+    if (roundCanvas) {
+        const labels = Object.keys(data.round_stats);
+        const values = Object.values(data.round_stats);
+        
+        if (roundChartInst) roundChartInst.destroy();
+        roundChartInst = new Chart(roundCanvas, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Teams Count',
+                    data: values,
+                    backgroundColor: ['#3b82f6', '#eab308', '#ef4444', '#a855f7', '#22c55e'],
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: labelColor },
+                        grid: { display: false }
+                    },
+                    y: {
+                        ticks: { color: labelColor, stepSize: 1 },
+                        grid: { color: gridColor }
+                    }
+                }
+            }
+        });
+    }
+
+    // C. Chart 3: QR Scans
+    const qrCanvas = document.getElementById('qrScanChart');
+    if (qrCanvas) {
+        const labels = Object.keys(data.qr_scans);
+        const values = Object.values(data.qr_scans);
+        
+        if (qrScanChartInst) qrScanChartInst.destroy();
+        qrScanChartInst = new Chart(qrCanvas, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Scan Counts',
+                    data: values,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: labelColor },
+                        grid: { display: false }
+                    },
+                    y: {
+                        ticks: { color: labelColor, stepSize: 2 },
+                        grid: { color: gridColor }
+                    }
+                }
+            }
+        });
+    }
+}
+
+// Self-healing polling fallback when Socket.io is offline or disconnected
+setInterval(() => {
+    if (typeof window.socket === 'undefined' || !window.socket || !window.socket.connected) {
+        console.log("Socket offline. Polling stats dashboard...");
+        fetchStatsData();
+    }
+}, 3000);
+</script>
+
+<style>
+    .dark-mode-hidden { display: inline-block; }
+    .light-mode-hidden { display: none; }
+    .dark-mode .dark-mode-hidden { display: none; }
+    .dark-mode .light-mode-hidden { display: inline-block; }
+    
+    .stats-split-container {
+        display: flex;
+        width: 100vw;
+        height: calc(100vh - 68px);
+        overflow: hidden;
+    }
+    
+    .stats-left-panel {
+        width: 100%;
+        height: 100%;
+        overflow-y: auto;
+        padding: 24px;
+        transition: width 0.5s ease-in-out;
+    }
+    
+    .stats-right-panel {
+        width: 0%;
+        height: 100%;
+        overflow-y: auto;
+        padding: 24px;
+        transition: width 0.5s ease-in-out, opacity 0.3s ease;
+        opacity: 0;
+        background-color: var(--bg-card);
+        border-left: 1px solid var(--border-color);
+        display: none;
+    }
+    
+    .stats-split-container.split .stats-left-panel {
+        width: 40%;
+    }
+    
+    .stats-split-container.split .stats-right-panel {
+        width: 60%;
+        opacity: 1;
+        display: block;
+    }
+
+    @media (max-width: 991px) {
+        /* On small screens, split container stacks vertically instead of side-by-side */
+        .stats-split-container {
+            flex-direction: column;
+            height: auto;
+            overflow: visible;
+        }
+        .stats-left-panel {
+            width: 100% !important;
+            height: auto;
+            overflow: visible;
+        }
+        .stats-right-panel {
+            width: 100% !important;
+            height: auto;
+            overflow: visible;
+            opacity: 1;
+            display: none;
+            border-left: none;
+            border-top: 1px solid var(--border-color);
+        }
+        .stats-split-container.split .stats-right-panel {
+            display: block;
+        }
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Console | TREASURE HUNT - LRDC 2026{% endblock %}
+{% block container_class %}mobile-container{% endblock %}
+
+{% block content %}
+<!-- Premium Header with Dark Admin Theme -->
+<div class="premium-header mx-2 mt-2 position-relative bg-dark">
+    <div class="d-flex justify-content-between align-items-start">
+        <div>
+            <span class="badge bg-danger mb-2 small fw-bold">System Administrator</span>
+            <h3 class="fw-bold mb-1 fs-4">TREASURE HUNT - LRDC 2026 Control Center</h3>
+            <p class="mb-0 small text-muted"><i class="bi bi-person-fill-lock me-1"></i>Session: <strong>{{ current_user.username }}</strong></p>
+        </div>
+        <div class="d-flex flex-column align-items-end gap-2">
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('auth.change_password') }}" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-semibold">
+                    <i class="bi bi-key-fill me-1"></i>Password
+                </a>
+                <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-light rounded-pill px-3 fw-semibold">
+                    <i class="bi bi-box-arrow-right me-1"></i>Logout
+                </a>
+            </div>
+            <button class="btn btn-sm btn-outline-light rounded-circle" onclick="toggleTheme()" type="button" style="width: 32px; height: 32px; padding: 0;">
+                <i class="bi bi-sun-fill dark-mode-hidden"></i>
+                <i class="bi bi-moon-fill light-mode-hidden"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Main Area -->
+<div class="px-2 mt-4">
+    <!-- Flask Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show rounded-3 small py-2 px-3 mb-3" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Account Password Card -->
+    <div class="glass-card p-3 mb-4">
+        <h6 class="fw-bold text-secondary mb-2"><i class="bi bi-key-fill text-warning me-1"></i>Your Account Password</h6>
+        <p class="text-secondary small mb-2" style="font-size: 11px;">Use this password to log in to your system administrator account:</p>
+        <div class="d-flex align-items-center justify-content-between bg-light p-2 rounded-3 border">
+            <code class="text-primary font-monospace fs-6 fw-bold" id="accountPasswordVal" data-password="{{ current_user.plain_password or 'N/A' }}" data-visible="false">••••••••</code>
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill border-0 px-2 py-1" onclick="toggleAccountPassword()">
+                <i class="bi bi-eye" id="accountPasswordEye"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Universal Start Approval Card -->
+    <div class="glass-card p-4 mb-4 border border-warning border-opacity-25 bg-warning bg-opacity-5">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <div>
+                <h5 class="fw-bold mb-1 text-warning"><i class="bi bi-play-circle-fill me-2 animate__animated animate__pulse animate__infinite"></i>Universal Start Control</h5>
+                <p class="text-secondary small mb-0" style="font-size: 11px;">Approve and launch all registered teams simultaneously once they have logged in.</p>
+            </div>
+            <span class="badge bg-warning text-dark fs-6 rounded-pill px-3 py-1.5 fw-bold">{{ r1_pending_start }} Pending</span>
+        </div>
+        
+        {% if r1_pending_start > 0 %}
+            <form method="POST" action="{{ url_for('admin.approve_start_all') }}" onsubmit="return confirm('Are you sure you want to approve all {{ r1_pending_start }} teams and start their stopwatches simultaneously? This action cannot be undone.');">
+                <button type="submit" class="btn btn-warning w-100 py-3 rounded-4 fw-bold text-dark d-flex align-items-center justify-content-center pulse shadow-sm">
+                    <i class="bi bi-play-fill fs-4 me-2"></i>Approve & Start All Teams
+                </button>
+            </form>
+        {% else %}
+            <button type="button" class="btn btn-secondary w-100 py-3 rounded-4 fw-bold opacity-75 cursor-not-allowed d-flex align-items-center justify-content-center" disabled>
+                <i class="bi bi-check2-all fs-4 me-2"></i>All Teams Already Started
+            </button>
+        {% endif %}
+    </div>
+
+    <!-- Admin Main Navigation Grid -->
+    <div class="glass-card p-3 mb-4">
+        <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-grid-fill me-2"></i>Quick Navigation</h6>
+        <div class="row g-2">
+            <div class="col-6">
+                <a href="{{ url_for('admin.teams_list') }}" class="btn btn-outline-primary w-100 py-3 rounded-4 d-flex flex-column align-items-center">
+                    <i class="bi bi-people-fill fs-3 mb-1"></i>
+                    <span class="small fw-bold">Manage Teams</span>
+                </a>
+            </div>
+            <div class="col-6">
+                <a href="{{ url_for('admin.manage_managers') }}" class="btn btn-outline-primary w-100 py-3 rounded-4 d-flex flex-column align-items-center">
+                    <i class="bi bi-person-fill-lock fs-3 mb-1"></i>
+                    <span class="small fw-bold">House Managers</span>
+                </a>
+            </div>
+            <div class="col-6">
+                <a href="{{ url_for('admin.manage_qrs') }}" class="btn btn-outline-primary w-100 py-3 rounded-4 d-flex flex-column align-items-center">
+                    <i class="bi bi-qr-code fs-3 mb-1"></i>
+                    <span class="small fw-bold">Clues (QRs)</span>
+                </a>
+            </div>
+            <div class="col-6">
+                <a href="{{ url_for('admin.download_reports_dashboard') }}" class="btn btn-outline-primary w-100 py-3 rounded-4 d-flex flex-column align-items-center">
+                    <i class="bi bi-file-earmark-bar-graph-fill fs-3 mb-1"></i>
+                    <span class="small fw-bold">Reports & Exports</span>
+                </a>
+            </div>
+            <div class="col-12 mt-2">
+                <a href="{{ url_for('admin.view_logs') }}" class="btn btn-light w-100 py-2 rounded-3 border d-flex align-items-center justify-content-center">
+                    <i class="bi bi-journal-text me-2 text-danger"></i>
+                    <span class="small fw-semibold text-secondary">System Audit Logs</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Status Overview -->
+    <div class="glass-card p-3 mb-4">
+        <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-speedometer2 me-2"></i>Live Game Funnel</h6>
+        <div class="row g-2">
+            <div class="col-6">
+                <div class="card bg-light border-0 p-3 rounded-4 text-center">
+                    <h4 class="fw-bold mb-0 text-primary">{{ r1_active }}</h4>
+                    <span class="text-secondary small">R1 Active</span>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="card bg-light border-0 p-3 rounded-4 text-center">
+                    <h4 class="fw-bold mb-0 text-warning">{{ r1_pending_approval + r1_verified }}</h4>
+                    <span class="text-secondary small">R1 Pending</span>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="card bg-light border-0 p-3 rounded-4 text-center">
+                    <h4 class="fw-bold mb-0 text-info">{{ r2_active }}</h4>
+                    <span class="text-secondary small">R2 Active</span>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="card bg-light border-0 p-3 rounded-4 text-center">
+                    <h4 class="fw-bold mb-0 text-success">{{ r2_completed }}</h4>
+                    <span class="text-secondary small">R2 Finished</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- House Stats Bar -->
+    <div class="glass-card p-3 mb-4">
+        <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-houses-fill me-2"></i>House Balances</h6>
+        <div class="list-group list-group-flush border rounded-4 overflow-hidden">
+            {% for house in houses %}
+                <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                    <span class="fw-semibold"><i class="bi bi-flag-fill text-{{ house.name.lower() }} me-2"></i>{{ house.name }} House</span>
+                    <span class="badge bg-secondary rounded-pill">{{ house.team_count }} teams</span>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Live Scans list -->
+    <div class="glass-card p-3 mb-4">
+        <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-qr-code-scan me-2"></i>Latest Clue Scans</h6>
+        <div class="list-group list-group-flush border rounded-4 overflow-hidden small">
+            {% for scan in recent_scans %}
+                <div class="list-group-item py-2 px-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <strong>{{ scan.team.team_name }}</strong>
+                        <small class="text-muted"><span class="local-time-text">{{ scan.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</span></small>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-secondary">
+                            {% if scan.is_dummy %}
+                                <span class="text-warning">Scanned Dummy</span>
+                            {% elif scan.is_repeated %}
+                                <span class="text-info">Repeated Clue {{ scan.qr_code.clue_number }}</span>
+                            {% elif scan.is_correct %}
+                                <span class="text-success">Correct Clue {{ scan.qr_code.clue_number }}</span>
+                            {% else %}
+                                <span class="text-danger">Failed Scan (Invalid/Skip)</span>
+                            {% endif %}
+                        </small>
+                        <span class="badge bg-light text-dark border font-monospace small">House: {{ scan.team.house.name }}</span>
+                    </div>
+                </div>
+            {% endfor %}
+            {% if not recent_scans %}
+                <div class="list-group-item text-center text-secondary py-3">No scans recorded yet.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <!-- Left Column: System Accounts Directory -->
+    <div class="col-md-8">
+        <div class="glass-card p-3 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="fw-bold text-secondary mb-0"><i class="bi bi-key-fill text-warning me-1"></i>System Accounts Directory</h6>
+            </div>
+            
+            <!-- Real-time search bar -->
+            <div class="mb-2 position-relative">
+                <i class="bi bi-search position-absolute text-muted" style="left: 12px; top: 8px; font-size: 11px;"></i>
+                <input type="text" id="accountSearchInput" class="form-control form-control-sm rounded-pill ps-4 py-1.5" placeholder="Search team names, managers, roles, or passwords..." onkeyup="filterAccountsDirectory()" style="font-size: 11px;">
+            </div>
+            
+            <p class="text-muted small mb-2" style="font-size: 10px;">Active accounts registered in the database. (Plaintext passwords shown):</p>
+            <div class="list-group rounded-3 border-0" id="accountsListContainer" style="max-height: 180px; overflow-y: auto; font-size: 11px;">
+                {% for u in users %}
+                    <div class="account-directory-item list-group-item bg-transparent d-flex justify-content-between align-items-center py-2 border-bottom border-dashed border-light">
+                        <div>
+                            <span class="fw-bold text-dark">{{ u.username }}</span>
+                            {% if u.role == 'admin' %}
+                                <span class="badge bg-danger ms-1" style="font-size: 8px;">ADMIN</span>
+                            {% elif u.role == 'manager' %}
+                                <span class="badge bg-success ms-1" style="font-size: 8px;">{{ u.manager_profile.house.name|upper }} MANAGER</span>
+                            {% elif u.role == 'team_leader' %}
+                                <span class="badge bg-info text-dark ms-1" style="font-size: 8px;">{{ u.team_profile.house.name|upper }} TEAM</span>
+                            {% endif %}
+                        </div>
+                        <div class="d-flex align-items-center">
+                            {% if u.username == 'admin@nstl' %}
+                                <code class="text-primary bg-light px-2 py-0.5 rounded border border-light font-monospace">{{ u.plain_password or 'treasure@lrdc2026' }}</code>
+                            {% elif u.role == 'manager' %}
+                                <code class="text-primary bg-light px-2 py-0.5 rounded border border-light font-monospace">{{ u.plain_password or u.username }}</code>
+                                <button type="button" class="btn btn-link btn-sm text-warning p-0 ms-2" data-bs-toggle="modal" data-bs-target="#editManagerModal_{{ u.id }}" title="Edit Credentials">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                            {% elif u.role == 'team_leader' %}
+                                <code class="text-primary bg-light px-2 py-0.5 rounded border border-light font-monospace">{{ u.plain_password or '[None]' }}</code>
+                            {% else %}
+                                <span class="text-muted font-monospace" style="font-size: 10px;">[Encrypted Hash]</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if u.role == 'manager' %}
+                    <!-- Edit Manager Modal -->
+                    <div class="modal fade" id="editManagerModal_{{ u.id }}" tabindex="-1" aria-labelledby="editManagerModalLabel_{{ u.id }}" aria-hidden="true" style="font-size: 14px;">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content border-0 rounded-4 shadow-lg text-start">
+                                <div class="modal-header bg-dark text-white rounded-top-4 border-0 py-3">
+                                    <h6 class="modal-title fw-bold" id="editManagerModalLabel_{{ u.id }}">
+                                        <i class="bi bi-pencil-square text-warning me-2"></i>Edit {{ u.manager_profile.house.name }} House Manager
+                                    </h6>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <form method="POST" action="{{ url_for('admin.edit_manager', user_id=u.id) }}">
+                                    <div class="modal-body p-4">
+                                        <div class="mb-3">
+                                            <label for="username_{{ u.id }}" class="form-label fw-semibold text-secondary">Manager Name (Username)</label>
+                                            <input type="text" class="form-control rounded-3" id="username_{{ u.id }}" name="username" value="{{ u.username }}" required>
+                                            <small class="text-muted" style="font-size: 11px;">This is the name and login username of the House Manager.</small>
+                                        </div>
+                                        <div class="mb-2">
+                                            <label for="password_{{ u.id }}" class="form-label fw-semibold text-secondary">New Password (Optional)</label>
+                                            <input type="text" class="form-control rounded-3 font-monospace text-primary" id="password_{{ u.id }}" name="password" placeholder="Leave blank to keep current password">
+                                            <small class="text-muted" style="font-size: 11px;">Type a new plain password to reset the manager's access credentials.</small>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer border-0 p-3 bg-light rounded-bottom-4">
+                                        <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-warning rounded-pill px-4 fw-bold">Save Changes</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Global Administrative Actions -->
+    <div class="col-md-4">
+        <div class="glass-card p-3 h-100 d-flex flex-column justify-content-between">
+            <div>
+                <h6 class="fw-bold text-danger mb-2"><i class="bi bi-shield-exclamation me-1"></i>Emergency Controls</h6>
+                <p class="text-muted small" style="font-size: 11px; line-height: 1.4;">
+                    Reset all system progress to zero. This deletes all task completions, clue approvals, QR scan logs, and restarts the event for all teams.
+                </p>
+            </div>
+            
+            <form method="POST" action="{{ url_for('admin.reset_all_teams') }}" onsubmit="return confirm('WARNING: Are you sure you want to completely reset ALL teams, tasks, scans, and clue progression to zero? This action cannot be undone.');">
+                <button type="submit" class="btn btn-danger w-100 py-2.5 rounded-3 fw-bold">
+                    <i class="bi bi-trash3-fill me-2"></i>Reset All Teams to Zero
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function refreshDashboardData() {
+    setTimeout(() => window.location.reload(), 1000);
+}
+
+function filterAccountsDirectory() {
+    const input = document.getElementById('accountSearchInput');
+    const filter = input.value.toLowerCase();
+    const items = document.querySelectorAll('#accountsListContainer .account-directory-item');
+    
+    items.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        if (text.includes(filter)) {
+            item.classList.remove('d-none');
+        } else {
+            item.classList.add('d-none');
+        }
+    });
+}
+</script>
+
+<style>
+    .dark-mode-hidden { display: inline-block; }
+    .light-mode-hidden { display: none; }
+    .dark-mode .dark-mode-hidden { display: none; }
+    .dark-mode .light-mode-hidden { display: inline-block; }
+    
+    .text-red { color: var(--house-red); }
+    .text-green { color: var(--house-green); }
+    .text-blue { color: var(--house-blue); }
+    .text-yellow { color: var(--house-yellow); }
+    
+    .dark-mode .card.bg-light {
+        background-color: #334155 !important;
+        border-color: #475569 !important;
+    }
+</style>
+{% endblock %}

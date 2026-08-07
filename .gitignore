@@ -1,0 +1,16 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# Local database
+database.db
+instance/
+
+# Local user uploads and generated QRs
+uploads/
+generated_qr/
+
+# Environment configurations
+.env
+.venv/
+

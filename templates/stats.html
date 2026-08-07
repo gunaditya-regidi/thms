@@ -25,6 +25,81 @@
     </div>
 </div>
 
+<!-- Pre-game House Readiness Alert (shown only before Round 1 starts) -->
+<div id="preGameBanner" class="container-fluid py-3 px-4 {% if game_started %}d-none{% endif %}">
+    <div class="glass-card p-4 border border-warning border-opacity-25 bg-warning bg-opacity-5 rounded-4 shadow-sm">
+        <h5 class="fw-bold text-warning mb-3 d-flex align-items-center">
+            <i class="bi bi-shield-fill-exclamation me-2 fs-4 animate__animated animate__flash animate__infinite"></i>
+            House Log-in Status (Awaiting Game Start)
+        </h5>
+        
+        <!-- Global readiness bar -->
+        {% set all_ready = true %}
+        {% for h_name, h_info in house_status.items() %}
+            {% if not h_info.logged_in %}
+                {% set all_ready = false %}
+            {% endif %}
+        {% endfor %}
+        
+        <div id="readinessAlert" class="alert {% if all_ready %}alert-success{% else %}alert-warning{% endif %} border-0 rounded-4 p-3 mb-3 d-flex align-items-center">
+            {% if all_ready %}
+                <i class="bi bi-check-circle-fill text-success fs-4 me-3"></i>
+                <div>
+                    <h6 class="fw-bold mb-1 text-success">All Houses Ready!</h6>
+                    <p class="mb-0 text-dark small">Teams from all four houses are successfully logged in. Ready for Admin to launch the game! 🚀</p>
+                </div>
+            {% else %}
+                <i class="bi bi-hourglass-split text-warning fs-4 me-3"></i>
+                <div>
+                    <h6 class="fw-bold mb-1 text-warning">Awaiting House Logins</h6>
+                    <p class="mb-0 text-dark small">Please wait for teams from all four houses to log in before the Administrator starts the round. ⏳</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="row g-3" id="houseStatusCards">
+            {% for h_name, h_info in house_status.items() %}
+                {% set h_lower = h_name.lower() %}
+                {% set badge_color = 'danger' %}
+                {% set text_color = 'danger' %}
+                {% if h_info.logged_in %}
+                    {% set badge_color = 'success' %}
+                    {% set text_color = 'success' %}
+                {% endif %}
+                <div class="col-md-3">
+                    <div class="card h-100 border border-{{ badge_color }} border-opacity-20 bg-{{ badge_color }} bg-opacity-5 rounded-4 p-3 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <span class="fw-bold text-dark fs-6">
+                                    <i class="bi bi-flag-fill text-{{ h_lower }} me-2"></i>{{ h_name }} House
+                                </span>
+                                {% if h_info.logged_in %}
+                                    <span class="badge bg-success rounded-pill small"><i class="bi bi-check-circle me-1"></i>Logged In</span>
+                                {% else %}
+                                    <span class="badge bg-danger rounded-pill small"><i class="bi bi-x-circle me-1"></i>No Log-in</span>
+                                {% endif %}
+                            </div>
+                            
+                            {% if h_info.logged_in %}
+                                <div class="mt-2">
+                                    <span class="text-secondary small d-block mb-1">Teams:</span>
+                                    <div class="d-flex flex-wrap gap-1">
+                                        {% for t_name in h_info.teams %}
+                                            <span class="badge bg-light text-dark border font-monospace small px-2 py-1">{{ t_name }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% else %}
+                                <p class="text-muted small mb-0 mt-2 italic">Waiting for a team from {{ h_name }} House to log in...</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
 <!-- Split Container -->
 <div class="stats-split-container {% if split_enabled %}split{% endif %}" id="statsContainer">
     
@@ -261,6 +336,89 @@ function fetchStatsData() {
 }
 
 function updateStatsView(data) {
+    // 0. Update Pre-game House Readiness Banner
+    const preGameBanner = document.getElementById('preGameBanner');
+    if (preGameBanner) {
+        if (data.game_started) {
+            preGameBanner.classList.add('d-none');
+        } else {
+            preGameBanner.classList.remove('d-none');
+            
+            // Re-render the readiness alert and cards
+            let allReady = true;
+            let cardsHtml = '';
+            
+            Object.entries(data.house_status).forEach(([hName, hInfo]) => {
+                if (!hInfo.logged_in) {
+                    allReady = false;
+                }
+                
+                const hLower = hName.toLowerCase();
+                const badgeColor = hInfo.logged_in ? 'success' : 'danger';
+                
+                let teamsHtml = '';
+                if (hInfo.logged_in) {
+                    teamsHtml = `
+                        <div class="mt-2">
+                            <span class="text-secondary small d-block mb-1">Teams:</span>
+                            <div class="d-flex flex-wrap gap-1">
+                                ${hInfo.teams.map(tName => `<span class="badge bg-light text-dark border font-monospace small px-2 py-1">${tName}</span>`).join('')}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    teamsHtml = `<p class="text-muted small mb-0 mt-2 italic">Waiting for a team from ${hName} House to log in...</p>`;
+                }
+                
+                cardsHtml += `
+                    <div class="col-md-3">
+                        <div class="card h-100 border border-${badgeColor} border-opacity-20 bg-${badgeColor} bg-opacity-5 rounded-4 p-3 d-flex flex-column justify-content-between">
+                            <div>
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="fw-bold text-dark fs-6">
+                                        <i class="bi bi-flag-fill text-${hLower} me-2"></i>${hName} House
+                                    </span>
+                                    <span class="badge bg-${badgeColor} rounded-pill small">
+                                        <i class="bi bi-${hInfo.logged_in ? 'check-circle' : 'x-circle'} me-1"></i>${hInfo.logged_in ? 'Logged In' : 'No Log-in'}
+                                    </span>
+                                </div>
+                                ${teamsHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            const readinessAlert = document.getElementById('readinessAlert');
+            if (readinessAlert) {
+                if (allReady) {
+                    readinessAlert.className = 'alert alert-success border-0 rounded-4 p-3 mb-3 d-flex align-items-center';
+                    readinessAlert.innerHTML = `
+                        <i class="bi bi-check-circle-fill text-success fs-4 me-3"></i>
+                        <div>
+                            <h6 class="fw-bold mb-1 text-success">All Houses Ready!</h6>
+                            <p class="mb-0 text-dark small">Teams from all four houses are successfully logged in. Ready for Admin to launch the game! 🚀</p>
+                        </div>
+                    `;
+                } else {
+                    readinessAlert.className = 'alert alert-warning border-0 rounded-4 p-3 mb-3 d-flex align-items-center';
+                    readinessAlert.innerHTML = `
+                        <i class="bi bi-hourglass-split text-warning fs-4 me-3"></i>
+                        <div>
+                            <h6 class="fw-bold mb-1 text-warning">Awaiting House Logins</h6>
+                            <p class="mb-0 text-dark small">Please wait for teams from all four houses to log in before the Administrator starts the round. ⏳</p>
+                        </div>
+                    `;
+                }
+            }
+            
+            const houseStatusCards = document.getElementById('houseStatusCards');
+            if (houseStatusCards) {
+                houseStatusCards.innerHTML = cardsHtml;
+            }
+        }
+    }
+
     // 1. Check if we need to enable Split-Screen Layout
     const r2_completed_or_started = (data.round_stats['R1 Verified'] > 0 || 
                                      data.round_stats['R1 Pending'] > 0 ||

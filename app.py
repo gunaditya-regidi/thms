@@ -216,7 +216,21 @@ def create_app(config_override=None):
                 'last_active': last_act
             })
             
+        # Check if any team has started Round 1 yet
+        game_started = Team.query.filter(Team.round1_status != 'pending_start').count() > 0
+        
+        # House status list
+        house_status = {}
+        for h in houses:
+            house_teams = [t.team_name for t in all_teams if t.house_id == h.id]
+            house_status[h.name] = {
+                'logged_in': len(house_teams) > 0,
+                'teams': house_teams
+            }
+            
         return jsonify({
+            'game_started': game_started,
+            'house_status': house_status,
             'house_dist': house_dist,
             'round_stats': {
                 'R1 Active': r1_active,
@@ -247,7 +261,24 @@ def create_app(config_override=None):
         # Load all teams for Left side table
         teams = Team.query.all()
         
-        return render_template('stats.html', teams=teams, split_enabled=split_enabled)
+        # Check if any team has started Round 1 yet
+        game_started = Team.query.filter(Team.round1_status != 'pending_start').count() > 0
+        
+        # House status list
+        houses = House.query.all()
+        house_status = {}
+        for h in houses:
+            house_teams = [t.team_name for t in teams if t.house_id == h.id]
+            house_status[h.name] = {
+                'logged_in': len(house_teams) > 0,
+                'teams': house_teams
+            }
+        
+        return render_template('stats.html', 
+                               teams=teams, 
+                               split_enabled=split_enabled,
+                               game_started=game_started,
+                               house_status=house_status)
 
     return app
 

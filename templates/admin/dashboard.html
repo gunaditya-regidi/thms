@@ -55,6 +55,29 @@
         </div>
     </div>
 
+    <!-- Universal Start Approval Card -->
+    <div class="glass-card p-4 mb-4 border border-warning border-opacity-25 bg-warning bg-opacity-5">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <div>
+                <h5 class="fw-bold mb-1 text-warning"><i class="bi bi-play-circle-fill me-2 animate__animated animate__pulse animate__infinite"></i>Universal Start Control</h5>
+                <p class="text-secondary small mb-0" style="font-size: 11px;">Approve and launch all registered teams simultaneously once they have logged in.</p>
+            </div>
+            <span class="badge bg-warning text-dark fs-6 rounded-pill px-3 py-1.5 fw-bold">{{ r1_pending_start }} Pending</span>
+        </div>
+        
+        {% if r1_pending_start > 0 %}
+            <form method="POST" action="{{ url_for('admin.approve_start_all') }}" onsubmit="return confirm('Are you sure you want to approve all {{ r1_pending_start }} teams and start their stopwatches simultaneously? This action cannot be undone.');">
+                <button type="submit" class="btn btn-warning w-100 py-3 rounded-4 fw-bold text-dark d-flex align-items-center justify-content-center pulse shadow-sm">
+                    <i class="bi bi-play-fill fs-4 me-2"></i>Approve & Start All Teams
+                </button>
+            </form>
+        {% else %}
+            <button type="button" class="btn btn-secondary w-100 py-3 rounded-4 fw-bold opacity-75 cursor-not-allowed d-flex align-items-center justify-content-center" disabled>
+                <i class="bi bi-check2-all fs-4 me-2"></i>All Teams Already Started
+            </button>
+        {% endif %}
+    </div>
+
     <!-- Admin Main Navigation Grid -->
     <div class="glass-card p-3 mb-4">
         <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-grid-fill me-2"></i>Quick Navigation</h6>

@@ -65,6 +65,7 @@ def dashboard():
     houses = House.query.all()
     
     # Round progress counts
+    r1_pending_start = Team.query.filter_by(round1_status='pending_start').count()
     r1_active = Team.query.filter_by(current_round=1, round1_status='active').count()
     r1_pending_approval = Team.query.filter_by(round1_status='requested').count()
     r1_verified = Team.query.filter_by(round1_status='verified').count()
@@ -82,6 +83,7 @@ def dashboard():
                            total_tasks=total_tasks,
                            total_qrs=total_qrs,
                            houses=houses,
+                           r1_pending_start=r1_pending_start,
                            r1_active=r1_active,
                            r1_pending_approval=r1_pending_approval,
                            r1_verified=r1_verified,
@@ -189,6 +191,52 @@ def approve_start(team_id):
         flash("An error occurred. Please try again.", "danger")
 
     return redirect(url_for('admin.teams_list'))
+
+@admin_bp.route('/admin/approve-start-all', methods=['POST'])
+@check_admin_role
+def approve_start_all():
+    pending_teams = Team.query.filter_by(round1_status='pending_start').all()
+    if not pending_teams:
+        flash("No teams are currently pending approval to start.", "warning")
+        return redirect(url_for('admin.dashboard'))
+
+    try:
+        from datetime import datetime
+        now = datetime.utcnow()
+        socketio = current_app.extensions.get('socketio')
+        
+        count = 0
+        for team in pending_teams:
+            team.round1_status = 'active'
+            team.created_at = now
+            
+            log = SystemLog(
+                action='r1_started',
+                details=f"Admin '{current_user.username}' approved Team '{team.team_name}' to start Round 1 via universal start.",
+                user_id=current_user.id,
+                team_id=team.id,
+                ip_address=request.remote_addr,
+                browser=request.user_agent.string
+            )
+            db.session.add(log)
+            count += 1
+            
+            if socketio:
+                socketio.emit('team_started', {
+                    'team_id': team.id,
+                    'team_name': team.team_name,
+                    'house': team.house.name,
+                    'timestamp': now.strftime('%Y-%m-%d %H:%M:%S')
+                })
+
+        db.session.commit()
+        flash(f"Successfully approved and started {count} teams simultaneously!", "success")
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error in starting all teams: {str(e)}")
+        flash("An error occurred while starting all teams.", "danger")
+
+    return redirect(url_for('admin.dashboard'))
 
 @admin_bp.route('/admin/promote-r2/<int:team_id>', methods=['POST'])
 @check_admin_role

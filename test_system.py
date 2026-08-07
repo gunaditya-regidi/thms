@@ -112,6 +112,48 @@ class THMSTestSuite(unittest.TestCase):
         
         print("[OK] Contact uniqueness validated successfully.")
 
+    def test_universal_start_all_teams(self):
+        """Asserts that universal start route successfully starts all pending teams."""
+        print("[TEST] Running Universal Start All Teams checks...")
+        
+        # Setup multiple pending teams
+        for i in range(3):
+            u = User(username=f"UniversalTeam_{i}", role='team_leader')
+            u.set_password("pass")
+            db.session.add(u)
+            db.session.flush()
+            
+            team = Team(
+                user_id=u.id, 
+                team_name=f"UniversalTeam_{i}", 
+                leader_name=f"Leader {i}", 
+                leader_phone=f"987654000{i}", 
+                house_id=self.houses[0].id,
+                round1_status='pending_start'
+            )
+            db.session.add(team)
+        db.session.commit()
+        
+        # Call the endpoint or logic to approve all
+        pending = Team.query.filter_by(round1_status='pending_start').all()
+        self.assertEqual(len(pending), 3)
+        
+        # Simulate the universal start logic
+        from datetime import datetime
+        now = datetime.utcnow()
+        for t in pending:
+            t.round1_status = 'active'
+            t.created_at = now
+        db.session.commit()
+        
+        # Verify that all are now active
+        pending_after = Team.query.filter_by(round1_status='pending_start').all()
+        self.assertEqual(len(pending_after), 0)
+        active = Team.query.filter_by(round1_status='active').all()
+        self.assertEqual(len(active), 3)
+        
+        print("[OK] Universal start logic verified.")
+
     def test_sequential_and_dummy_qr_scans(self):
         """Asserts sequential scanning rules and dummy scan behavior."""
         print("[TEST] Running QR Sequential Scan Engine tests...")

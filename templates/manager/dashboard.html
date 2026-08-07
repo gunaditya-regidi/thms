@@ -314,9 +314,15 @@ function refreshDashboardData() {
     setTimeout(() => window.location.reload(), 1000);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function initManagerPage() {
     startAllStopwatches();
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initManagerPage);
+} else {
+    initManagerPage();
+}
 
 function startAllStopwatches() {
     setInterval(() => {

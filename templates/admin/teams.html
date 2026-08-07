@@ -183,9 +183,15 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
+function initTeamsPage() {
     startAllStopwatches();
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initTeamsPage);
+} else {
+    initTeamsPage();
+}
 
 function startAllStopwatches() {
     setInterval(() => {

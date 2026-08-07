@@ -48,7 +48,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     
     <!-- Socket.io Client JS -->
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
     
     <!-- Theme Switcher and SocketIO Listeners -->
     <script>
@@ -161,137 +161,141 @@
                 el.innerText = convertUTCToLocalText(el.innerText);
             });
 
-            window.socket = io();
-            const socket = window.socket;
-            
-            function showLiveToast(title, body, iconClass = 'bi-bell-fill') {
-                const toastEl = document.getElementById('liveToast');
-                const clone = toastEl.cloneNode(true);
-                clone.id = 'toast_' + Date.now();
+            if (typeof io !== 'undefined') {
+                window.socket = io();
+                const socket = window.socket;
                 
-                // Update elements
-                clone.querySelector('#toastTitle').innerText = title;
-                clone.querySelector('#toastBody').innerText = body;
-                clone.querySelector('i').className = `bi ${iconClass} me-2`;
-                
-                // Add to container
-                document.querySelector('.toast-container').appendChild(clone);
-                
-                const bsToast = new bootstrap.Toast(clone);
-                bsToast.show();
-                
-                // Remove from DOM on hidden
-                clone.addEventListener('hidden.bs.toast', () => {
-                    clone.remove();
-                });
-            }
-
-            // Bind Socket Events
-            socket.on('connect', () => {
-                console.log('Connected to THMS Real-Time Socket Gateway.');
-            });
-
-            socket.on('global_reset', () => {
-                window.location.reload();
-            });
-
-            socket.on('register_team', (data) => {
-                showLiveToast(
-                    'New Team Registered!',
-                    `Team "${data.team_name}" has joined the hunt! Assigned to ${data.house} House.`,
-                    'bi-person-plus-fill'
-                );
-                // Trigger page elements refresh if dynamic functions exist
-                if (typeof refreshDashboardData === 'function') refreshDashboardData();
-            });
-
-            socket.on('task_completed', (data) => {
-                showLiveToast(
-                    'Task Completed!',
-                    `Team "${data.team_name}" (${data.house} House) completed a Round 1 task. Progress: ${data.completed_count}/10.`,
-                    'bi-check-circle-fill'
-                );
-                if (typeof refreshDashboardData === 'function') refreshDashboardData();
-            });
-
-            socket.on('r1_requested', (data) => {
-                showLiveToast(
-                    'Round 1 Verification Requested',
-                    `Team "${data.team_name}" (${data.house} House) has finished all tasks and requested verification.`,
-                    'bi-exclamation-triangle-fill'
-                );
-                if (typeof refreshDashboardData === 'function') refreshDashboardData();
-            });
-
-            socket.on('r1_verified', (data) => {
-                showLiveToast(
-                    'Round 1 Verified',
-                    `Team "${data.team_name}" (${data.house} House) has been physically verified by their Manager.`,
-                    'bi-shield-check'
-                );
-                if (typeof refreshDashboardData === 'function') refreshDashboardData();
-            });
-
-            socket.on('r1_approved', (data) => {
-                showLiveToast(
-                    'Round 1 Approved!',
-                    `Team "${data.team_name}" (${data.house} House) has been approved by Admin! Round 2 (QR Hunt) is unlocked.`,
-                    'bi-unlock-fill'
-                );
-                if (typeof refreshDashboardData === 'function') refreshDashboardData();
-            });
-
-            socket.on('qr_scanned', (data) => {
-                let title = 'QR Code Scanned';
-                let icon = 'bi-qr-code';
-                let desc = `Team "${data.team_name}" (${data.house} House) scanned a QR code.`;
-                
-                if (data.type === 'correct') {
-                    title = 'Correct Clue Solved!';
-                    icon = 'bi-check-circle';
-                    desc = `Team "${data.team_name}" solved Clue #${data.clue_number}!`;
-                } else if (data.type === 'dummy') {
-                    title = 'Dummy Clue Triggered';
-                    icon = 'bi-x-circle';
-                    desc = `Team "${data.team_name}" scanned a dummy coordinate.`;
-                } else if (data.type === 'repeated') {
-                    title = 'Repeated Clue Scan';
-                    desc = `Team "${data.team_name}" scanned clue #${data.clue_number} again.`;
-                } else if (data.type === 'out_of_order') {
-                    title = 'Incorrect Sequence Scan';
-                    icon = 'bi-exclamation-octagon';
-                    desc = `Team "${data.team_name}" scanned a clue out of order.`;
+                function showLiveToast(title, body, iconClass = 'bi-bell-fill') {
+                    const toastEl = document.getElementById('liveToast');
+                    const clone = toastEl.cloneNode(true);
+                    clone.id = 'toast_' + Date.now();
+                    
+                    // Update elements
+                    clone.querySelector('#toastTitle').innerText = title;
+                    clone.querySelector('#toastBody').innerText = body;
+                    clone.querySelector('i').className = `bi ${iconClass} me-2`;
+                    
+                    // Add to container
+                    document.querySelector('.toast-container').appendChild(clone);
+                    
+                    const bsToast = new bootstrap.Toast(clone);
+                    bsToast.show();
+                    
+                    // Remove from DOM on hidden
+                    clone.addEventListener('hidden.bs.toast', () => {
+                        clone.remove();
+                    });
                 }
-                
-                showLiveToast(title, desc, icon);
-                if (typeof refreshDashboardData === 'function') refreshDashboardData();
-            });
 
-            socket.on('team_finished', (data) => {
-                showLiveToast(
-                    'HUNT COMPLETED!',
-                    `CONGRATULATIONS: Team "${data.team_name}" (${data.house} House) has completed all 6 levels and finished the Hunt!`,
-                    'bi-trophy-fill'
-                );
-                if (typeof refreshDashboardData === 'function') refreshDashboardData();
-            });
-            
-            socket.on('team_started', (data) => {
-                showLiveToast(
-                    'TEAM STARTED!',
-                    `Team "${data.team_name}" (${data.house} House) has been approved to start Round 1!`,
-                    'bi-play-circle-fill'
-                );
-                if (typeof refreshDashboardData === 'function') refreshDashboardData();
-            });
-            
-            socket.on('team_reset', (data) => {
-                if (typeof refreshDashboardData === 'function') refreshDashboardData();
-            });
-            
-            socket.on('team_qr_reset', (data) => {
-                if (typeof refreshDashboardData === 'function') refreshDashboardData();
-            });
+                // Bind Socket Events
+                socket.on('connect', () => {
+                    console.log('Connected to THMS Real-Time Socket Gateway.');
+                });
+
+                socket.on('global_reset', () => {
+                    window.location.reload();
+                });
+
+                socket.on('register_team', (data) => {
+                    showLiveToast(
+                        'New Team Registered!',
+                        `Team "${data.team_name}" has joined the hunt! Assigned to ${data.house} House.`,
+                        'bi-person-plus-fill'
+                    );
+                    // Trigger page elements refresh if dynamic functions exist
+                    if (typeof refreshDashboardData === 'function') refreshDashboardData();
+                });
+
+                socket.on('task_completed', (data) => {
+                    showLiveToast(
+                        'Task Completed!',
+                        `Team "${data.team_name}" (${data.house} House) completed a Round 1 task. Progress: ${data.completed_count}/10.`,
+                        'bi-check-circle-fill'
+                    );
+                    if (typeof refreshDashboardData === 'function') refreshDashboardData();
+                });
+
+                socket.on('r1_requested', (data) => {
+                    showLiveToast(
+                        'Round 1 Verification Requested',
+                        `Team "${data.team_name}" (${data.house} House) has finished all tasks and requested verification.`,
+                        'bi-exclamation-triangle-fill'
+                    );
+                    if (typeof refreshDashboardData === 'function') refreshDashboardData();
+                });
+
+                socket.on('r1_verified', (data) => {
+                    showLiveToast(
+                        'Round 1 Verified',
+                        `Team "${data.team_name}" (${data.house} House) has been physically verified by their Manager.`,
+                        'bi-shield-check'
+                    );
+                    if (typeof refreshDashboardData === 'function') refreshDashboardData();
+                });
+
+                socket.on('r1_approved', (data) => {
+                    showLiveToast(
+                        'Round 1 Approved!',
+                        `Team "${data.team_name}" (${data.house} House) has been approved by Admin! Round 2 (QR Hunt) is unlocked.`,
+                        'bi-unlock-fill'
+                    );
+                    if (typeof refreshDashboardData === 'function') refreshDashboardData();
+                });
+
+                socket.on('qr_scanned', (data) => {
+                    let title = 'QR Code Scanned';
+                    let icon = 'bi-qr-code';
+                    let desc = `Team "${data.team_name}" (${data.house} House) scanned a QR code.`;
+                    
+                    if (data.type === 'correct') {
+                        title = 'Correct Clue Solved!';
+                        icon = 'bi-check-circle';
+                        desc = `Team "${data.team_name}" solved Clue #${data.clue_number}!`;
+                    } else if (data.type === 'dummy') {
+                        title = 'Dummy Clue Triggered';
+                        icon = 'bi-x-circle';
+                        desc = `Team "${data.team_name}" scanned a dummy coordinate.`;
+                    } else if (data.type === 'repeated') {
+                        title = 'Repeated Clue Scan';
+                        desc = `Team "${data.team_name}" scanned clue #${data.clue_number} again.`;
+                    } else if (data.type === 'out_of_order') {
+                        title = 'Incorrect Sequence Scan';
+                        icon = 'bi-exclamation-octagon';
+                        desc = `Team "${data.team_name}" scanned a clue out of order.`;
+                    }
+                    
+                    showLiveToast(title, desc, icon);
+                    if (typeof refreshDashboardData === 'function') refreshDashboardData();
+                });
+
+                socket.on('team_finished', (data) => {
+                    showLiveToast(
+                        'HUNT COMPLETED!',
+                        `CONGRATULATIONS: Team "${data.team_name}" (${data.house} House) has completed all 6 levels and finished the Hunt!`,
+                        'bi-trophy-fill'
+                    );
+                    if (typeof refreshDashboardData === 'function') refreshDashboardData();
+                });
+                
+                socket.on('team_started', (data) => {
+                    showLiveToast(
+                        'TEAM STARTED!',
+                        `Team "${data.team_name}" (${data.house} House) has been approved to start Round 1!`,
+                        'bi-play-circle-fill'
+                    );
+                    if (typeof refreshDashboardData === 'function') refreshDashboardData();
+                });
+                
+                socket.on('team_reset', (data) => {
+                    if (typeof refreshDashboardData === 'function') refreshDashboardData();
+                });
+                
+                socket.on('team_qr_reset', (data) => {
+                    if (typeof refreshDashboardData === 'function') refreshDashboardData();
+                });
+            } else {
+                console.warn("Socket.io library not loaded. Real-time updates disabled.");
+            }
         });
     </script>
     

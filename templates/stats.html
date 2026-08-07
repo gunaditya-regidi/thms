@@ -532,10 +532,16 @@ function runStatsStopwatches() {
 }
 
 // Initial stats fetch & clock start
-document.addEventListener('DOMContentLoaded', () => {
+function initStatsPage() {
     fetchStatsData();
     startLocalClock();
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initStatsPage);
+} else {
+    initStatsPage();
+}
 
 // Running local time ticking logic
 function startLocalClock() {

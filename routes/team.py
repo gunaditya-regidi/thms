@@ -72,6 +72,7 @@ def dashboard():
     approved_iso = r1_app.approved_at.isoformat() + "Z" if (r1_app and r1_app.approved_at) else ""
     created_iso = team.created_at.isoformat() + "Z" if team.created_at else ""
     finished_iso = team.round2_completion_time.isoformat() + "Z" if team.round2_completion_time else ""
+    server_now_iso = datetime.datetime.utcnow().isoformat() + "Z"
 
     return render_template('team/dashboard.html', 
                            team=team, 
@@ -86,6 +87,7 @@ def dashboard():
                            created_iso=created_iso,
                            approved_iso=approved_iso,
                            finished_iso=finished_iso,
+                           server_now_iso=server_now_iso,
                            progress_map=progress_map,
                            preloaded_scan_result=preloaded_scan_result)
 
@@ -668,3 +670,16 @@ def serve_dummy_image():
     from flask import send_from_directory
     clues_dir = r'C:\Users\ASUS\Downloads\clues'
     return send_from_directory(clues_dir, 'DUMMY.jpg')
+
+@team_bp.route('/api/status')
+@login_required
+def team_api_status():
+    from models import Team
+    team = Team.query.get(current_user.id)
+    if not team:
+        return jsonify({'error': 'Team not found'}), 404
+    return jsonify({
+        'round1_status': team.round1_status,
+        'current_round': team.current_round,
+        'round2_completed': team.round2_completed
+    })

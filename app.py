@@ -199,9 +199,9 @@ def create_app(config_override=None):
             if last_task: times.append(last_task.completed_at)
             
             if times:
-                last_act = max(times).strftime('%I:%M:%S %p')
+                last_act = max(times).strftime('%Y-%m-%d %H:%M:%S')
             else:
-                last_act = t.created_at.strftime('%I:%M:%S %p')
+                last_act = t.created_at.strftime('%Y-%m-%d %H:%M:%S')
                 
             teams_list_data.append({
                 'id': t.id,

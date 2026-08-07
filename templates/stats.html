@@ -522,7 +522,7 @@ function updateStatsView(data) {
                 </div>
             </td>
             <td class="text-muted text-end small">
-                <i class="bi bi-clock-history me-1"></i>${lastActive}
+                <i class="bi bi-clock-history me-1"></i>${convertUTCToLocalText(lastActive)}
             </td>
         `;
         tableBody.appendChild(tr);
@@ -541,7 +541,7 @@ function updateStatsView(data) {
             <td><span class="badge bg-light text-dark border font-monospace">${row[2]}</span></td>
             <td>${row[3]}</td>
             <td><span class="badge bg-primary">${row[5]}</span></td>
-            <td class="text-muted font-monospace small">${row[4]}</td>
+            <td class="text-muted font-monospace small">${convertUTCToLocalText(row[4])}</td>
         `;
         leaderboardBody.appendChild(tr);
     });

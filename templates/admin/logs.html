@@ -49,7 +49,7 @@
         <div class="glass-card mb-3 p-3">
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <span class="badge bg-secondary font-monospace">{{ log.action.upper() }}</span>
-                <small class="text-muted">{{ log.timestamp.strftime('%Y-%m-%d %I:%M:%S %p') }}</small>
+                <small class="text-muted"><span class="local-time-text">{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</span></small>
             </div>
             <p class="mb-2 text-dark small">{{ log.details }}</p>
             <div class="d-flex justify-content-between border-top pt-2 mt-2" style="font-size: 11px;">

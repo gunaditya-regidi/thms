@@ -622,10 +622,39 @@ function closeResultCard() {
 // Stopwatch ticking logic
 document.addEventListener('DOMContentLoaded', () => {
     startTeamStopwatch();
+    setupDashboardSocketListeners();
     {% if preloaded_scan_result %}
     displayScanResults({{ preloaded_scan_result|tojson }});
     {% endif %}
 });
+
+// Setup socket listeners for player page auto-reload on start/approvals
+function setupDashboardSocketListeners() {
+    if (window.socket) {
+        window.socket.on('team_started', (data) => {
+            if (data && data.team_id == {{ team.id }}) {
+                window.location.reload();
+            }
+        });
+        window.socket.on('r1_approved', (data) => {
+            if (data && data.team_id == {{ team.id }}) {
+                window.location.reload();
+            }
+        });
+        window.socket.on('team_reset', (data) => {
+            if (data && data.team_id == {{ team.id }}) {
+                window.location.reload();
+            }
+        });
+        window.socket.on('team_qr_reset', (data) => {
+            if (data && data.team_id == {{ team.id }}) {
+                window.location.reload();
+            }
+        });
+    } else {
+        setTimeout(setupDashboardSocketListeners, 100);
+    }
+}
 
 function startTeamStopwatch() {
     const stopwatchEl = document.getElementById('teamStopwatch');

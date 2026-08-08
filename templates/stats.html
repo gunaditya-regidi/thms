@@ -708,13 +708,25 @@ function updateStatsView(data) {
             itemEl.style.opacity = '1';
             itemEl.style.transform = 'scale(1)';
             
+            // Determine house badge class
+            let houseBadgeClass = 'bg-secondary text-white';
+            if (houseName.toLowerCase() === 'red') {
+                houseBadgeClass = 'bg-danger text-white';
+            } else if (houseName.toLowerCase() === 'green') {
+                houseBadgeClass = 'bg-success text-white';
+            } else if (houseName.toLowerCase() === 'blue') {
+                houseBadgeClass = 'bg-primary text-white';
+            } else if (houseName.toLowerCase() === 'yellow') {
+                houseBadgeClass = 'bg-warning text-dark';
+            }
+
             // Build content
             itemEl.innerHTML = `
                 <div class="d-flex align-items-center gap-2">
                     <span class="badge bg-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 26px; height: 26px; font-size: 10px;">#${rank}</span>
                     <div>
                         <span class="fw-bold text-dark" style="font-size: 12.5px;">${teamName}</span>
-                        <span class="badge bg-light text-dark border font-monospace" style="font-size: 8.5px; padding: 2px 4px;">${houseName}</span>
+                        <span class="badge ${houseBadgeClass} font-monospace" style="font-size: 8.5px; padding: 2px 4px;">${houseName}</span>
                     </div>
                 </div>
                 <div class="d-flex align-items-center gap-3">

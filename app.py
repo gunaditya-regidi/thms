@@ -90,6 +90,10 @@ def create_app(config_override=None):
             db_token = current_user.current_login_token
             
             if sess_token != db_token:
+                app.logger.warning(
+                    f"Single-device login violation for user '{current_user.username}': "
+                    f"session_token={sess_token}, db_token={db_token}. Forcing logout."
+                )
                 from flask_login import logout_user
                 logout_user()
                 session.clear()

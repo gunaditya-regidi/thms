@@ -205,15 +205,27 @@
             <p class="text-muted small mb-2" style="font-size: 10px;">Active accounts registered in the database. (Plaintext passwords shown):</p>
             <div class="list-group rounded-3 border-0" id="accountsListContainer" style="max-height: 180px; overflow-y: auto; font-size: 11px;">
                 {% for u in users %}
-                    <div class="account-directory-item list-group-item bg-transparent d-flex justify-content-between align-items-center py-2 border-bottom border-dashed border-light">
+                    {% set house_name = '' %}
+                    {% set house_color_class = 'secondary' %}
+                    {% if u.role == 'manager' %}
+                        {% set house_name = u.manager_profile.house.name %}
+                        {% set house_color_class = house_name.lower() %}
+                    {% elif u.role == 'team_leader' %}
+                        {% set house_name = u.team_profile.house.name %}
+                        {% set house_color_class = house_name.lower() %}
+                    {% endif %}
+                    
+                    <div class="account-directory-item list-group-item bg-transparent d-flex justify-content-between align-items-center py-2 border-bottom border-dashed border-light" style="border-left: 4px solid {% if u.role == 'admin' %}#6f42c1{% else %}var(--house-{{ house_color_class }}){% endif %} !important; padding-left: 10px !important; margin-bottom: 2px;">
                         <div>
-                            <span class="fw-bold text-dark">{{ u.username }}</span>
                             {% if u.role == 'admin' %}
-                                <span class="badge bg-danger ms-1" style="font-size: 8px;">ADMIN</span>
+                                <span class="fw-bold text-dark fs-6" style="color: #6f42c1 !important;"><i class="bi bi-star-fill text-warning me-1"></i>{{ u.username }}</span>
+                                <span class="badge bg-dark text-warning border border-warning border-opacity-50 ms-1" style="font-size: 8px;"><i class="bi bi-shield-fill me-1"></i>ADMIN</span>
                             {% elif u.role == 'manager' %}
-                                <span class="badge bg-success ms-1" style="font-size: 8px;">{{ u.manager_profile.house.name|upper }} MANAGER</span>
+                                <span class="fw-bold fs-6 text-{{ house_color_class }}" style="{% if house_color_class == 'yellow' %}color: #d89e00 !important;{% elif house_color_class == 'red' %}color: var(--house-red) !important;{% elif house_color_class == 'blue' %}color: var(--house-blue) !important;{% elif house_color_class == 'green' %}color: var(--house-green) !important;{% endif %}"><i class="bi bi-person-fill-gear me-1"></i>{{ u.username }}</span>
+                                <span class="badge bg-house-{{ house_color_class }} ms-1" style="font-size: 8px;"><i class="bi bi-flag-fill me-1"></i>{{ house_name|upper }} MANAGER</span>
                             {% elif u.role == 'team_leader' %}
-                                <span class="badge bg-info text-dark ms-1" style="font-size: 8px;">{{ u.team_profile.house.name|upper }} TEAM</span>
+                                <span class="fw-bold text-dark"><i class="bi bi-people-fill text-secondary me-1"></i>{{ u.username }}</span>
+                                <span class="badge bg-house-{{ house_color_class }}-light ms-1" style="font-size: 8px;"><i class="bi bi-flag-fill me-1"></i>{{ house_name|upper }} TEAM</span>
                             {% endif %}
                         </div>
                         <div class="d-flex align-items-center">
@@ -311,19 +323,19 @@ function filterAccountsDirectory() {
 </script>
 
 <style>
-    .dark-mode-hidden { display: inline-block; }
-    .light-mode-hidden { display: none; }
-    .dark-mode .dark-mode-hidden { display: none; }
-    .dark-mode .light-mode-hidden { display: inline-block; }
-    
     .text-red { color: var(--house-red); }
     .text-green { color: var(--house-green); }
     .text-blue { color: var(--house-blue); }
     .text-yellow { color: var(--house-yellow); }
     
-    .dark-mode .card.bg-light {
-        background-color: #334155 !important;
-        border-color: #475569 !important;
-    }
+    .bg-house-red { background-color: var(--house-red) !important; color: white !important; }
+    .bg-house-blue { background-color: var(--house-blue) !important; color: white !important; }
+    .bg-house-green { background-color: var(--house-green) !important; color: white !important; }
+    .bg-house-yellow { background-color: var(--house-yellow) !important; color: black !important; }
+
+    .bg-house-red-light { background-color: var(--house-red-bg) !important; color: var(--house-red) !important; border: 1px solid rgba(220, 53, 69, 0.25) !important; }
+    .bg-house-blue-light { background-color: var(--house-blue-bg) !important; color: var(--house-blue) !important; border: 1px solid rgba(13, 110, 253, 0.25) !important; }
+    .bg-house-green-light { background-color: var(--house-green-bg) !important; color: var(--house-green) !important; border: 1px solid rgba(25, 135, 84, 0.25) !important; }
+    .bg-house-yellow-light { background-color: var(--house-yellow-bg) !important; color: var(--house-yellow) !important; border: 1px solid rgba(234, 179, 8, 0.25) !important; }
 </style>
 {% endblock %}

@@ -323,10 +323,25 @@ def create_app(config_override=None):
         houses = House.query.all()
         house_status = {}
         for h in houses:
-            house_teams = [t.team_name for t in teams if t.house_id == h.id]
+            teams_in_house = [t for t in teams if t.house_id == h.id]
+            house_teams_data = []
+            house_logged_in = True
+            
+            if not teams_in_house:
+                house_logged_in = False
+                
+            for t in teams_in_house:
+                is_logged = t.user.current_login_token is not None
+                if not is_logged:
+                    house_logged_in = False
+                house_teams_data.append({
+                    'team_name': t.team_name,
+                    'is_logged_in': is_logged
+                })
+                
             house_status[h.name] = {
-                'logged_in': len(house_teams) > 0,
-                'teams': house_teams
+                'logged_in': house_logged_in,
+                'teams': house_teams_data
             }
         
         return render_template('stats.html', 

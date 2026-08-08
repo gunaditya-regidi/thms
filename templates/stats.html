@@ -26,12 +26,12 @@
 </div>
 
 <!-- Pre-game House Readiness Alert (shown only before Round 1 starts) -->
-<div id="preGameBanner" class="container-fluid py-3 px-4 {% if game_started %}d-none{% endif %}">
-    <div class="glass-card p-4 border border-warning border-opacity-25 bg-warning bg-opacity-5 rounded-4 shadow-sm">
-        <h5 class="fw-bold text-warning mb-3 d-flex align-items-center">
-            <i class="bi bi-shield-fill-exclamation me-2 fs-4 animate__animated animate__flash animate__infinite"></i>
+<div id="preGameBanner" class="container-fluid py-2 px-4 {% if game_started %}d-none{% endif %}">
+    <div class="glass-card p-3 rounded-4 shadow-sm" style="background: rgba(255, 193, 7, 0.03) !important; border: 1px solid rgba(255, 193, 7, 0.25) !important;">
+        <h6 class="fw-bold text-warning mb-2 d-flex align-items-center" style="font-size: 14px;">
+            <i class="bi bi-shield-fill-exclamation me-2 fs-5 animate__animated animate__flash animate__infinite"></i>
             House Log-in Status (Awaiting Game Start)
-        </h5>
+        </h6>
         
         <!-- Global readiness bar -->
         {% set all_ready = true %}
@@ -41,23 +41,23 @@
             {% endif %}
         {% endfor %}
         
-        <div id="readinessAlert" class="alert {% if all_ready %}alert-success{% else %}alert-warning{% endif %} border-0 rounded-4 p-3 mb-3 d-flex align-items-center">
+        <div id="readinessAlert" class="alert {% if all_ready %}alert-success{% else %}alert-warning{% endif %} border-0 rounded-3 p-2 px-3 mb-3 d-flex align-items-center" style="{% if all_ready %}background: rgba(25, 135, 84, 0.08) !important; color: #0f5132 !important;{% else %}background: rgba(255, 193, 7, 0.08) !important; color: #664d03 !important;{% endif %}">
             {% if all_ready %}
-                <i class="bi bi-check-circle-fill text-success fs-4 me-3"></i>
+                <i class="bi bi-check-circle-fill text-success fs-5 me-2"></i>
                 <div>
-                    <h6 class="fw-bold mb-1 text-success">All Houses Ready!</h6>
-                    <p class="mb-0 text-dark small">Teams from all four houses are successfully logged in. Ready for Admin to launch the game! 🚀</p>
+                    <span class="fw-bold small me-1">All Houses Ready!</span>
+                    <span class="small" style="color: inherit; opacity: 0.85;">Teams from all four houses are successfully logged in. Ready to launch the game! 🚀</span>
                 </div>
             {% else %}
-                <i class="bi bi-hourglass-split text-warning fs-4 me-3"></i>
+                <i class="bi bi-hourglass-split text-warning fs-5 me-2"></i>
                 <div>
-                    <h6 class="fw-bold mb-1 text-warning">Awaiting House Logins</h6>
-                    <p class="mb-0 text-dark small">Please wait for teams from all four houses to log in before the Administrator starts the round. ⏳</p>
+                    <span class="fw-bold small me-1">Awaiting House Logins:</span>
+                    <span class="small" style="color: inherit; opacity: 0.85;">Please wait for teams from all four houses to log in before starting the round. ⏳</span>
                 </div>
             {% endif %}
         </div>
 
-        <div class="row g-3" id="houseStatusCards">
+        <div class="row g-2" id="houseStatusCards">
             {% for h_name, h_info in house_status.items() %}
                 {% set h_lower = h_name.lower() %}
                 {% set badge_color = 'danger' %}
@@ -65,21 +65,21 @@
                     {% set badge_color = 'success' %}
                 {% endif %}
                 <div class="col-md-3">
-                    <div class="card h-100 border border-{{ badge_color }} border-opacity-20 bg-{{ badge_color }} bg-opacity-5 rounded-4 p-3 d-flex flex-column justify-content-between">
+                    <div class="card h-100 border rounded-3 p-2 px-3 d-flex flex-column justify-content-between" style="background: rgba({% if h_info.logged_in %}25, 135, 84{% else %}220, 53, 69{% endif %}, 0.05) !important; border: 1px solid rgba({% if h_info.logged_in %}25, 135, 84{% else %}220, 53, 69{% endif %}, 0.2) !important; box-shadow: var(--shadow-soft);">
                         <div>
                             <div class="d-flex align-items-center justify-content-between mb-2">
-                                <span class="fw-bold text-dark fs-6">
+                                <span class="fw-bold fs-6">
                                     <i class="bi bi-flag-fill text-{{ h_lower }} me-2"></i>{{ h_name }} House
                                 </span>
                                 {% if h_info.logged_in %}
-                                    <span class="badge bg-success rounded-pill small"><i class="bi bi-check-circle me-1"></i>Ready</span>
+                                    <span class="badge bg-success rounded-pill" style="font-size: 10px; padding: 4px 8px;"><i class="bi bi-check-circle me-1"></i>Ready</span>
                                 {% else %}
-                                    <span class="badge bg-danger rounded-pill small"><i class="bi bi-exclamation-circle me-1"></i>Not Ready</span>
+                                    <span class="badge bg-danger rounded-pill" style="font-size: 10px; padding: 4px 8px;"><i class="bi bi-exclamation-circle me-1"></i>Not Ready</span>
                                 {% endif %}
                             </div>
                             
-                            <div class="mt-2">
-                                <span class="text-secondary small d-block mb-1">Teams:</span>
+                            <div class="mt-1">
+                                <span class="text-secondary small d-block mb-1" style="font-size: 10px;">Teams:</span>
                                 <div class="d-flex flex-column gap-1">
                                     {% for t in h_info.teams %}
                                         <div class="d-flex align-items-center justify-content-between p-1 px-2 border rounded-2 {% if t.is_logged_in %}bg-success bg-opacity-10 text-success border-success border-opacity-20{% else %}bg-danger bg-opacity-10 text-danger border-danger border-opacity-20{% endif %}" style="font-size: 11px;">
@@ -92,7 +92,7 @@
                                         </div>
                                     {% endfor %}
                                     {% if not h_info.teams %}
-                                        <p class="text-muted small mb-0 mt-1 italic">No teams registered.</p>
+                                        <p class="text-muted small mb-0 mt-1 italic" style="font-size: 10px;">No teams registered.</p>
                                     {% endif %}
                                 </div>
                             </div>
@@ -395,6 +395,7 @@ function updateStatsView(data) {
                 
                 const hLower = hName.toLowerCase();
                 const badgeColor = hInfo.logged_in ? 'success' : 'danger';
+                const cardBgColor = hInfo.logged_in ? '25, 135, 84' : '220, 53, 69';
                 
                 let teamsHtml = '';
                 if (hInfo.teams.length > 0) {
@@ -410,26 +411,26 @@ function updateStatsView(data) {
                     }).join('');
                     
                     teamsHtml = `
-                        <div class="mt-2">
-                            <span class="text-secondary small d-block mb-1">Teams:</span>
+                        <div class="mt-1">
+                            <span class="text-secondary small d-block mb-1" style="font-size: 10px;">Teams:</span>
                             <div class="d-flex flex-column gap-1">
                                 ${teamsItems}
                             </div>
                         </div>
                     `;
                 } else {
-                    teamsHtml = `<p class="text-muted small mb-0 mt-2 italic">No teams registered.</p>`;
+                    teamsHtml = `<p class="text-muted small mb-0 mt-1 italic" style="font-size: 10px;">No teams registered.</p>`;
                 }
                 
                 cardsHtml += `
                     <div class="col-md-3">
-                        <div class="card h-100 border border-${badgeColor} border-opacity-20 bg-${badgeColor} bg-opacity-5 rounded-4 p-3 d-flex flex-column justify-content-between">
+                        <div class="card h-100 border rounded-3 p-2 px-3 d-flex flex-column justify-content-between" style="background: rgba(${cardBgColor}, 0.05) !important; border: 1px solid rgba(${cardBgColor}, 0.2) !important; box-shadow: var(--shadow-soft);">
                             <div>
                                 <div class="d-flex align-items-center justify-content-between mb-2">
-                                    <span class="fw-bold text-dark fs-6">
+                                    <span class="fw-bold fs-6">
                                         <i class="bi bi-flag-fill text-${hLower} me-2"></i>${hName} House
                                     </span>
-                                    <span class="badge bg-${badgeColor} rounded-pill small">
+                                    <span class="badge bg-${badgeColor} rounded-pill" style="font-size: 10px; padding: 4px 8px;">
                                         <i class="bi bi-${hInfo.logged_in ? 'check-circle' : 'exclamation-circle'} me-1"></i>${hInfo.logged_in ? 'Ready' : 'Not Ready'}
                                     </span>
                                 </div>
@@ -443,21 +444,23 @@ function updateStatsView(data) {
             const readinessAlert = document.getElementById('readinessAlert');
             if (readinessAlert) {
                 if (allReady) {
-                    readinessAlert.className = 'alert alert-success border-0 rounded-4 p-3 mb-3 d-flex align-items-center';
+                    readinessAlert.className = 'alert alert-success border-0 rounded-3 p-2 px-3 mb-3 d-flex align-items-center';
+                    readinessAlert.style.cssText = 'background: rgba(25, 135, 84, 0.08) !important; color: #0f5132 !important;';
                     readinessAlert.innerHTML = `
-                        <i class="bi bi-check-circle-fill text-success fs-4 me-3"></i>
+                        <i class="bi bi-check-circle-fill text-success fs-5 me-2"></i>
                         <div>
-                            <h6 class="fw-bold mb-1 text-success">All Houses Ready!</h6>
-                            <p class="mb-0 text-dark small">Teams from all four houses are successfully logged in. Ready for Admin to launch the game! 🚀</p>
+                            <span class="fw-bold small me-1">All Houses Ready!</span>
+                            <span class="small" style="color: inherit; opacity: 0.85;">Teams from all four houses are successfully logged in. Ready to launch the game! 🚀</span>
                         </div>
                     `;
                 } else {
-                    readinessAlert.className = 'alert alert-warning border-0 rounded-4 p-3 mb-3 d-flex align-items-center';
+                    readinessAlert.className = 'alert alert-warning border-0 rounded-3 p-2 px-3 mb-3 d-flex align-items-center';
+                    readinessAlert.style.cssText = 'background: rgba(255, 193, 7, 0.08) !important; color: #664d03 !important;';
                     readinessAlert.innerHTML = `
-                        <i class="bi bi-hourglass-split text-warning fs-4 me-3"></i>
+                        <i class="bi bi-hourglass-split text-warning fs-5 me-2"></i>
                         <div>
-                            <h6 class="fw-bold mb-1 text-warning">Awaiting House Logins</h6>
-                            <p class="mb-0 text-dark small">Please wait for teams from all four houses to log in before the Administrator starts the round. ⏳</p>
+                            <span class="fw-bold small me-1">Awaiting House Logins:</span>
+                            <span class="small" style="color: inherit; opacity: 0.85;">Please wait for teams from all four houses to log in before starting the round. ⏳</span>
                         </div>
                     `;
                 }

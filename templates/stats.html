@@ -242,70 +242,67 @@
     </div>
 
     <!-- RIGHT PANEL: Leaderboard & Charts (60% or Hidden) -->
-    <div class="stats-right-panel" id="rightPanel">
-        
-        <!-- Section 1: Top 10 Leaderboard -->
-        <div class="glass-card p-3 mb-4 border-primary border-opacity-25 shadow-sm">
-            <h6 class="fw-bold text-primary mb-3"><i class="bi bi-trophy-fill me-2"></i>Top 10 Leaderboard</h6>
-            <div id="leaderboardContainer" style="position: relative; height: 530px; overflow: hidden; width: 100%;">
-                <!-- Filled Dynamically with styled cards -->
-            </div>
-        </div>
-        
-        <!-- Section 2: Quick Metrics Cards -->
-        <div class="row g-2 mb-4">
-            <div class="col-6 col-md-3">
-                <div class="glass-card p-3 text-center">
-                    <h6 class="text-secondary small mb-1">Total Scans</h6>
-                    <h4 class="fw-bold mb-0 text-primary" id="metricTotalScans">0</h4>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="glass-card p-3 text-center">
-                    <h6 class="text-secondary small mb-1">Fastest Finish</h6>
-                    <h6 class="fw-bold mb-0 text-success text-truncate" id="metricFastestTeam" style="font-size: 13px;">None</h6>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="glass-card p-3 text-center">
-                    <h6 class="text-secondary small mb-1">Most Active</h6>
-                    <h6 class="fw-bold mb-0 text-info text-truncate" id="metricMostActive" style="font-size: 13px;">None</h6>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="glass-card p-3 text-center">
-                    <h6 class="text-secondary small mb-1">House Leader</h6>
-                    <h6 class="fw-bold mb-0 text-warning text-truncate" id="metricHouseLeader" style="font-size: 13px;">None</h6>
-                </div>
-            </div>
-        </div>
-
-        <!-- Section 3: Analytics Charts -->
-        <div class="row g-3">
-            <!-- Chart 1: House distribution -->
-            <div class="col-12 col-md-6">
-                <div class="glass-card p-3 shadow-sm">
-                    <h6 class="fw-bold text-secondary mb-2">Teams per House</h6>
-                    <div style="height: 200px; position: relative;">
-                        <canvas id="houseChart"></canvas>
+    <div class="stats-right-panel" id="rightPanel" style="padding: 16px;">
+        <div class="row g-2 h-100 align-items-stretch" style="height: 100%;">
+            <!-- Left col: Leaderboard (takes 7 cols) -->
+            <div class="col-lg-7 d-flex flex-column h-100">
+                <div class="glass-card p-3 mb-0 border-primary border-opacity-25 shadow-sm d-flex flex-column" style="height: 100%; min-height: 520px;">
+                    <h6 class="fw-bold text-primary mb-2"><i class="bi bi-trophy-fill me-2"></i>Top 10 Leaderboard</h6>
+                    <div id="leaderboardContainer" style="position: relative; flex: 1; overflow: hidden; width: 100%; min-height: 520px;">
+                        <!-- Filled Dynamically with styled cards -->
                     </div>
                 </div>
             </div>
-            <!-- Chart 2: Round Status counts -->
-            <div class="col-12 col-md-6">
-                <div class="glass-card p-3 shadow-sm">
-                    <h6 class="fw-bold text-secondary mb-2">Round Completions</h6>
-                    <div style="height: 200px; position: relative;">
-                        <canvas id="roundChart"></canvas>
+            
+            <!-- Right col: Quick Metrics & Charts (takes 5 cols) -->
+            <div class="col-lg-5 d-flex flex-column h-100 justify-content-between">
+                <!-- Section 2: Quick Metrics Cards -->
+                <div class="row g-2 mb-2">
+                    <div class="col-6">
+                        <div class="glass-card p-2 text-center" style="font-size: 10px;">
+                            <span class="text-secondary d-block mb-0" style="font-size: 9px;">Total Scans</span>
+                            <span class="fw-bold mb-0 text-primary fs-6" id="metricTotalScans">0</span>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="glass-card p-2 text-center" style="font-size: 10px;">
+                            <span class="text-secondary d-block mb-0" style="font-size: 9px;">Fastest Finish</span>
+                            <span class="fw-bold mb-0 text-success text-truncate d-block" id="metricFastestTeam" style="font-size: 11px;">None</span>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="glass-card p-2 text-center" style="font-size: 10px;">
+                            <span class="text-secondary d-block mb-0" style="font-size: 9px;">Most Active</span>
+                            <span class="fw-bold mb-0 text-info text-truncate d-block" id="metricMostActive" style="font-size: 11px;">None</span>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="glass-card p-2 text-center" style="font-size: 10px;">
+                            <span class="text-secondary d-block mb-0" style="font-size: 9px;">House Leader</span>
+                            <span class="fw-bold mb-0 text-warning text-truncate d-block" id="metricHouseLeader" style="font-size: 11px;">None</span>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <!-- Chart 3: QR Scan analytics line -->
-            <div class="col-12">
-                <div class="glass-card p-3 shadow-sm">
-                    <h6 class="fw-bold text-secondary mb-2">QR Clue Scans Volume</h6>
-                    <div style="height: 200px; position: relative;">
-                        <canvas id="qrScanChart"></canvas>
+                
+                <!-- Section 3: Charts -->
+                <div class="d-flex flex-column gap-2 flex-fill" style="height: calc(100% - 130px);">
+                    <div class="glass-card p-2 flex-fill" style="height: 33%;">
+                        <h6 class="fw-bold text-secondary mb-1 d-block" style="font-size: 10px; margin-bottom: 2px;">Teams per House</h6>
+                        <div style="height: calc(100% - 16px); position: relative;">
+                            <canvas id="houseChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="glass-card p-2 flex-fill" style="height: 33%;">
+                        <h6 class="fw-bold text-secondary mb-1 d-block" style="font-size: 10px; margin-bottom: 2px;">Round Completions</h6>
+                        <div style="height: calc(100% - 16px); position: relative;">
+                            <canvas id="roundChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="glass-card p-2 flex-fill" style="height: 33%;">
+                        <h6 class="fw-bold text-secondary mb-1 d-block" style="font-size: 10px; margin-bottom: 2px;">QR Clue Scans Volume</h6>
+                        <div style="height: calc(100% - 16px); position: relative;">
+                            <canvas id="qrScanChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -892,6 +889,14 @@ setInterval(() => {
 </script>
 
 <style>
+    @media (min-width: 992px) {
+        html, body {
+            height: 100vh !important;
+            max-height: 100vh !important;
+            overflow: hidden !important;
+        }
+    }
+
     .dark-mode-hidden { display: inline-block; }
     .light-mode-hidden { display: none; }
     .dark-mode .dark-mode-hidden { display: none; }
@@ -910,6 +915,11 @@ setInterval(() => {
         overflow-y: auto;
         padding: 24px;
         transition: width 0.5s ease-in-out;
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+    .stats-left-panel::-webkit-scrollbar {
+        display: none;
     }
     
     .stats-right-panel {
@@ -921,6 +931,11 @@ setInterval(() => {
         opacity: 0;
         background-color: var(--bg-card);
         border-left: 1px solid var(--border-color);
+        display: none;
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+    .stats-right-panel::-webkit-scrollbar {
         display: none;
     }
     

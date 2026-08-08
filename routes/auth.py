@@ -162,6 +162,13 @@ def register():
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
+    if request.method == 'GET' and request.args.get('replaced') == '1':
+        from flask_login import logout_user
+        logout_user()
+        session.clear()
+        flash("Your account was logged in from another device or session expired.", "warning")
+        return redirect(url_for('auth.login'))
+
     if request.method == 'GET' and current_user.is_authenticated:
         if current_user.role == 'admin':
             return redirect(url_for('admin.dashboard'))
@@ -183,6 +190,14 @@ def login():
             
             login_user(user)
             session['login_token'] = login_token
+            
+            # Emit socket event to notify other clients about the session replacement
+            socketio = current_app.extensions.get('socketio')
+            if socketio:
+                socketio.emit('session_replaced', {
+                    'user_id': user.id,
+                    'login_token': login_token
+                })
             
             # Log login audit
             team_id = user.team_profile.id if user.role == 'team_leader' else None

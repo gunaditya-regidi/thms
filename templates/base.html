@@ -154,6 +154,12 @@
             return str.replace(regex, `${localYear}-${localMonth}-${localDay} ${hrsStr}:${minutes}:${seconds} ${ampm}`);
         }
 
+        // Global current user credentials for real-time session checking
+        window.currentUser = {
+            id: {% if current_user.is_authenticated %}{{ current_user.id }}{% else %}null{% endif %},
+            token: "{{ session.get('login_token', '') }}"
+        };
+
         // 2. Real-Time Toast Alerts via Socket.io
         document.addEventListener('DOMContentLoaded', () => {
             // Convert static date tags to user local timezone
@@ -194,6 +200,14 @@
 
                 socket.on('global_reset', () => {
                     window.location.reload();
+                });
+
+                socket.on('session_replaced', (data) => {
+                    if (window.currentUser && window.currentUser.id === data.user_id) {
+                        if (window.currentUser.token !== data.login_token) {
+                            window.location.href = "/login?replaced=1";
+                        }
+                    }
                 });
 
                 socket.on('register_team', (data) => {

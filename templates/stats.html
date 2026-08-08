@@ -286,19 +286,13 @@
                 
                 <!-- Section 3: Charts -->
                 <div class="d-flex flex-column gap-2 flex-fill" style="height: calc(100% - 130px);">
-                    <div class="glass-card p-2 flex-fill" style="height: 33%;">
-                        <h6 class="fw-bold text-secondary mb-1 d-block" style="font-size: 10px; margin-bottom: 2px;">Teams per House</h6>
-                        <div style="height: calc(100% - 16px); position: relative;">
-                            <canvas id="houseChart"></canvas>
-                        </div>
-                    </div>
-                    <div class="glass-card p-2 flex-fill" style="height: 33%;">
+                    <div class="glass-card p-2 flex-fill" style="height: 50%;">
                         <h6 class="fw-bold text-secondary mb-1 d-block" style="font-size: 10px; margin-bottom: 2px;">Round Completions</h6>
                         <div style="height: calc(100% - 16px); position: relative;">
                             <canvas id="roundChart"></canvas>
                         </div>
                     </div>
-                    <div class="glass-card p-2 flex-fill" style="height: 33%;">
+                    <div class="glass-card p-2 flex-fill" style="height: 50%;">
                         <h6 class="fw-bold text-secondary mb-1 d-block" style="font-size: 10px; margin-bottom: 2px;">QR Clue Scans Volume</h6>
                         <div style="height: calc(100% - 16px); position: relative;">
                             <canvas id="qrScanChart"></canvas>
@@ -318,7 +312,6 @@
 
 <script>
 // Declare Chart.js variables globally to allow updates
-let houseChartInst = null;
 let roundChartInst = null;
 let qrScanChartInst = null;
 
@@ -768,36 +761,7 @@ function initializeCharts(data) {
         'Yellow': '#eab308'
     };
 
-    // A. Chart 1: House Distribution
-    const houseCanvas = document.getElementById('houseChart');
-    if (houseCanvas) {
-        const labels = Object.keys(data.house_dist);
-        const values = Object.values(data.house_dist);
-        const bgColors = labels.map(l => houseColors[l] || '#cccccc');
-        
-        if (houseChartInst) houseChartInst.destroy();
-        houseChartInst = new Chart(houseCanvas, {
-            type: 'pie',
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: values,
-                    backgroundColor: bgColors,
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { color: labelColor }
-                    }
-                }
-            }
-        });
-    }
+    // A. Chart 1: House Distribution removed
 
     // B. Chart 2: Round completions
     const roundCanvas = document.getElementById('roundChart');
@@ -879,13 +843,10 @@ function initializeCharts(data) {
     }
 }
 
-// Self-healing polling fallback when Socket.io is offline or disconnected
+// Poll stats dashboard every 2 seconds unconditionally to guarantee real-time updates
 setInterval(() => {
-    if (typeof window.socket === 'undefined' || !window.socket || !window.socket.connected) {
-        console.log("Socket offline. Polling stats dashboard...");
-        fetchStatsData();
-    }
-}, 3000);
+    fetchStatsData();
+}, 2000);
 </script>
 
 <style>

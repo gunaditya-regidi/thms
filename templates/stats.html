@@ -241,64 +241,12 @@
         </div>
     </div>
 
-    <!-- RIGHT PANEL: Leaderboard & Charts (60% or Hidden) -->
-    <div class="stats-right-panel" id="rightPanel" style="padding: 16px;">
-        <div class="row g-2 h-100 align-items-stretch" style="height: 100%;">
-            <!-- Left col: Leaderboard (takes 7 cols) -->
-            <div class="col-lg-7 d-flex flex-column h-100">
-                <div class="glass-card p-3 mb-0 border-primary border-opacity-25 shadow-sm d-flex flex-column" style="height: 100%; min-height: 520px;">
-                    <h6 class="fw-bold text-primary mb-2"><i class="bi bi-trophy-fill me-2"></i>Top 10 Leaderboard</h6>
-                    <div id="leaderboardContainer" style="position: relative; flex: 1; overflow: hidden; width: 100%; min-height: 520px;">
-                        <!-- Filled Dynamically with styled cards -->
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Right col: Quick Metrics & Charts (takes 5 cols) -->
-            <div class="col-lg-5 d-flex flex-column h-100 justify-content-between">
-                <!-- Section 2: Quick Metrics Cards -->
-                <div class="row g-2 mb-2">
-                    <div class="col-6">
-                        <div class="glass-card p-2 text-center" style="font-size: 10px;">
-                            <span class="text-secondary d-block mb-0" style="font-size: 9px;">Total Scans</span>
-                            <span class="fw-bold mb-0 text-primary fs-6" id="metricTotalScans">0</span>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="glass-card p-2 text-center" style="font-size: 10px;">
-                            <span class="text-secondary d-block mb-0" style="font-size: 9px;">Fastest Finish</span>
-                            <span class="fw-bold mb-0 text-success text-truncate d-block" id="metricFastestTeam" style="font-size: 11px;">None</span>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="glass-card p-2 text-center" style="font-size: 10px;">
-                            <span class="text-secondary d-block mb-0" style="font-size: 9px;">Most Active</span>
-                            <span class="fw-bold mb-0 text-info text-truncate d-block" id="metricMostActive" style="font-size: 11px;">None</span>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="glass-card p-2 text-center" style="font-size: 10px;">
-                            <span class="text-secondary d-block mb-0" style="font-size: 9px;">House Leader</span>
-                            <span class="fw-bold mb-0 text-warning text-truncate d-block" id="metricHouseLeader" style="font-size: 11px;">None</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Section 3: Charts -->
-                <div class="d-flex flex-column gap-2 flex-fill" style="height: calc(100% - 130px);">
-                    <div class="glass-card p-2 flex-fill" style="height: 50%;">
-                        <h6 class="fw-bold text-secondary mb-1 d-block" style="font-size: 10px; margin-bottom: 2px;">Round Completions</h6>
-                        <div style="height: calc(100% - 16px); position: relative;">
-                            <canvas id="roundChart"></canvas>
-                        </div>
-                    </div>
-                    <div class="glass-card p-2 flex-fill" style="height: 50%;">
-                        <h6 class="fw-bold text-secondary mb-1 d-block" style="font-size: 10px; margin-bottom: 2px;">QR Clue Scans Volume</h6>
-                        <div style="height: calc(100% - 16px); position: relative;">
-                            <canvas id="qrScanChart"></canvas>
-                        </div>
-                    </div>
-                </div>
+    <!-- RIGHT PANEL: Leaderboard (60% or Hidden) -->
+    <div class="stats-right-panel" id="rightPanel" style="padding: 24px;">
+        <div class="glass-card p-3 mb-0 border-primary border-opacity-25 shadow-sm d-flex flex-column" style="height: 100%; min-height: 520px;">
+            <h6 class="fw-bold text-primary mb-2"><i class="bi bi-trophy-fill me-2"></i>Top 10 Leaderboard</h6>
+            <div id="leaderboardContainer" style="position: relative; flex: 1; overflow: hidden; width: 100%; min-height: 520px;">
+                <!-- Filled Dynamically with styled cards -->
             </div>
         </div>
     </div>
@@ -307,13 +255,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- Chart.js CDN -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <script>
-// Declare Chart.js variables globally to allow updates
-let roundChartInst = null;
-let qrScanChartInst = null;
 
 let statsStopwatchData = {};
 let statsStopwatchInterval = null;
@@ -750,110 +692,11 @@ function updateStatsView(data) {
         });
     }
 
-    // 4. Update Quick stats cards
-    document.getElementById('metricTotalScans').innerText = data.metrics.total_scans;
-    document.getElementById('metricFastestTeam').innerText = data.metrics.fastest_team;
-    document.getElementById('metricMostActive').innerText = data.metrics.most_active_team;
-    
-    const hRank = data.metrics.house_rankings;
-    if (hRank && hRank.length > 0) {
-        document.getElementById('metricHouseLeader').innerText = `${hRank[0].name} (${hRank[0].finished} Fin)`;
-    }
+    // Quick stats cards updates removed
 }
 
 function initializeCharts(data) {
-    const isDark = document.documentElement.classList.contains('dark-mode');
-    const labelColor = isDark ? '#f8fafc' : '#1e293b';
-    const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)';
-    
-    // Colors for Houses: Red, Green, Blue, Yellow
-    const houseColors = {
-        'Red': '#ef4444',
-        'Green': '#22c55e',
-        'Blue': '#3b82f6',
-        'Yellow': '#eab308'
-    };
-
-    // A. Chart 1: House Distribution removed
-
-    // B. Chart 2: Round completions
-    const roundCanvas = document.getElementById('roundChart');
-    if (roundCanvas) {
-        const labels = Object.keys(data.round_stats);
-        const values = Object.values(data.round_stats);
-        
-        if (roundChartInst) roundChartInst.destroy();
-        roundChartInst = new Chart(roundCanvas, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Teams Count',
-                    data: values,
-                    backgroundColor: ['#3b82f6', '#eab308', '#ef4444', '#a855f7', '#22c55e'],
-                    borderRadius: 8
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false }
-                },
-                scales: {
-                    x: {
-                        ticks: { color: labelColor },
-                        grid: { display: false }
-                    },
-                    y: {
-                        ticks: { color: labelColor, stepSize: 1 },
-                        grid: { color: gridColor }
-                    }
-                }
-            }
-        });
-    }
-
-    // C. Chart 3: QR Scans
-    const qrCanvas = document.getElementById('qrScanChart');
-    if (qrCanvas) {
-        const labels = Object.keys(data.qr_scans);
-        const values = Object.values(data.qr_scans);
-        
-        if (qrScanChartInst) qrScanChartInst.destroy();
-        qrScanChartInst = new Chart(qrCanvas, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Scan Counts',
-                    data: values,
-                    borderColor: '#3b82f6',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    fill: true,
-                    tension: 0.3,
-                    borderWidth: 3
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false }
-                },
-                scales: {
-                    x: {
-                        ticks: { color: labelColor },
-                        grid: { display: false }
-                    },
-                    y: {
-                        ticks: { color: labelColor, stepSize: 2 },
-                        grid: { color: gridColor }
-                    }
-                }
-            }
-        });
-    }
+    // Chart rendering removed
 }
 
 // Poll stats dashboard every 2 seconds unconditionally to guarantee real-time updates

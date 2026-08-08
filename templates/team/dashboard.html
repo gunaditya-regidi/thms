@@ -658,7 +658,7 @@ function setupDashboardSocketListeners() {
 }
 
 function pollStartStatus() {
-    fetch('/team/api/status')
+    fetch('/api/status')
         .then(res => res.json())
         .then(data => {
             if (data) {
@@ -666,18 +666,23 @@ function pollStartStatus() {
                 if (stopwatchEl) {
                     const currentStatus = stopwatchEl.getAttribute('data-status');
                     const currentRound = {{ team.current_round }};
-                    if (data.round1_status !== currentStatus || data.current_round !== currentRound) {
+                    const currentCompleted = {% if team.round2_completed %}true{% else %}false{% endif %};
+                    if (data.round1_status !== currentStatus || 
+                        data.current_round !== currentRound ||
+                        data.round2_completed !== currentCompleted) {
+                        console.log("Team status changed. Reloading dashboard...");
                         window.location.reload();
-                    } else {
-                        setTimeout(pollStartStatus, 3000);
                     }
                 }
             }
         })
         .catch(err => {
-            setTimeout(pollStartStatus, 5000);
+            console.error("Error polling team status:", err);
         });
 }
+
+// Universal polling loop for offline/socket fallback
+setInterval(pollStartStatus, 3000);
 
 function startTeamStopwatch() {
     const stopwatchEl = document.getElementById('teamStopwatch');
@@ -688,10 +693,7 @@ function startTeamStopwatch() {
     
     if (status === 'pending_start') {
         stopwatchEl.innerHTML = '<i class="bi bi-play-circle-fill text-secondary me-1"></i>00:00:00';
-        setTimeout(pollStartStatus, 3000);
         return;
-    } else if (currentRound === 1 && (status === 'requested' || status === 'verified')) {
-        setTimeout(pollStartStatus, 3000);
     }
     
     const createdStr = stopwatchEl.getAttribute('data-created');

@@ -163,6 +163,7 @@
                                         </div>
                                     </div>
                                     
+                                    {% if t.current_round == 1 and t.round1_status != 'approved' %}
                                     <div class="d-flex justify-content-between align-items-center mt-2 border-top pt-2" style="font-size: 9px;">
                                         <span class="font-monospace fw-bold text-secondary" id="statsStopwatch_{{ t.id }}">
                                             <i class="bi bi-stopwatch-fill me-1"></i>00:00:00
@@ -171,6 +172,7 @@
                                             <i class="bi bi-clock-history me-1"></i><span class="local-time-text">{{ t.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
                                         </span>
                                     </div>
+                                    {% endif %}
                                 </div>
                             {% endif %}
                         {% endfor %}
@@ -230,6 +232,7 @@
                                         </div>
                                     </div>
                                     
+                                    {% if t.current_round == 1 and t.round1_status != 'approved' %}
                                     <div class="d-flex justify-content-between align-items-center mt-2 border-top pt-2" style="font-size: 9px;">
                                         <span class="font-monospace fw-bold text-secondary" id="statsStopwatch_{{ t.id }}">
                                             <i class="bi bi-stopwatch-fill me-1"></i>00:00:00
@@ -238,6 +241,7 @@
                                             <i class="bi bi-clock-history me-1"></i><span class="local-time-text">{{ t.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
                                         </span>
                                     </div>
+                                    {% endif %}
                                 </div>
                             {% endif %}
                         {% endfor %}
@@ -297,6 +301,7 @@
                                         </div>
                                     </div>
                                     
+                                    {% if t.current_round == 1 and t.round1_status != 'approved' %}
                                     <div class="d-flex justify-content-between align-items-center mt-2 border-top pt-2" style="font-size: 9px;">
                                         <span class="font-monospace fw-bold text-secondary" id="statsStopwatch_{{ t.id }}">
                                             <i class="bi bi-stopwatch-fill me-1"></i>00:00:00
@@ -305,6 +310,7 @@
                                             <i class="bi bi-clock-history me-1"></i><span class="local-time-text">{{ t.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
                                         </span>
                                     </div>
+                                    {% endif %}
                                 </div>
                             {% endif %}
                         {% endfor %}
@@ -364,6 +370,7 @@
                                         </div>
                                     </div>
                                     
+                                    {% if t.current_round == 1 and t.round1_status != 'approved' %}
                                     <div class="d-flex justify-content-between align-items-center mt-2 border-top pt-2" style="font-size: 9px;">
                                         <span class="font-monospace fw-bold text-secondary" id="statsStopwatch_{{ t.id }}">
                                             <i class="bi bi-stopwatch-fill me-1"></i>00:00:00
@@ -372,6 +379,7 @@
                                             <i class="bi bi-clock-history me-1"></i><span class="local-time-text">{{ t.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
                                         </span>
                                     </div>
+                                    {% endif %}
                                 </div>
                             {% endif %}
                         {% endfor %}
@@ -387,22 +395,8 @@
         <!-- Section 1: Top 10 Leaderboard -->
         <div class="glass-card p-3 mb-4 border-primary border-opacity-25 shadow-sm">
             <h6 class="fw-bold text-primary mb-3"><i class="bi bi-trophy-fill me-2"></i>Top 10 Leaderboard</h6>
-            <div class="table-responsive">
-                <table class="table table-striped align-middle mb-0 small">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>Rank</th>
-                            <th>Team</th>
-                            <th>House</th>
-                            <th>Round</th>
-                            <th>QR Progress</th>
-                            <th>Completion Time</th>
-                        </tr>
-                    </thead>
-                    <tbody id="leaderboardTableBody">
-                        <!-- Filled Dynamically -->
-                    </tbody>
-                </table>
+            <div id="leaderboardContainer" style="position: relative; height: 530px; overflow: hidden; width: 100%;">
+                <!-- Filled Dynamically with styled cards -->
             </div>
         </div>
         
@@ -786,6 +780,21 @@ function updateStatsView(data) {
         // Build card element
         const card = document.createElement('div');
         card.className = 'card border rounded-4 p-3 shadow-sm bg-white position-relative';
+        
+        let footerHtml = '';
+        if (currentRound === 1 && round1Status !== 'approved') {
+            footerHtml = `
+                <div class="d-flex justify-content-between align-items-center mt-2 border-top pt-2" style="font-size: 9px;">
+                    <span class="font-monospace fw-bold text-secondary" id="statsStopwatch_${team.id}">
+                        <i class="bi bi-stopwatch-fill me-1"></i>00:00:00
+                    </span>
+                    <span class="text-muted">
+                        <i class="bi bi-clock-history me-1"></i><span>${convertUTCToLocalText(lastActive)}</span>
+                    </span>
+                </div>
+            `;
+        }
+
         card.innerHTML = `
             <div class="d-flex justify-content-between align-items-start mb-2">
                 <h6 class="fw-bold mb-0 text-dark" style="font-size: 12px;">${teamName}</h6>
@@ -801,15 +810,7 @@ function updateStatsView(data) {
                     <div class="progress-bar ${progressBarColor} progress-bar-striped progress-bar-animated" role="progressbar" style="width: ${progressVal}%;" aria-valuenow="${progressVal}" aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
             </div>
-            
-            <div class="d-flex justify-content-between align-items-center mt-2 border-top pt-2" style="font-size: 9px;">
-                <span class="font-monospace fw-bold text-secondary" id="statsStopwatch_${team.id}">
-                    <i class="bi bi-stopwatch-fill me-1"></i>00:00:00
-                </span>
-                <span class="text-muted">
-                    <i class="bi bi-clock-history me-1"></i><span>${convertUTCToLocalText(lastActive)}</span>
-                </span>
-            </div>
+            ${footerHtml}
         `;
         
         const listEl = houseLists[houseName];
@@ -834,22 +835,77 @@ function updateStatsView(data) {
     runStatsStopwatches();
 
     // 3. Update Right side Leaderboard Grid (Top 10)
-    const leaderboardBody = document.getElementById('leaderboardTableBody');
-    leaderboardBody.innerHTML = '';
-    
-    const top10 = data.leaderboard.slice(0, 10);
-    top10.forEach(row => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td class="fw-bold">#${row[0]}</td>
-            <td class="fw-bold">${row[1]}</td>
-            <td><span class="badge bg-light text-dark border font-monospace">${row[2]}</span></td>
-            <td>${row[3]}</td>
-            <td><span class="badge bg-primary">${row[5]}</span></td>
-            <td class="text-muted font-monospace small">${convertUTCToLocalText(row[4])}</td>
-        `;
-        leaderboardBody.appendChild(tr);
-    });
+    const leaderboardContainer = document.getElementById('leaderboardContainer');
+    if (leaderboardContainer) {
+        const top10 = data.leaderboard.slice(0, 10);
+        const activeTeamKeys = new Set();
+        
+        top10.forEach((row, index) => {
+            const rank = row[0];
+            const teamName = row[1];
+            const houseName = row[2];
+            const roundLabel = row[3];
+            const durationText = row[4];
+            const clueProgress = row[5];
+            
+            const teamKey = 'leader_team_' + teamName.replace(/[^a-zA-Z0-9]/g, '_');
+            activeTeamKeys.add(teamKey);
+            
+            let itemEl = document.getElementById(teamKey);
+            if (!itemEl) {
+                itemEl = document.createElement('div');
+                itemEl.id = teamKey;
+                itemEl.className = 'leaderboard-item d-flex align-items-center justify-content-between p-2 mb-2 border rounded-3 bg-white shadow-sm';
+                itemEl.style.position = 'absolute';
+                itemEl.style.left = '0';
+                itemEl.style.right = '0';
+                itemEl.style.height = '48px';
+                itemEl.style.transition = 'top 0.8s cubic-bezier(0.25, 1, 0.5, 1), transform 0.8s ease, background-color 0.3s ease, opacity 0.5s ease';
+                
+                let houseBorderColor = '#cccccc';
+                if (houseName.toLowerCase() === 'red') houseBorderColor = '#ef4444';
+                else if (houseName.toLowerCase() === 'green') houseBorderColor = '#22c55e';
+                else if (houseName.toLowerCase() === 'blue') houseBorderColor = '#3b82f6';
+                else if (houseName.toLowerCase() === 'yellow') houseBorderColor = '#eab308';
+                itemEl.style.borderLeft = `5px solid ${houseBorderColor}`;
+                
+                leaderboardContainer.appendChild(itemEl);
+            }
+            
+            // Update positioning
+            itemEl.style.top = (index * 52) + 'px';
+            itemEl.style.opacity = '1';
+            itemEl.style.transform = 'scale(1)';
+            
+            // Build content
+            itemEl.innerHTML = `
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 26px; height: 26px; font-size: 10px;">#${rank}</span>
+                    <div>
+                        <span class="fw-bold text-dark" style="font-size: 12.5px;">${teamName}</span>
+                        <span class="badge bg-light text-dark border font-monospace" style="font-size: 8.5px; padding: 2px 4px;">${houseName}</span>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <span class="small text-secondary fw-semibold" style="font-size: 10.5px;">${roundLabel}: ${clueProgress}</span>
+                    <span class="badge bg-primary font-monospace" style="font-size: 9.5px; padding: 3px 6px;">Dur: ${durationText}</span>
+                </div>
+            `;
+        });
+        
+        // Remove elements that are no longer in the top 10
+        Array.from(leaderboardContainer.children).forEach(child => {
+            if (!activeTeamKeys.has(child.id)) {
+                child.style.transform = 'scale(0.8)';
+                child.style.opacity = '0';
+                setTimeout(() => {
+                    if (child.parentNode === leaderboardContainer) {
+                        child.remove();
+                    }
+                }, 800);
+            }
+        });
+    }
 
     // 4. Update Quick stats cards
     document.getElementById('metricTotalScans').innerText = data.metrics.total_scans;

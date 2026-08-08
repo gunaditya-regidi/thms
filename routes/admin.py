@@ -1084,25 +1084,32 @@ def get_report_data(report_type):
         data = []
         
         # Sorting priority:
-        # 1. Completed Round 2 (round2_completed == True) sorted by round2_completion_time ascending.
-        # 2. In Round 2 sorted by round2_current_clue descending, then by Round 1 approved_at timestamp ascending.
+        # 1. Completed Round 2 (round2_completed == True) sorted by duration (round2_completion_time - Round 1 approved_at) ascending.
+        # 2. In Round 2 sorted by clues completed descending, then by duration to complete those clues ascending.
         # 3. In Round 1 sorted by completed tasks count descending, then by team creation time ascending.
         
         teams = Team.query.all()
         
         def sort_key(t):
-            # We want to sort ascending, so lower sort score represents higher rank
             if t.round2_completed:
-                # Rank 1: completed all clues. Sort by round 2 completion time
-                t_val = t.round2_completion_time.timestamp() if t.round2_completion_time else 0
-                return (0, t_val)
-            elif t.current_round == 2:
-                # Rank 2: in Round 2. Sort by current expected clue descending (negative), then by R1 approval time
                 r1_app = Round1Approval.query.filter_by(team_id=t.id).first()
-                r1_time = r1_app.approved_at.timestamp() if (r1_app and r1_app.approved_at) else t.created_at.timestamp()
-                return (1, -t.round2_current_clue, r1_time)
+                r2_start = r1_app.approved_at if (r1_app and r1_app.approved_at) else t.created_at
+                duration = (t.round2_completion_time - r2_start).total_seconds() if (t.round2_completion_time and r2_start) else 0
+                return (0, 0, duration)
+            elif t.current_round == 2:
+                clues_solved = t.round2_current_clue - 1
+                duration = 0
+                if clues_solved > 0:
+                    prog = Round2Progress.query.filter_by(team_id=t.id, clue_number=clues_solved).first()
+                    r1_app = Round1Approval.query.filter_by(team_id=t.id).first()
+                    r2_start = r1_app.approved_at if (r1_app and r1_app.approved_at) else t.created_at
+                    if prog and r2_start:
+                        duration = (prog.completed_at - r2_start).total_seconds()
+                else:
+                    r1_app = Round1Approval.query.filter_by(team_id=t.id).first()
+                    duration = r1_app.approved_at.timestamp() if (r1_app and r1_app.approved_at) else t.created_at.timestamp()
+                return (1, -clues_solved, duration)
             else:
-                # Rank 3: in Round 1. Sort by completed task counts descending (negative), then creation time
                 comp_count = len(t.task_completions)
                 return (2, -comp_count, t.created_at.timestamp())
                 
@@ -1110,12 +1117,27 @@ def get_report_data(report_type):
         
         for rank, t in enumerate(sorted_teams, start=1):
             comp_time = "-"
-            if t.round2_completed and t.round2_completion_time:
-                comp_time = t.round2_completion_time.strftime('%Y-%m-%d %H:%M:%S')
+            r1_app = Round1Approval.query.filter_by(team_id=t.id).first()
+            r2_start = r1_app.approved_at if (r1_app and r1_app.approved_at) else t.created_at
+            
+            if t.round2_completed and t.round2_completion_time and r2_start:
+                dur_sec = int((t.round2_completion_time - r2_start).total_seconds())
+                h = dur_sec // 3600
+                m = (dur_sec % 3600) // 60
+                s = dur_sec % 60
+                comp_time = f"{h:02d}:{m:02d}:{s:02d} (Finished)"
             elif t.current_round == 2:
-                r1_app = Round1Approval.query.filter_by(team_id=t.id).first()
-                if r1_app and r1_app.approved_at:
-                    comp_time = f"R1 Appr: {r1_app.approved_at.strftime('%Y-%m-%d %H:%M:%S')}"
+                clues_solved = t.round2_current_clue - 1
+                if clues_solved > 0 and r2_start:
+                    prog = Round2Progress.query.filter_by(team_id=t.id, clue_number=clues_solved).first()
+                    if prog:
+                        dur_sec = int((prog.completed_at - r2_start).total_seconds())
+                        h = dur_sec // 3600
+                        m = (dur_sec % 3600) // 60
+                        s = dur_sec % 60
+                        comp_time = f"{h:02d}:{m:02d}:{s:02d}"
+                else:
+                    comp_time = "00:00:00"
                     
             qr_prog = f"{t.round2_current_clue - 1} / 7 solved" if t.current_round == 2 else "Not started"
             if t.round2_completed:

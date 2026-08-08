@@ -61,10 +61,8 @@
             {% for h_name, h_info in house_status.items() %}
                 {% set h_lower = h_name.lower() %}
                 {% set badge_color = 'danger' %}
-                {% set text_color = 'danger' %}
                 {% if h_info.logged_in %}
                     {% set badge_color = 'success' %}
-                    {% set text_color = 'success' %}
                 {% endif %}
                 <div class="col-md-3">
                     <div class="card h-100 border border-{{ badge_color }} border-opacity-20 bg-{{ badge_color }} bg-opacity-5 rounded-4 p-3 d-flex flex-column justify-content-between">
@@ -74,24 +72,30 @@
                                     <i class="bi bi-flag-fill text-{{ h_lower }} me-2"></i>{{ h_name }} House
                                 </span>
                                 {% if h_info.logged_in %}
-                                    <span class="badge bg-success rounded-pill small"><i class="bi bi-check-circle me-1"></i>Logged In</span>
+                                    <span class="badge bg-success rounded-pill small"><i class="bi bi-check-circle me-1"></i>Ready</span>
                                 {% else %}
-                                    <span class="badge bg-danger rounded-pill small"><i class="bi bi-x-circle me-1"></i>No Log-in</span>
+                                    <span class="badge bg-danger rounded-pill small"><i class="bi bi-exclamation-circle me-1"></i>Not Ready</span>
                                 {% endif %}
                             </div>
                             
-                            {% if h_info.logged_in %}
-                                <div class="mt-2">
-                                    <span class="text-secondary small d-block mb-1">Teams:</span>
-                                    <div class="d-flex flex-wrap gap-1">
-                                        {% for t_name in h_info.teams %}
-                                            <span class="badge bg-light text-dark border font-monospace small px-2 py-1">{{ t_name }}</span>
-                                        {% endfor %}
-                                    </div>
+                            <div class="mt-2">
+                                <span class="text-secondary small d-block mb-1">Teams:</span>
+                                <div class="d-flex flex-column gap-1">
+                                    {% for t in h_info.teams %}
+                                        <div class="d-flex align-items-center justify-content-between p-1 px-2 border rounded-2 {% if t.is_logged_in %}bg-success bg-opacity-10 text-success border-success border-opacity-20{% else %}bg-danger bg-opacity-10 text-danger border-danger border-opacity-20{% endif %}" style="font-size: 11px;">
+                                            <span>{{ t.team_name }}</span>
+                                            {% if t.is_logged_in %}
+                                                <span class="badge bg-success rounded-pill" style="font-size: 8px;">Ready</span>
+                                            {% else %}
+                                                <span class="badge bg-danger rounded-pill" style="font-size: 8px;">Not Ready</span>
+                                            {% endif %}
+                                        </div>
+                                    {% endfor %}
+                                    {% if not h_info.teams %}
+                                        <p class="text-muted small mb-0 mt-1 italic">No teams registered.</p>
+                                    {% endif %}
                                 </div>
-                            {% else %}
-                                <p class="text-muted small mb-0 mt-2 italic">Waiting for a team from {{ h_name }} House to log in...</p>
-                            {% endif %}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -393,17 +397,28 @@ function updateStatsView(data) {
                 const badgeColor = hInfo.logged_in ? 'success' : 'danger';
                 
                 let teamsHtml = '';
-                if (hInfo.logged_in) {
+                if (hInfo.teams.length > 0) {
+                    const teamsItems = hInfo.teams.map(t => {
+                        const tClass = t.is_logged_in ? 'bg-success bg-opacity-10 text-success border-success border-opacity-20' : 'bg-danger bg-opacity-10 text-danger border-danger border-opacity-20';
+                        const tBadge = t.is_logged_in ? '<span class="badge bg-success rounded-pill" style="font-size: 8px;">Ready</span>' : '<span class="badge bg-danger rounded-pill" style="font-size: 8px;">Not Ready</span>';
+                        return `
+                            <div class="d-flex align-items-center justify-content-between p-1 px-2 border rounded-2 ${tClass}" style="font-size: 11px;">
+                                <span>${t.team_name}</span>
+                                ${tBadge}
+                            </div>
+                        `;
+                    }).join('');
+                    
                     teamsHtml = `
                         <div class="mt-2">
                             <span class="text-secondary small d-block mb-1">Teams:</span>
-                            <div class="d-flex flex-wrap gap-1">
-                                ${hInfo.teams.map(tName => `<span class="badge bg-light text-dark border font-monospace small px-2 py-1">${tName}</span>`).join('')}
+                            <div class="d-flex flex-column gap-1">
+                                ${teamsItems}
                             </div>
                         </div>
                     `;
                 } else {
-                    teamsHtml = `<p class="text-muted small mb-0 mt-2 italic">Waiting for a team from ${hName} House to log in...</p>`;
+                    teamsHtml = `<p class="text-muted small mb-0 mt-2 italic">No teams registered.</p>`;
                 }
                 
                 cardsHtml += `
@@ -415,7 +430,7 @@ function updateStatsView(data) {
                                         <i class="bi bi-flag-fill text-${hLower} me-2"></i>${hName} House
                                     </span>
                                     <span class="badge bg-${badgeColor} rounded-pill small">
-                                        <i class="bi bi-${hInfo.logged_in ? 'check-circle' : 'x-circle'} me-1"></i>${hInfo.logged_in ? 'Logged In' : 'No Log-in'}
+                                        <i class="bi bi-${hInfo.logged_in ? 'check-circle' : 'exclamation-circle'} me-1"></i>${hInfo.logged_in ? 'Ready' : 'Not Ready'}
                                     </span>
                                 </div>
                                 ${teamsHtml}

@@ -32,10 +32,14 @@ def create_app(config_override=None):
     if not app.config.get('TESTING'):
         with app.app_context():
             try:
-                # Run structure updates on PostgreSQL if table exists
                 try:
                     with db.engine.begin() as conn:
                         conn.execute(db.text("ALTER TABLE users ALTER COLUMN password_hash TYPE VARCHAR(255)"))
+                except Exception:
+                    pass
+                try:
+                    with db.engine.begin() as conn:
+                        conn.execute(db.text("ALTER TABLE users ADD COLUMN current_login_token VARCHAR(100)"))
                 except Exception:
                     pass
                 
@@ -73,6 +77,24 @@ def create_app(config_override=None):
     app.register_blueprint(team_bp)
     app.register_blueprint(manager_bp)
     app.register_blueprint(admin_bp)
+
+    @app.before_request
+    def check_single_device_session():
+        if request.path.startswith('/static/'):
+            return
+        if request.endpoint in ['auth.login', 'auth.logout', 'auth.register', 'stats', 'stats_logout']:
+            return
+
+        if current_user.is_authenticated and current_user.role == 'team_leader':
+            sess_token = session.get('login_token')
+            db_token = current_user.current_login_token
+            
+            if sess_token != db_token:
+                from flask_login import logout_user
+                logout_user()
+                session.clear()
+                flash("Your account was logged in from another device or session expired.", "warning")
+                return redirect(url_for('auth.login'))
 
     # Base routing
     @app.route('/')
@@ -238,10 +260,25 @@ def create_app(config_override=None):
         # House status list
         house_status = {}
         for h in houses:
-            house_teams = [t.team_name for t in all_teams if t.house_id == h.id]
+            teams_in_house = [t for t in all_teams if t.house_id == h.id]
+            house_teams_data = []
+            house_logged_in = True
+            
+            if not teams_in_house:
+                house_logged_in = False
+                
+            for t in teams_in_house:
+                is_logged = t.user.current_login_token is not None
+                if not is_logged:
+                    house_logged_in = False
+                house_teams_data.append({
+                    'team_name': t.team_name,
+                    'is_logged_in': is_logged
+                })
+                
             house_status[h.name] = {
-                'logged_in': len(house_teams) > 0,
-                'teams': house_teams
+                'logged_in': house_logged_in,
+                'teams': house_teams_data
             }
             
         return jsonify({

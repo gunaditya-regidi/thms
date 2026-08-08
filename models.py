@@ -13,6 +13,7 @@ class User(db.Model, UserMixin):
     plain_password = db.Column(db.String(255), nullable=True)
     role = db.Column(db.String(20), nullable=False) # 'admin', 'manager', 'team_leader'
     is_active = db.Column(db.Boolean, default=True)
+    current_login_token = db.Column(db.String(100), nullable=True)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)

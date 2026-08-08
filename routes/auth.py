@@ -1,5 +1,5 @@
 import random
-from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, session
 from flask_login import login_user, logout_user, login_required, current_user
 from models import db, User, Team, Member, House, SystemLog
 from werkzeug.security import check_password_hash
@@ -162,7 +162,7 @@ def register():
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
-    if current_user.is_authenticated:
+    if request.method == 'GET' and current_user.is_authenticated:
         if current_user.role == 'admin':
             return redirect(url_for('admin.dashboard'))
         elif current_user.role == 'manager':
@@ -176,7 +176,13 @@ def login():
 
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
+            import uuid
+            login_token = str(uuid.uuid4())
+            user.current_login_token = login_token
+            db.session.commit()
+            
             login_user(user)
+            session['login_token'] = login_token
             
             # Log login audit
             team_id = user.team_profile.id if user.role == 'team_leader' else None
@@ -220,10 +226,12 @@ def logout():
         ip_address=request.remote_addr,
         browser=request.user_agent.string
     )
+    current_user.current_login_token = None
     db.session.add(log)
     db.session.commit()
     
     logout_user()
+    session.clear()
     flash("You have been logged out.", "info")
     return redirect(url_for('auth.login'))
 

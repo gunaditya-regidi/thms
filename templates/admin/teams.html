@@ -47,14 +47,14 @@
     </div>
 
     {% for team in teams %}
-        <div class="glass-card mb-3 p-3" id="teamRow_{{ team.id }}" style="{% if not team.user.is_active %}opacity: 0.75; border-left: 4px solid var(--bs-warning);{% endif %}">
+        <div class="glass-card mb-3 p-3" id="teamRow_{{ team.id }}" style="border-left: 4px solid var(--house-{{ team.house.name.lower() }}) !important; {% if not team.user.is_active %}opacity: 0.75;{% endif %}">
             <div class="d-flex justify-content-between align-items-start mb-2">
                 <div class="d-flex align-items-start">
                     <div class="form-check me-2 pt-1">
                         <input class="form-check-input team-select-checkbox" type="checkbox" value="{{ team.id }}" id="selectTeam_{{ team.id }}">
                     </div>
                     <div>
-                        <h6 class="fw-bold mb-1 d-inline-block">{{ team.team_name }}</h6>
+                        <h6 class="fw-bold mb-1 d-inline-block" style="color: var(--house-{{ team.house.name.lower() }}); font-size: 15px;"><i class="bi bi-shield-fill text-{{ team.house.name.lower() }} me-1"></i>{{ team.team_name }}</h6>
                         {% if not team.user.is_active %}
                             <span class="badge bg-danger ms-1" style="font-size: 8px;">SUSPENDED</span>
                         {% endif %}
@@ -91,7 +91,7 @@
 
             <!-- Team Contact Details -->
             <div class="bg-light p-2 rounded-3 small mb-3 border">
-                <div class="mb-1"><strong>Leader:</strong> {{ team.leader_name }} ({{ team.leader_phone }})</div>
+                <div class="mb-1"><strong>Leader:</strong> <span class="fw-bold" style="color: var(--house-{{ team.house.name.lower() }});">{{ team.leader_name }}</span> ({{ team.leader_phone }})</div>
                 {% if team.members %}
                     <div class="mb-0">
                         <strong>Members:</strong> 

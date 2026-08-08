@@ -12,3 +12,4 @@ generated_qr/
 
 # Environment configurations
 .env
+.venv/

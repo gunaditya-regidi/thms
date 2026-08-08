@@ -48,11 +48,10 @@ def register():
         for i in range(2, 5):
             m_name = request.form.get(f'member{i}_name', '').strip()
             m_phone = request.form.get(f'member{i}_phone', '').strip()
-            if m_name or m_phone:
-                if not m_name or not m_phone:
-                    flash(f"Please fill both Name and Phone for Member {i}.", "danger")
-                    return render_template('auth/register.html')
-                members_data.append((m_name, m_phone, i))
+            if not m_name or not m_phone:
+                flash(f"Please fill both Name and Phone for Member {i}. All 3 team members are required.", "danger")
+                return render_template('auth/register.html')
+            members_data.append((m_name, m_phone, i))
 
         # Basic validations
         if not team_name or not leader_name or not leader_phone or not leader_password:

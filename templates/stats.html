@@ -121,8 +121,8 @@
                     <div class="d-flex flex-column gap-2" id="list_Red">
                         {% for t in teams %}
                             {% if t.house.name.lower() == 'red' %}
-                                <div class="d-flex justify-content-between align-items-center p-2 border rounded-3 bg-white shadow-sm" style="font-size: 11px;">
-                                    <span class="fw-bold text-dark text-truncate" style="max-width: 70%;" title="{{ t.team_name }}">{{ t.team_name }}</span>
+                                <div class="d-flex justify-content-between align-items-center p-2 border rounded-3 bg-white shadow-sm" style="font-size: 11px; gap: 4px;">
+                                    <span class="fw-bold text-dark" style="word-break: break-word; line-height: 1.2;">{{ t.team_name }}</span>
                                     {% if t.round2_completed %}
                                         <span class="badge bg-success" style="font-size: 8px;">FIN 🏆</span>
                                     {% elif t.current_round == 2 or t.round1_status == 'approved' %}
@@ -153,8 +153,8 @@
                     <div class="d-flex flex-column gap-2" id="list_Blue">
                         {% for t in teams %}
                             {% if t.house.name.lower() == 'blue' %}
-                                <div class="d-flex justify-content-between align-items-center p-2 border rounded-3 bg-white shadow-sm" style="font-size: 11px;">
-                                    <span class="fw-bold text-dark text-truncate" style="max-width: 70%;" title="{{ t.team_name }}">{{ t.team_name }}</span>
+                                <div class="d-flex justify-content-between align-items-center p-2 border rounded-3 bg-white shadow-sm" style="font-size: 11px; gap: 4px;">
+                                    <span class="fw-bold text-dark" style="word-break: break-word; line-height: 1.2;">{{ t.team_name }}</span>
                                     {% if t.round2_completed %}
                                         <span class="badge bg-success" style="font-size: 8px;">FIN 🏆</span>
                                     {% elif t.current_round == 2 or t.round1_status == 'approved' %}
@@ -185,8 +185,8 @@
                     <div class="d-flex flex-column gap-2" id="list_Green">
                         {% for t in teams %}
                             {% if t.house.name.lower() == 'green' %}
-                                <div class="d-flex justify-content-between align-items-center p-2 border rounded-3 bg-white shadow-sm" style="font-size: 11px;">
-                                    <span class="fw-bold text-dark text-truncate" style="max-width: 70%;" title="{{ t.team_name }}">{{ t.team_name }}</span>
+                                <div class="d-flex justify-content-between align-items-center p-2 border rounded-3 bg-white shadow-sm" style="font-size: 11px; gap: 4px;">
+                                    <span class="fw-bold text-dark" style="word-break: break-word; line-height: 1.2;">{{ t.team_name }}</span>
                                     {% if t.round2_completed %}
                                         <span class="badge bg-success" style="font-size: 8px;">FIN 🏆</span>
                                     {% elif t.current_round == 2 or t.round1_status == 'approved' %}
@@ -217,8 +217,8 @@
                     <div class="d-flex flex-column gap-2" id="list_Yellow">
                         {% for t in teams %}
                             {% if t.house.name.lower() == 'yellow' %}
-                                <div class="d-flex justify-content-between align-items-center p-2 border rounded-3 bg-white shadow-sm" style="font-size: 11px;">
-                                    <span class="fw-bold text-dark text-truncate" style="max-width: 70%;" title="{{ t.team_name }}">{{ t.team_name }}</span>
+                                <div class="d-flex justify-content-between align-items-center p-2 border rounded-3 bg-white shadow-sm" style="font-size: 11px; gap: 4px;">
+                                    <span class="fw-bold text-dark" style="word-break: break-word; line-height: 1.2;">{{ t.team_name }}</span>
                                     {% if t.round2_completed %}
                                         <span class="badge bg-success" style="font-size: 8px;">FIN 🏆</span>
                                     {% elif t.current_round == 2 or t.round1_status == 'approved' %}
@@ -638,8 +638,9 @@ function updateStatsView(data) {
         const card = document.createElement('div');
         card.className = 'd-flex justify-content-between align-items-center p-2 border rounded-3 bg-white shadow-sm';
         card.style.fontSize = '11px';
+        card.style.gap = '4px';
         card.innerHTML = `
-            <span class="fw-bold text-dark text-truncate" style="max-width: 70%;" title="${teamName}">${teamName}</span>
+            <span class="fw-bold text-dark" style="word-break: break-word; line-height: 1.2;">${teamName}</span>
             ${badgeHtml}
         `;
         

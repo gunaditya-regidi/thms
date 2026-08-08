@@ -21,15 +21,7 @@
     --house-yellow-bg: rgba(234, 179, 8, 0.1);
 }
 
-.dark-mode {
-    --bg-primary: #0f172a;
-    --bg-card: rgba(30, 41, 59, 0.85);
-    --border-color: rgba(51, 65, 85, 0.5);
-    --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
-    --shadow-soft: 0 8px 30px rgba(0, 0, 0, 0.2);
-    --shadow-hover: 0 12px 40px rgba(59, 130, 246, 0.15);
-}
+
 
 body {
     background-color: var(--bg-primary);
@@ -255,36 +247,7 @@ body {
     }
 }
 
-/* Dark mode overrides for libraries */
-.dark-mode .table {
-    color: #f8fafc;
-}
 
-.dark-mode .modal-content {
-    background-color: #1e293b;
-    color: #f8fafc;
-    border-color: #334155;
-}
-
-.dark-mode .list-group-item {
-    background-color: transparent;
-    color: #f8fafc;
-    border-color: #334155;
-}
-
-.dark-mode .dropdown-menu {
-    background-color: #1e293b;
-    color: #f8fafc;
-    border-color: #334155;
-}
-
-.dark-mode .dropdown-item {
-    color: #f8fafc;
-}
-
-.dark-mode .dropdown-item:hover {
-    background-color: #334155;
-}
 
 /* Toast container override */
 .toast-container {

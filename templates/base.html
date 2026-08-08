@@ -52,25 +52,13 @@
     
     <!-- Theme Switcher and SocketIO Listeners -->
     <script>
-        // 1. Dark Theme Management
+        // 1. Dark Theme Management (Disabled)
         function initTheme() {
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                document.documentElement.classList.add('dark-mode');
-            } else {
-                document.documentElement.classList.remove('dark-mode');
-            }
+            document.documentElement.classList.remove('dark-mode');
+            localStorage.removeItem('theme');
         }
         
-        function toggleTheme() {
-            if (document.documentElement.classList.contains('dark-mode')) {
-                document.documentElement.classList.remove('dark-mode');
-                localStorage.setItem('theme', 'light');
-            } else {
-                document.documentElement.classList.add('dark-mode');
-                localStorage.setItem('theme', 'dark');
-            }
-        }
+        function toggleTheme() {}
         
         initTheme();
 

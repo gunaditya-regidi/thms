@@ -118,60 +118,23 @@
                         <span><i class="bi bi-flag-fill me-2"></i>Red House</span>
                         <span class="badge bg-danger rounded-pill" id="count_Red" style="font-size: 11px;">0</span>
                     </h6>
-                    <div class="d-flex flex-column gap-3" id="list_Red">
+                    <div class="d-flex flex-column gap-2" id="list_Red">
                         {% for t in teams %}
                             {% if t.house.name.lower() == 'red' %}
-                                <div class="card border rounded-4 p-3 shadow-sm bg-white position-relative">
-                                    <div class="d-flex justify-content-between align-items-start mb-2">
-                                        <h6 class="fw-bold mb-0 text-dark" style="font-size: 12px;">{{ t.team_name }}</h6>
-                                        {% if t.round2_completed %}
-                                            <span class="badge bg-success" style="font-size: 8px;">FINISHED 🏆</span>
-                                        {% elif t.current_round == 2 or t.round1_status == 'approved' %}
-                                            <span class="badge bg-info text-dark" style="font-size: 8px;">R2 ACTIVE</span>
-                                        {% elif t.round1_status == 'verified' %}
-                                            <span class="badge bg-danger" style="font-size: 8px;">R1 VERIFIED</span>
-                                        {% elif t.round1_status == 'requested' %}
-                                            <span class="badge bg-warning text-dark" style="font-size: 8px;">R1 REQUESTED</span>
-                                        {% elif t.round1_status == 'pending_start' %}
-                                            <span class="badge bg-secondary" style="font-size: 8px;">PENDING START</span>
-                                        {% else %}
-                                            <span class="badge bg-primary" style="font-size: 8px;">R1 ACTIVE</span>
-                                        {% endif %}
-                                    </div>
-                                    
+                                <div class="d-flex justify-content-between align-items-center p-2 border rounded-3 bg-white shadow-sm" style="font-size: 11px;">
+                                    <span class="fw-bold text-dark text-truncate" style="max-width: 70%;" title="{{ t.team_name }}">{{ t.team_name }}</span>
                                     {% if t.round2_completed %}
-                                        {% set progress_val = 100 %}
-                                        {% set progress_label = 'FINISHED 🏆 (100%)' %}
+                                        <span class="badge bg-success" style="font-size: 8px;">FIN 🏆</span>
                                     {% elif t.current_round == 2 or t.round1_status == 'approved' %}
-                                        {% set progress_val = ((t.round2_current_clue - 1) * 100 // 7)|int %}
-                                        {% set progress_label = 'R2 Clues: ' ~ (t.round2_current_clue - 1) ~ '/7 (' ~ progress_val ~ '%)' %}
-                                    {% elif t.round1_status == 'verified' or t.round1_status == 'requested' %}
-                                        {% set progress_val = 100 %}
-                                        {% set progress_label = 'R1 Done (100%)' %}
+                                        <span class="badge bg-info text-dark" style="font-size: 8px;">R2</span>
+                                    {% elif t.round1_status == 'verified' %}
+                                        <span class="badge bg-danger" style="font-size: 8px;">R1-V</span>
+                                    {% elif t.round1_status == 'requested' %}
+                                        <span class="badge bg-warning text-dark" style="font-size: 8px;">R1-R</span>
+                                    {% elif t.round1_status == 'pending_start' %}
+                                        <span class="badge bg-secondary" style="font-size: 8px;">PEND</span>
                                     {% else %}
-                                        {% set progress_val = (t.task_completions|length) * 10 %}
-                                        {% set progress_label = 'R1 Tasks: ' ~ (t.task_completions|length) ~ '/10 (' ~ progress_val ~ '%)' %}
-                                    {% endif %}
-                                    
-                                    <div class="mb-2">
-                                        <div class="d-flex justify-content-between text-secondary mb-1" style="font-size: 8px;">
-                                            <span>Progress</span>
-                                            <span>{{ progress_label }}</span>
-                                        </div>
-                                        <div class="progress" style="height: 6px; border-radius: 50px;">
-                                            <div class="progress-bar bg-danger progress-bar-striped progress-bar-animated" role="progressbar" style="width: {{ progress_val }}%;" aria-valuenow="{{ progress_val }}" aria-valuemin="0" aria-valuemax="100"></div>
-                                        </div>
-                                    </div>
-                                    
-                                    {% if t.current_round == 1 and t.round1_status != 'approved' %}
-                                    <div class="d-flex justify-content-between align-items-center mt-2 border-top pt-2" style="font-size: 9px;">
-                                        <span class="font-monospace fw-bold text-secondary" id="statsStopwatch_{{ t.id }}">
-                                            <i class="bi bi-stopwatch-fill me-1"></i>00:00:00
-                                        </span>
-                                        <span class="text-muted">
-                                            <i class="bi bi-clock-history me-1"></i><span class="local-time-text">{{ t.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
-                                        </span>
-                                    </div>
+                                        <span class="badge bg-primary" style="font-size: 8px;">R1</span>
                                     {% endif %}
                                 </div>
                             {% endif %}
@@ -187,60 +150,23 @@
                         <span><i class="bi bi-flag-fill me-2"></i>Blue House</span>
                         <span class="badge bg-primary rounded-pill" id="count_Blue" style="font-size: 11px;">0</span>
                     </h6>
-                    <div class="d-flex flex-column gap-3" id="list_Blue">
+                    <div class="d-flex flex-column gap-2" id="list_Blue">
                         {% for t in teams %}
                             {% if t.house.name.lower() == 'blue' %}
-                                <div class="card border rounded-4 p-3 shadow-sm bg-white position-relative">
-                                    <div class="d-flex justify-content-between align-items-start mb-2">
-                                        <h6 class="fw-bold mb-0 text-dark" style="font-size: 12px;">{{ t.team_name }}</h6>
-                                        {% if t.round2_completed %}
-                                            <span class="badge bg-success" style="font-size: 8px;">FINISHED 🏆</span>
-                                        {% elif t.current_round == 2 or t.round1_status == 'approved' %}
-                                            <span class="badge bg-info text-dark" style="font-size: 8px;">R2 ACTIVE</span>
-                                        {% elif t.round1_status == 'verified' %}
-                                            <span class="badge bg-danger" style="font-size: 8px;">R1 VERIFIED</span>
-                                        {% elif t.round1_status == 'requested' %}
-                                            <span class="badge bg-warning text-dark" style="font-size: 8px;">R1 REQUESTED</span>
-                                        {% elif t.round1_status == 'pending_start' %}
-                                            <span class="badge bg-secondary" style="font-size: 8px;">PENDING START</span>
-                                        {% else %}
-                                            <span class="badge bg-primary" style="font-size: 8px;">R1 ACTIVE</span>
-                                        {% endif %}
-                                    </div>
-                                    
+                                <div class="d-flex justify-content-between align-items-center p-2 border rounded-3 bg-white shadow-sm" style="font-size: 11px;">
+                                    <span class="fw-bold text-dark text-truncate" style="max-width: 70%;" title="{{ t.team_name }}">{{ t.team_name }}</span>
                                     {% if t.round2_completed %}
-                                        {% set progress_val = 100 %}
-                                        {% set progress_label = 'FINISHED 🏆 (100%)' %}
+                                        <span class="badge bg-success" style="font-size: 8px;">FIN 🏆</span>
                                     {% elif t.current_round == 2 or t.round1_status == 'approved' %}
-                                        {% set progress_val = ((t.round2_current_clue - 1) * 100 // 7)|int %}
-                                        {% set progress_label = 'R2 Clues: ' ~ (t.round2_current_clue - 1) ~ '/7 (' ~ progress_val ~ '%)' %}
-                                    {% elif t.round1_status == 'verified' or t.round1_status == 'requested' %}
-                                        {% set progress_val = 100 %}
-                                        {% set progress_label = 'R1 Done (100%)' %}
+                                        <span class="badge bg-info text-dark" style="font-size: 8px;">R2</span>
+                                    {% elif t.round1_status == 'verified' %}
+                                        <span class="badge bg-danger" style="font-size: 8px;">R1-V</span>
+                                    {% elif t.round1_status == 'requested' %}
+                                        <span class="badge bg-warning text-dark" style="font-size: 8px;">R1-R</span>
+                                    {% elif t.round1_status == 'pending_start' %}
+                                        <span class="badge bg-secondary" style="font-size: 8px;">PEND</span>
                                     {% else %}
-                                        {% set progress_val = (t.task_completions|length) * 10 %}
-                                        {% set progress_label = 'R1 Tasks: ' ~ (t.task_completions|length) ~ '/10 (' ~ progress_val ~ '%)' %}
-                                    {% endif %}
-                                    
-                                    <div class="mb-2">
-                                        <div class="d-flex justify-content-between text-secondary mb-1" style="font-size: 8px;">
-                                            <span>Progress</span>
-                                            <span>{{ progress_label }}</span>
-                                        </div>
-                                        <div class="progress" style="height: 6px; border-radius: 50px;">
-                                            <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" role="progressbar" style="width: {{ progress_val }}%;" aria-valuenow="{{ progress_val }}" aria-valuemin="0" aria-valuemax="100"></div>
-                                        </div>
-                                    </div>
-                                    
-                                    {% if t.current_round == 1 and t.round1_status != 'approved' %}
-                                    <div class="d-flex justify-content-between align-items-center mt-2 border-top pt-2" style="font-size: 9px;">
-                                        <span class="font-monospace fw-bold text-secondary" id="statsStopwatch_{{ t.id }}">
-                                            <i class="bi bi-stopwatch-fill me-1"></i>00:00:00
-                                        </span>
-                                        <span class="text-muted">
-                                            <i class="bi bi-clock-history me-1"></i><span class="local-time-text">{{ t.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
-                                        </span>
-                                    </div>
+                                        <span class="badge bg-primary" style="font-size: 8px;">R1</span>
                                     {% endif %}
                                 </div>
                             {% endif %}
@@ -256,60 +182,23 @@
                         <span><i class="bi bi-flag-fill me-2"></i>Green House</span>
                         <span class="badge bg-success rounded-pill" id="count_Green" style="font-size: 11px;">0</span>
                     </h6>
-                    <div class="d-flex flex-column gap-3" id="list_Green">
+                    <div class="d-flex flex-column gap-2" id="list_Green">
                         {% for t in teams %}
                             {% if t.house.name.lower() == 'green' %}
-                                <div class="card border rounded-4 p-3 shadow-sm bg-white position-relative">
-                                    <div class="d-flex justify-content-between align-items-start mb-2">
-                                        <h6 class="fw-bold mb-0 text-dark" style="font-size: 12px;">{{ t.team_name }}</h6>
-                                        {% if t.round2_completed %}
-                                            <span class="badge bg-success" style="font-size: 8px;">FINISHED 🏆</span>
-                                        {% elif t.current_round == 2 or t.round1_status == 'approved' %}
-                                            <span class="badge bg-info text-dark" style="font-size: 8px;">R2 ACTIVE</span>
-                                        {% elif t.round1_status == 'verified' %}
-                                            <span class="badge bg-danger" style="font-size: 8px;">R1 VERIFIED</span>
-                                        {% elif t.round1_status == 'requested' %}
-                                            <span class="badge bg-warning text-dark" style="font-size: 8px;">R1 REQUESTED</span>
-                                        {% elif t.round1_status == 'pending_start' %}
-                                            <span class="badge bg-secondary" style="font-size: 8px;">PENDING START</span>
-                                        {% else %}
-                                            <span class="badge bg-primary" style="font-size: 8px;">R1 ACTIVE</span>
-                                        {% endif %}
-                                    </div>
-                                    
+                                <div class="d-flex justify-content-between align-items-center p-2 border rounded-3 bg-white shadow-sm" style="font-size: 11px;">
+                                    <span class="fw-bold text-dark text-truncate" style="max-width: 70%;" title="{{ t.team_name }}">{{ t.team_name }}</span>
                                     {% if t.round2_completed %}
-                                        {% set progress_val = 100 %}
-                                        {% set progress_label = 'FINISHED 🏆 (100%)' %}
+                                        <span class="badge bg-success" style="font-size: 8px;">FIN 🏆</span>
                                     {% elif t.current_round == 2 or t.round1_status == 'approved' %}
-                                        {% set progress_val = ((t.round2_current_clue - 1) * 100 // 7)|int %}
-                                        {% set progress_label = 'R2 Clues: ' ~ (t.round2_current_clue - 1) ~ '/7 (' ~ progress_val ~ '%)' %}
-                                    {% elif t.round1_status == 'verified' or t.round1_status == 'requested' %}
-                                        {% set progress_val = 100 %}
-                                        {% set progress_label = 'R1 Done (100%)' %}
+                                        <span class="badge bg-info text-dark" style="font-size: 8px;">R2</span>
+                                    {% elif t.round1_status == 'verified' %}
+                                        <span class="badge bg-danger" style="font-size: 8px;">R1-V</span>
+                                    {% elif t.round1_status == 'requested' %}
+                                        <span class="badge bg-warning text-dark" style="font-size: 8px;">R1-R</span>
+                                    {% elif t.round1_status == 'pending_start' %}
+                                        <span class="badge bg-secondary" style="font-size: 8px;">PEND</span>
                                     {% else %}
-                                        {% set progress_val = (t.task_completions|length) * 10 %}
-                                        {% set progress_label = 'R1 Tasks: ' ~ (t.task_completions|length) ~ '/10 (' ~ progress_val ~ '%)' %}
-                                    {% endif %}
-                                    
-                                    <div class="mb-2">
-                                        <div class="d-flex justify-content-between text-secondary mb-1" style="font-size: 8px;">
-                                            <span>Progress</span>
-                                            <span>{{ progress_label }}</span>
-                                        </div>
-                                        <div class="progress" style="height: 6px; border-radius: 50px;">
-                                            <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" role="progressbar" style="width: {{ progress_val }}%;" aria-valuenow="{{ progress_val }}" aria-valuemin="0" aria-valuemax="100"></div>
-                                        </div>
-                                    </div>
-                                    
-                                    {% if t.current_round == 1 and t.round1_status != 'approved' %}
-                                    <div class="d-flex justify-content-between align-items-center mt-2 border-top pt-2" style="font-size: 9px;">
-                                        <span class="font-monospace fw-bold text-secondary" id="statsStopwatch_{{ t.id }}">
-                                            <i class="bi bi-stopwatch-fill me-1"></i>00:00:00
-                                        </span>
-                                        <span class="text-muted">
-                                            <i class="bi bi-clock-history me-1"></i><span class="local-time-text">{{ t.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
-                                        </span>
-                                    </div>
+                                        <span class="badge bg-primary" style="font-size: 8px;">R1</span>
                                     {% endif %}
                                 </div>
                             {% endif %}
@@ -325,60 +214,23 @@
                         <span><i class="bi bi-flag-fill me-2 text-warning"></i>Yellow House</span>
                         <span class="badge bg-warning text-dark rounded-pill" id="count_Yellow" style="font-size: 11px;">0</span>
                     </h6>
-                    <div class="d-flex flex-column gap-3" id="list_Yellow">
+                    <div class="d-flex flex-column gap-2" id="list_Yellow">
                         {% for t in teams %}
                             {% if t.house.name.lower() == 'yellow' %}
-                                <div class="card border rounded-4 p-3 shadow-sm bg-white position-relative">
-                                    <div class="d-flex justify-content-between align-items-start mb-2">
-                                        <h6 class="fw-bold mb-0 text-dark" style="font-size: 12px;">{{ t.team_name }}</h6>
-                                        {% if t.round2_completed %}
-                                            <span class="badge bg-success" style="font-size: 8px;">FINISHED 🏆</span>
-                                        {% elif t.current_round == 2 or t.round1_status == 'approved' %}
-                                            <span class="badge bg-info text-dark" style="font-size: 8px;">R2 ACTIVE</span>
-                                        {% elif t.round1_status == 'verified' %}
-                                            <span class="badge bg-danger" style="font-size: 8px;">R1 VERIFIED</span>
-                                        {% elif t.round1_status == 'requested' %}
-                                            <span class="badge bg-warning text-dark" style="font-size: 8px;">R1 REQUESTED</span>
-                                        {% elif t.round1_status == 'pending_start' %}
-                                            <span class="badge bg-secondary" style="font-size: 8px;">PENDING START</span>
-                                        {% else %}
-                                            <span class="badge bg-primary" style="font-size: 8px;">R1 ACTIVE</span>
-                                        {% endif %}
-                                    </div>
-                                    
+                                <div class="d-flex justify-content-between align-items-center p-2 border rounded-3 bg-white shadow-sm" style="font-size: 11px;">
+                                    <span class="fw-bold text-dark text-truncate" style="max-width: 70%;" title="{{ t.team_name }}">{{ t.team_name }}</span>
                                     {% if t.round2_completed %}
-                                        {% set progress_val = 100 %}
-                                        {% set progress_label = 'FINISHED 🏆 (100%)' %}
+                                        <span class="badge bg-success" style="font-size: 8px;">FIN 🏆</span>
                                     {% elif t.current_round == 2 or t.round1_status == 'approved' %}
-                                        {% set progress_val = ((t.round2_current_clue - 1) * 100 // 7)|int %}
-                                        {% set progress_label = 'R2 Clues: ' ~ (t.round2_current_clue - 1) ~ '/7 (' ~ progress_val ~ '%)' %}
-                                    {% elif t.round1_status == 'verified' or t.round1_status == 'requested' %}
-                                        {% set progress_val = 100 %}
-                                        {% set progress_label = 'R1 Done (100%)' %}
+                                        <span class="badge bg-info text-dark" style="font-size: 8px;">R2</span>
+                                    {% elif t.round1_status == 'verified' %}
+                                        <span class="badge bg-danger" style="font-size: 8px;">R1-V</span>
+                                    {% elif t.round1_status == 'requested' %}
+                                        <span class="badge bg-warning text-dark" style="font-size: 8px;">R1-R</span>
+                                    {% elif t.round1_status == 'pending_start' %}
+                                        <span class="badge bg-secondary" style="font-size: 8px;">PEND</span>
                                     {% else %}
-                                        {% set progress_val = (t.task_completions|length) * 10 %}
-                                        {% set progress_label = 'R1 Tasks: ' ~ (t.task_completions|length) ~ '/10 (' ~ progress_val ~ '%)' %}
-                                    {% endif %}
-                                    
-                                    <div class="mb-2">
-                                        <div class="d-flex justify-content-between text-secondary mb-1" style="font-size: 8px;">
-                                            <span>Progress</span>
-                                            <span>{{ progress_label }}</span>
-                                        </div>
-                                        <div class="progress" style="height: 6px; border-radius: 50px;">
-                                            <div class="progress-bar bg-warning progress-bar-striped progress-bar-animated text-dark" role="progressbar" style="width: {{ progress_val }}%;" aria-valuenow="{{ progress_val }}" aria-valuemin="0" aria-valuemax="100"></div>
-                                        </div>
-                                    </div>
-                                    
-                                    {% if t.current_round == 1 and t.round1_status != 'approved' %}
-                                    <div class="d-flex justify-content-between align-items-center mt-2 border-top pt-2" style="font-size: 9px;">
-                                        <span class="font-monospace fw-bold text-secondary" id="statsStopwatch_{{ t.id }}">
-                                            <i class="bi bi-stopwatch-fill me-1"></i>00:00:00
-                                        </span>
-                                        <span class="text-muted">
-                                            <i class="bi bi-clock-history me-1"></i><span class="local-time-text">{{ t.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
-                                        </span>
-                                    </div>
+                                        <span class="badge bg-primary" style="font-size: 8px;">R1</span>
                                     {% endif %}
                                 </div>
                             {% endif %}
@@ -778,39 +630,27 @@ function updateStatsView(data) {
         };
         
         // Build card element
-        const card = document.createElement('div');
-        card.className = 'card border rounded-4 p-3 shadow-sm bg-white position-relative';
-        
-        let footerHtml = '';
-        if (currentRound === 1 && round1Status !== 'approved') {
-            footerHtml = `
-                <div class="d-flex justify-content-between align-items-center mt-2 border-top pt-2" style="font-size: 9px;">
-                    <span class="font-monospace fw-bold text-secondary" id="statsStopwatch_${team.id}">
-                        <i class="bi bi-stopwatch-fill me-1"></i>00:00:00
-                    </span>
-                    <span class="text-muted">
-                        <i class="bi bi-clock-history me-1"></i><span>${convertUTCToLocalText(lastActive)}</span>
-                    </span>
-                </div>
-            `;
+        let badgeHtml = '';
+        if (team.round2_completed) {
+            badgeHtml = '<span class="badge bg-success" style="font-size: 8px;">FIN 🏆</span>';
+        } else if (currentRound === 2 || round1Status === 'approved') {
+            badgeHtml = '<span class="badge bg-info text-dark" style="font-size: 8px;">R2</span>';
+        } else if (round1Status === 'verified') {
+            badgeHtml = '<span class="badge bg-danger" style="font-size: 8px;">R1-V</span>';
+        } else if (round1Status === 'requested') {
+            badgeHtml = '<span class="badge bg-warning text-dark" style="font-size: 8px;">R1-R</span>';
+        } else if (round1Status === 'pending_start') {
+            badgeHtml = '<span class="badge bg-secondary" style="font-size: 8px;">PEND</span>';
+        } else {
+            badgeHtml = '<span class="badge bg-primary" style="font-size: 8px;">R1</span>';
         }
 
+        const card = document.createElement('div');
+        card.className = 'd-flex justify-content-between align-items-center p-2 border rounded-3 bg-white shadow-sm';
+        card.style.fontSize = '11px';
         card.innerHTML = `
-            <div class="d-flex justify-content-between align-items-start mb-2">
-                <h6 class="fw-bold mb-0 text-dark" style="font-size: 12px;">${teamName}</h6>
-                <span class="badge ${badgeClass}" style="font-size: 8px;">${statusText}</span>
-            </div>
-            
-            <div class="mb-2">
-                <div class="d-flex justify-content-between text-secondary mb-1" style="font-size: 8px;">
-                    <span>Progress</span>
-                    <span>${progressLabel}</span>
-                </div>
-                <div class="progress" style="height: 6px; border-radius: 50px;">
-                    <div class="progress-bar ${progressBarColor} progress-bar-striped progress-bar-animated" role="progressbar" style="width: ${progressVal}%;" aria-valuenow="${progressVal}" aria-valuemin="0" aria-valuemax="100"></div>
-                </div>
-            </div>
-            ${footerHtml}
+            <span class="fw-bold text-dark text-truncate" style="max-width: 70%;" title="${teamName}">${teamName}</span>
+            ${badgeHtml}
         `;
         
         const listEl = houseLists[houseName];

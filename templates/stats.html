@@ -102,39 +102,38 @@
 
 <!-- Split Container -->
 <div class="stats-split-container {% if split_enabled %}split{% endif %}" id="statsContainer">
-    
-    <!-- LEFT PANEL: Active Team List Grid (40% or 100%) -->
+    <!-- LEFT PANEL: Active Team List Grid (50% or 100%) -->
     <div class="stats-left-panel">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="fw-bold mb-0 text-primary"><i class="bi bi-people-fill me-2"></i>Active Team Grid</h5>
-            <span class="badge bg-secondary rounded-pill" id="totalTeamsCount">{{ teams|length }} Teams Registered</span>
+            <h3 class="fw-bold mb-0 text-primary fs-3"><i class="bi bi-people-fill me-2"></i>Active Team Grid</h3>
+            <span class="badge bg-secondary rounded-pill fs-5" id="totalTeamsCount" style="padding: 6px 12px;">{{ teams|length }} Teams Registered</span>
         </div>
         
         <div class="row g-3" id="housesColumnsContainer">
             <!-- Red House Column -->
             <div class="col-xl-3 col-md-6 mb-3">
                 <div class="glass-card p-3 h-100 border-top border-4 border-danger" style="background: rgba(220, 53, 69, 0.015);">
-                    <h6 class="fw-bold mb-3 text-danger d-flex justify-content-between align-items-center">
+                    <h4 class="fw-bold mb-3 text-danger d-flex justify-content-between align-items-center fs-4">
                         <span><i class="bi bi-flag-fill me-2"></i>Red House</span>
-                        <span class="badge bg-danger rounded-pill" id="count_Red" style="font-size: 11px;">0</span>
-                    </h6>
+                        <span class="badge bg-danger rounded-pill" id="count_Red" style="font-size: 14px;">0</span>
+                    </h4>
                     <div class="d-flex flex-column gap-2" id="list_Red">
                         {% for t in teams %}
                             {% if t.house.name.lower() == 'red' %}
-                                <div class="d-flex justify-content-between align-items-center p-2 border rounded-3 bg-white shadow-sm" style="font-size: 11px; gap: 4px;">
+                                <div class="d-flex justify-content-between align-items-center border rounded-3 bg-white shadow-sm" style="font-size: 15px; gap: 4px; padding: 10px 12px !important;">
                                     <span class="fw-bold text-dark" style="word-break: break-word; line-height: 1.2;">{{ t.team_name }}</span>
                                     {% if t.round2_completed %}
-                                        <span class="badge bg-success" style="font-size: 8px;">FIN 🏆</span>
+                                        <span class="badge bg-success" style="font-size: 11px;">FIN 🏆</span>
                                     {% elif t.current_round == 2 or t.round1_status == 'approved' %}
-                                        <span class="badge bg-info text-dark" style="font-size: 8px;">R2</span>
+                                        <span class="badge bg-info text-dark" style="font-size: 11px;">R2</span>
                                     {% elif t.round1_status == 'verified' %}
-                                        <span class="badge bg-danger" style="font-size: 8px;">R1-V</span>
+                                        <span class="badge bg-danger" style="font-size: 11px;">R1-V</span>
                                     {% elif t.round1_status == 'requested' %}
-                                        <span class="badge bg-warning text-dark" style="font-size: 8px;">R1-R</span>
+                                        <span class="badge bg-warning text-dark" style="font-size: 11px;">R1-R</span>
                                     {% elif t.round1_status == 'pending_start' %}
-                                        <span class="badge bg-secondary" style="font-size: 8px;">PEND</span>
+                                        <span class="badge bg-secondary" style="font-size: 11px;">PEND</span>
                                     {% else %}
-                                        <span class="badge bg-primary" style="font-size: 8px;">R1</span>
+                                        <span class="badge bg-primary" style="font-size: 11px;">R1</span>
                                     {% endif %}
                                 </div>
                             {% endif %}
@@ -146,27 +145,27 @@
             <!-- Blue House Column -->
             <div class="col-xl-3 col-md-6 mb-3">
                 <div class="glass-card p-3 h-100 border-top border-4 border-primary" style="background: rgba(13, 110, 253, 0.015);">
-                    <h6 class="fw-bold mb-3 text-primary d-flex justify-content-between align-items-center">
+                    <h4 class="fw-bold mb-3 text-primary d-flex justify-content-between align-items-center fs-4">
                         <span><i class="bi bi-flag-fill me-2"></i>Blue House</span>
-                        <span class="badge bg-primary rounded-pill" id="count_Blue" style="font-size: 11px;">0</span>
-                    </h6>
+                        <span class="badge bg-primary rounded-pill" id="count_Blue" style="font-size: 14px;">0</span>
+                    </h4>
                     <div class="d-flex flex-column gap-2" id="list_Blue">
                         {% for t in teams %}
                             {% if t.house.name.lower() == 'blue' %}
-                                <div class="d-flex justify-content-between align-items-center p-2 border rounded-3 bg-white shadow-sm" style="font-size: 11px; gap: 4px;">
+                                <div class="d-flex justify-content-between align-items-center border rounded-3 bg-white shadow-sm" style="font-size: 15px; gap: 4px; padding: 10px 12px !important;">
                                     <span class="fw-bold text-dark" style="word-break: break-word; line-height: 1.2;">{{ t.team_name }}</span>
                                     {% if t.round2_completed %}
-                                        <span class="badge bg-success" style="font-size: 8px;">FIN 🏆</span>
+                                        <span class="badge bg-success" style="font-size: 11px;">FIN 🏆</span>
                                     {% elif t.current_round == 2 or t.round1_status == 'approved' %}
-                                        <span class="badge bg-info text-dark" style="font-size: 8px;">R2</span>
+                                        <span class="badge bg-info text-dark" style="font-size: 11px;">R2</span>
                                     {% elif t.round1_status == 'verified' %}
-                                        <span class="badge bg-danger" style="font-size: 8px;">R1-V</span>
+                                        <span class="badge bg-danger" style="font-size: 11px;">R1-V</span>
                                     {% elif t.round1_status == 'requested' %}
-                                        <span class="badge bg-warning text-dark" style="font-size: 8px;">R1-R</span>
+                                        <span class="badge bg-warning text-dark" style="font-size: 11px;">R1-R</span>
                                     {% elif t.round1_status == 'pending_start' %}
-                                        <span class="badge bg-secondary" style="font-size: 8px;">PEND</span>
+                                        <span class="badge bg-secondary" style="font-size: 11px;">PEND</span>
                                     {% else %}
-                                        <span class="badge bg-primary" style="font-size: 8px;">R1</span>
+                                        <span class="badge bg-primary" style="font-size: 11px;">R1</span>
                                     {% endif %}
                                 </div>
                             {% endif %}
@@ -178,27 +177,27 @@
             <!-- Green House Column -->
             <div class="col-xl-3 col-md-6 mb-3">
                 <div class="glass-card p-3 h-100 border-top border-4 border-success" style="background: rgba(25, 135, 84, 0.015);">
-                    <h6 class="fw-bold mb-3 text-success d-flex justify-content-between align-items-center">
+                    <h4 class="fw-bold mb-3 text-success d-flex justify-content-between align-items-center fs-4">
                         <span><i class="bi bi-flag-fill me-2"></i>Green House</span>
-                        <span class="badge bg-success rounded-pill" id="count_Green" style="font-size: 11px;">0</span>
-                    </h6>
+                        <span class="badge bg-success rounded-pill" id="count_Green" style="font-size: 14px;">0</span>
+                    </h4>
                     <div class="d-flex flex-column gap-2" id="list_Green">
                         {% for t in teams %}
                             {% if t.house.name.lower() == 'green' %}
-                                <div class="d-flex justify-content-between align-items-center p-2 border rounded-3 bg-white shadow-sm" style="font-size: 11px; gap: 4px;">
+                                <div class="d-flex justify-content-between align-items-center border rounded-3 bg-white shadow-sm" style="font-size: 15px; gap: 4px; padding: 10px 12px !important;">
                                     <span class="fw-bold text-dark" style="word-break: break-word; line-height: 1.2;">{{ t.team_name }}</span>
                                     {% if t.round2_completed %}
-                                        <span class="badge bg-success" style="font-size: 8px;">FIN 🏆</span>
+                                        <span class="badge bg-success" style="font-size: 11px;">FIN 🏆</span>
                                     {% elif t.current_round == 2 or t.round1_status == 'approved' %}
-                                        <span class="badge bg-info text-dark" style="font-size: 8px;">R2</span>
+                                        <span class="badge bg-info text-dark" style="font-size: 11px;">R2</span>
                                     {% elif t.round1_status == 'verified' %}
-                                        <span class="badge bg-danger" style="font-size: 8px;">R1-V</span>
+                                        <span class="badge bg-danger" style="font-size: 11px;">R1-V</span>
                                     {% elif t.round1_status == 'requested' %}
-                                        <span class="badge bg-warning text-dark" style="font-size: 8px;">R1-R</span>
+                                        <span class="badge bg-warning text-dark" style="font-size: 11px;">R1-R</span>
                                     {% elif t.round1_status == 'pending_start' %}
-                                        <span class="badge bg-secondary" style="font-size: 8px;">PEND</span>
+                                        <span class="badge bg-secondary" style="font-size: 11px;">PEND</span>
                                     {% else %}
-                                        <span class="badge bg-primary" style="font-size: 8px;">R1</span>
+                                        <span class="badge bg-primary" style="font-size: 11px;">R1</span>
                                     {% endif %}
                                 </div>
                             {% endif %}
@@ -210,27 +209,27 @@
             <!-- Yellow House Column -->
             <div class="col-xl-3 col-md-6 mb-3">
                 <div class="glass-card p-3 h-100 border-top border-4 border-warning" style="background: rgba(255, 193, 7, 0.015);">
-                    <h6 class="fw-bold mb-3 text-warning d-flex justify-content-between align-items-center">
+                    <h4 class="fw-bold mb-3 text-warning d-flex justify-content-between align-items-center fs-4">
                         <span><i class="bi bi-flag-fill me-2 text-warning"></i>Yellow House</span>
-                        <span class="badge bg-warning text-dark rounded-pill" id="count_Yellow" style="font-size: 11px;">0</span>
-                    </h6>
+                        <span class="badge bg-warning text-dark rounded-pill" id="count_Yellow" style="font-size: 14px;">0</span>
+                    </h4>
                     <div class="d-flex flex-column gap-2" id="list_Yellow">
                         {% for t in teams %}
                             {% if t.house.name.lower() == 'yellow' %}
-                                <div class="d-flex justify-content-between align-items-center p-2 border rounded-3 bg-white shadow-sm" style="font-size: 11px; gap: 4px;">
+                                <div class="d-flex justify-content-between align-items-center border rounded-3 bg-white shadow-sm" style="font-size: 15px; gap: 4px; padding: 10px 12px !important;">
                                     <span class="fw-bold text-dark" style="word-break: break-word; line-height: 1.2;">{{ t.team_name }}</span>
                                     {% if t.round2_completed %}
-                                        <span class="badge bg-success" style="font-size: 8px;">FIN 🏆</span>
+                                        <span class="badge bg-success" style="font-size: 11px;">FIN 🏆</span>
                                     {% elif t.current_round == 2 or t.round1_status == 'approved' %}
-                                        <span class="badge bg-info text-dark" style="font-size: 8px;">R2</span>
+                                        <span class="badge bg-info text-dark" style="font-size: 11px;">R2</span>
                                     {% elif t.round1_status == 'verified' %}
-                                        <span class="badge bg-danger" style="font-size: 8px;">R1-V</span>
+                                        <span class="badge bg-danger" style="font-size: 11px;">R1-V</span>
                                     {% elif t.round1_status == 'requested' %}
-                                        <span class="badge bg-warning text-dark" style="font-size: 8px;">R1-R</span>
+                                        <span class="badge bg-warning text-dark" style="font-size: 11px;">R1-R</span>
                                     {% elif t.round1_status == 'pending_start' %}
-                                        <span class="badge bg-secondary" style="font-size: 8px;">PEND</span>
+                                        <span class="badge bg-secondary" style="font-size: 11px;">PEND</span>
                                     {% else %}
-                                        <span class="badge bg-primary" style="font-size: 8px;">R1</span>
+                                        <span class="badge bg-primary" style="font-size: 11px;">R1</span>
                                     {% endif %}
                                 </div>
                             {% endif %}
@@ -241,11 +240,11 @@
         </div>
     </div>
 
-    <!-- RIGHT PANEL: Leaderboard (60% or Hidden) -->
+    <!-- RIGHT PANEL: Leaderboard (50% or Hidden) -->
     <div class="stats-right-panel" id="rightPanel" style="padding: 24px;">
-        <div class="glass-card p-3 mb-0 border-primary border-opacity-25 shadow-sm d-flex flex-column" style="height: 100%; min-height: 520px;">
-            <h6 class="fw-bold text-primary mb-2"><i class="bi bi-trophy-fill me-2"></i>Top 10 Leaderboard</h6>
-            <div id="leaderboardContainer" style="position: relative; flex: 1; overflow: hidden; width: 100%; min-height: 520px;">
+        <div class="glass-card p-4 mb-0 border-primary border-opacity-25 shadow-sm d-flex flex-column" style="height: 100%; min-height: 700px;">
+            <h3 class="fw-bold text-primary mb-3 fs-3"><i class="bi bi-trophy-fill me-2"></i>Top 10 Leaderboard</h3>
+            <div id="leaderboardContainer" style="position: relative; flex: 1; overflow: hidden; width: 100%; min-height: 700px;">
                 <!-- Filled Dynamically with styled cards -->
             </div>
         </div>
@@ -564,23 +563,24 @@ function updateStatsView(data) {
         // Build card element
         let badgeHtml = '';
         if (team.round2_completed) {
-            badgeHtml = '<span class="badge bg-success" style="font-size: 8px;">FIN 🏆</span>';
+            badgeHtml = '<span class="badge bg-success" style="font-size: 11px;">FIN 🏆</span>';
         } else if (currentRound === 2 || round1Status === 'approved') {
-            badgeHtml = '<span class="badge bg-info text-dark" style="font-size: 8px;">R2</span>';
+            badgeHtml = '<span class="badge bg-info text-dark" style="font-size: 11px;">R2</span>';
         } else if (round1Status === 'verified') {
-            badgeHtml = '<span class="badge bg-danger" style="font-size: 8px;">R1-V</span>';
+            badgeHtml = '<span class="badge bg-danger" style="font-size: 11px;">R1-V</span>';
         } else if (round1Status === 'requested') {
-            badgeHtml = '<span class="badge bg-warning text-dark" style="font-size: 8px;">R1-R</span>';
+            badgeHtml = '<span class="badge bg-warning text-dark" style="font-size: 11px;">R1-R</span>';
         } else if (round1Status === 'pending_start') {
-            badgeHtml = '<span class="badge bg-secondary" style="font-size: 8px;">PEND</span>';
+            badgeHtml = '<span class="badge bg-secondary" style="font-size: 11px;">PEND</span>';
         } else {
-            badgeHtml = '<span class="badge bg-primary" style="font-size: 8px;">R1</span>';
+            badgeHtml = '<span class="badge bg-primary" style="font-size: 11px;">R1</span>';
         }
 
         const card = document.createElement('div');
-        card.className = 'd-flex justify-content-between align-items-center p-2 border rounded-3 bg-white shadow-sm';
-        card.style.fontSize = '11px';
+        card.className = 'd-flex justify-content-between align-items-center border rounded-3 bg-white shadow-sm';
+        card.style.fontSize = '15px';
         card.style.gap = '4px';
+        card.style.padding = '10px 12px';
         card.innerHTML = `
             <span class="fw-bold text-dark" style="word-break: break-word; line-height: 1.2;">${teamName}</span>
             ${badgeHtml}
@@ -628,11 +628,11 @@ function updateStatsView(data) {
             if (!itemEl) {
                 itemEl = document.createElement('div');
                 itemEl.id = teamKey;
-                itemEl.className = 'leaderboard-item d-flex align-items-center justify-content-between p-2 mb-2 border rounded-3 bg-white shadow-sm';
+                itemEl.className = 'leaderboard-item d-flex align-items-center justify-content-between p-3 mb-2 border rounded-3 bg-white shadow-sm';
                 itemEl.style.position = 'absolute';
                 itemEl.style.left = '0';
                 itemEl.style.right = '0';
-                itemEl.style.height = '48px';
+                itemEl.style.height = '62px';
                 itemEl.style.transition = 'top 0.8s cubic-bezier(0.25, 1, 0.5, 1), transform 0.8s ease, background-color 0.3s ease, opacity 0.5s ease';
                 
                 let houseBorderColor = '#cccccc';
@@ -640,13 +640,13 @@ function updateStatsView(data) {
                 else if (houseName.toLowerCase() === 'green') houseBorderColor = '#22c55e';
                 else if (houseName.toLowerCase() === 'blue') houseBorderColor = '#3b82f6';
                 else if (houseName.toLowerCase() === 'yellow') houseBorderColor = '#eab308';
-                itemEl.style.borderLeft = `5px solid ${houseBorderColor}`;
+                itemEl.style.borderLeft = `6px solid ${houseBorderColor}`;
                 
                 leaderboardContainer.appendChild(itemEl);
             }
             
             // Update positioning
-            itemEl.style.top = (index * 52) + 'px';
+            itemEl.style.top = (index * 68) + 'px';
             itemEl.style.opacity = '1';
             itemEl.style.transform = 'scale(1)';
             
@@ -664,16 +664,16 @@ function updateStatsView(data) {
 
             // Build content
             itemEl.innerHTML = `
-                <div class="d-flex align-items-center gap-2">
-                    <span class="badge bg-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 26px; height: 26px; font-size: 10px;">#${rank}</span>
+                <div class="d-flex align-items-center gap-3">
+                    <span class="badge bg-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 34px; height: 34px; font-size: 14px;">#${rank}</span>
                     <div>
-                        <span class="fw-bold text-dark" style="font-size: 12.5px;">${teamName}</span>
-                        <span class="badge ${houseBadgeClass} font-monospace" style="font-size: 8.5px; padding: 2px 4px;">${houseName}</span>
+                        <span class="fw-bold text-dark" style="font-size: 17px; margin-right: 4px;">${teamName}</span>
+                        <span class="badge ${houseBadgeClass} font-monospace" style="font-size: 11px; padding: 3px 6px;">${houseName}</span>
                     </div>
                 </div>
-                <div class="d-flex align-items-center gap-3">
-                    <span class="small text-secondary fw-semibold" style="font-size: 10.5px;">${roundLabel}: ${clueProgress}</span>
-                    <span class="badge bg-primary font-monospace" style="font-size: 9.5px; padding: 3px 6px;">Dur: ${durationText}</span>
+                <div class="d-flex align-items-center gap-4">
+                    <span class="text-secondary fw-semibold" style="font-size: 15px;">${roundLabel}: ${clueProgress}</span>
+                    <span class="badge bg-primary font-monospace" style="font-size: 14px; padding: 4px 8px;">Dur: ${durationText}</span>
                 </div>
             `;
         });
@@ -757,11 +757,11 @@ setInterval(() => {
     }
     
     .stats-split-container.split .stats-left-panel {
-        width: 40%;
+        width: 50%;
     }
     
     .stats-split-container.split .stats-right-panel {
-        width: 60%;
+        width: 50%;
         opacity: 1;
         display: block;
     }

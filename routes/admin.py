@@ -888,6 +888,50 @@ def delete_manager(mgr_id):
     return redirect(url_for('admin.manage_managers'))
 
 
+@admin_bp.route('/admin/managers/edit/<int:mgr_id>', methods=['POST'])
+@check_admin_role
+def update_manager_profile(mgr_id):
+    from werkzeug.security import generate_password_hash
+    mgr = Manager.query.get_or_404(mgr_id)
+    user = mgr.user
+    
+    username = request.form.get('username')
+    password = request.form.get('password')
+    house_id = request.form.get('house_id', type=int)
+    
+    if not username or not house_id:
+        flash("Username and House Assignment are required.", "danger")
+        return redirect(url_for('admin.manage_managers'))
+        
+    existing_user = User.query.filter_by(username=username).first()
+    if existing_user and existing_user.id != user.id:
+        flash(f"Username '{username}' is already taken.", "danger")
+        return redirect(url_for('admin.manage_managers'))
+        
+    try:
+        user.username = username
+        if password and password.strip():
+            user.password = generate_password_hash(password.strip())
+            
+        mgr.house_id = house_id
+        
+        log = SystemLog(
+            action='manager_edited',
+            details=f"Admin '{current_user.username}' edited Manager '{username}'.",
+            user_id=current_user.id
+        )
+        db.session.add(log)
+        db.session.commit()
+        
+        flash(f"Manager '{username}' updated successfully.", "success")
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error editing manager: {str(e)}")
+        flash("An error occurred while updating the manager.", "danger")
+        
+    return redirect(url_for('admin.manage_managers'))
+
+
 # ==========================================
 # REPORT EXPORT ENDPOINTS
 # ==========================================
@@ -1016,9 +1060,12 @@ def export_report(report_type, format_type):
         
         # Estimate column widths based on page width (7.5 inches printable)
         num_cols = len(headers)
-        col_width = (7.5 * inch) / num_cols
-        
-        t = Table(table_content, colWidths=[col_width]*num_cols)
+        if report_type == 'leaderboard':
+            col_widths = [0.5*inch, 1.4*inch, 0.8*inch, 0.6*inch, 1.0*inch, 1.0*inch, 2.2*inch]
+            t = Table(table_content, colWidths=col_widths)
+        else:
+            col_width = (7.5 * inch) / num_cols
+            t = Table(table_content, colWidths=[col_width]*num_cols)
         t.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#0d6efd')),
             ('TEXTCOLOR', (0,0), (-1,0), colors.white),
@@ -1085,76 +1132,88 @@ def get_report_data(report_type):
         return headers, data
         
     elif report_type == 'leaderboard':
-        headers = ['Rank', 'Team Name', 'House', 'Current Round', 'Completion Time', 'QR Clues Progress']
+        headers = ['Rank', 'Team Name', 'House', 'Points', 'Clue Progress', 'Total Time', 'Clue Durations']
         data = []
-        
-        # Sorting priority:
-        # 1. Completed Round 2 (round2_completed == True) sorted by duration (round2_completion_time - Round 1 approved_at) ascending.
-        # 2. In Round 2 sorted by clues completed descending, then by duration to complete those clues ascending.
-        # 3. In Round 1 sorted by completed tasks count descending, then by team creation time ascending.
         
         teams = Team.query.all()
         
         def sort_key(t):
-            if t.round2_completed:
-                r1_app = Round1Approval.query.filter_by(team_id=t.id).first()
-                r2_start = r1_app.approved_at if (r1_app and r1_app.approved_at) else t.created_at
-                duration = (t.round2_completion_time - r2_start).total_seconds() if (t.round2_completion_time and r2_start) else 0
-                return (0, 0, duration)
-            elif t.current_round == 2:
-                clues_solved = t.round2_current_clue - 1
-                duration = 0
-                if clues_solved > 0:
-                    prog = Round2Progress.query.filter_by(team_id=t.id, clue_number=clues_solved).first()
-                    r1_app = Round1Approval.query.filter_by(team_id=t.id).first()
-                    r2_start = r1_app.approved_at if (r1_app and r1_app.approved_at) else t.created_at
-                    if prog and r2_start:
-                        duration = (prog.completed_at - r2_start).total_seconds()
-                else:
-                    r1_app = Round1Approval.query.filter_by(team_id=t.id).first()
-                    duration = r1_app.approved_at.timestamp() if (r1_app and r1_app.approved_at) else t.created_at.timestamp()
-                return (1, -clues_solved, duration)
-            else:
-                comp_count = len(t.task_completions)
-                return (2, -comp_count, t.created_at.timestamp())
-                
-        sorted_teams = sorted(teams, key=sort_key)
-        
-        for rank, t in enumerate(sorted_teams, start=1):
-            comp_time = "-"
+            solved_count = 7 if t.round2_completed else (t.round2_current_clue - 1 if t.current_round == 2 else 0)
+            points = (100 if t.round1_status == 'approved' else 0) + solved_count * 10
+            
+            duration = 0
             r1_app = Round1Approval.query.filter_by(team_id=t.id).first()
             r2_start = r1_app.approved_at if (r1_app and r1_app.approved_at) else t.created_at
             
-            if t.round2_completed and t.round2_completion_time and r2_start:
-                dur_sec = int((t.round2_completion_time - r2_start).total_seconds())
-                h = dur_sec // 3600
-                m = (dur_sec % 3600) // 60
-                s = dur_sec % 60
-                comp_time = f"{h:02d}:{m:02d}:{s:02d} (Finished)"
+            if t.round2_completed:
+                duration = (t.round2_completion_time - r2_start).total_seconds() if (t.round2_completion_time and r2_start) else 0
             elif t.current_round == 2:
                 clues_solved = t.round2_current_clue - 1
-                if clues_solved > 0 and r2_start:
+                if clues_solved > 0:
                     prog = Round2Progress.query.filter_by(team_id=t.id, clue_number=clues_solved).first()
-                    if prog:
-                        dur_sec = int((prog.completed_at - r2_start).total_seconds())
-                        h = dur_sec // 3600
-                        m = (dur_sec % 3600) // 60
-                        s = dur_sec % 60
-                        comp_time = f"{h:02d}:{m:02d}:{s:02d}"
-                else:
-                    comp_time = "00:00:00"
+                    if prog and r2_start:
+                        duration = (prog.completed_at - r2_start).total_seconds()
+            else:
+                comp_count = len(t.task_completions)
+                if comp_count > 0:
+                    last_task = TaskCompletion.query.filter_by(team_id=t.id).order_by(TaskCompletion.completed_at.desc()).first()
+                    if last_task:
+                        duration = (last_task.completed_at - t.created_at).total_seconds()
+            return (-points, duration)
+            
+        sorted_teams = sorted(teams, key=sort_key)
+        
+        for rank, t in enumerate(sorted_teams, start=1):
+            solved_count = 7 if t.round2_completed else (t.round2_current_clue - 1 if t.current_round == 2 else 0)
+            points = (100 if t.round1_status == 'approved' else 0) + solved_count * 10
+            
+            r1_app = Round1Approval.query.filter_by(team_id=t.id).first()
+            r2_start = r1_app.approved_at if (r1_app and r1_app.approved_at) else t.created_at
+            
+            progresses = Round2Progress.query.filter_by(team_id=t.id).order_by(Round2Progress.clue_number).all()
+            prog_map = {p.clue_number: p.completed_at for p in progresses}
+            
+            total_dur_sec = 0
+            durations_text_list = []
+            
+            for lvl in range(1, 8):
+                if lvl in prog_map:
+                    if lvl == 1:
+                        dur_sec = int((prog_map[1] - r2_start).total_seconds())
+                    else:
+                        prev_time = prog_map.get(lvl - 1)
+                        if prev_time:
+                            dur_sec = int((prog_map[lvl] - prev_time).total_seconds())
+                        else:
+                            dur_sec = 0
+                    total_dur_sec += dur_sec
                     
-            qr_prog = f"{t.round2_current_clue - 1} / 7 solved" if t.current_round == 2 else "Not started"
-            if t.round2_completed:
-                qr_prog = "7 / 7 solved"
+                    m = dur_sec // 60
+                    s = dur_sec % 60
+                    durations_text_list.append(f"C{lvl}:{m}m{s}s")
+                else:
+                    durations_text_list.append(f"C{lvl}:-")
+                    
+            h_tot = total_dur_sec // 3600
+            m_tot = (total_dur_sec % 3600) // 60
+            s_tot = total_dur_sec % 60
+            total_time_str = f"{h_tot:02d}:{m_tot:02d}:{s_tot:02d}" if total_dur_sec > 0 else "00:00:00"
+            if total_dur_sec == 0 and t.round1_status == 'approved':
+                total_time_str = "00:00:00"
+            elif t.round1_status != 'approved':
+                total_time_str = "-"
                 
+            clue_durs_str = ", ".join(durations_text_list)
+            qr_prog = f"{solved_count} / 7 solved" if t.current_round == 2 or t.round2_completed else "Not started"
+            
             data.append([
                 rank,
                 t.team_name,
                 t.house.name,
-                f"Round {t.current_round}",
-                comp_time,
-                qr_prog
+                points,
+                qr_prog,
+                total_time_str,
+                clue_durs_str
             ])
         return headers, data
         

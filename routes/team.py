@@ -81,6 +81,31 @@ def dashboard():
     finished_iso = team.round2_completion_time.isoformat() + "Z" if team.round2_completion_time else ""
     server_now_iso = datetime.datetime.utcnow().isoformat() + "Z"
 
+    solved_count = 7 if team.round2_completed else (team.round2_current_clue - 1 if team.current_round == 2 else 0)
+    score = (100 if team.round1_status == 'approved' else 0) + solved_count * 10
+    
+    clue_completion_times = {}
+    clue_durations = {}
+    
+    r2_start = r1_app.approved_at if (r1_app and r1_app.approved_at) else team.created_at
+    progresses = Round2Progress.query.filter_by(team_id=team.id).order_by(Round2Progress.clue_number).all()
+    prog_map = {p.clue_number: p.completed_at for p in progresses}
+    
+    for lvl in range(1, 8):
+        if lvl in prog_map:
+            clue_completion_times[lvl] = prog_map[lvl]
+            if lvl == 1:
+                dur_sec = int((prog_map[1] - r2_start).total_seconds())
+            else:
+                prev_time = prog_map.get(lvl - 1)
+                if prev_time:
+                    dur_sec = int((prog_map[lvl] - prev_time).total_seconds())
+                else:
+                    dur_sec = 0
+            m = dur_sec // 60
+            s = dur_sec % 60
+            clue_durations[lvl] = f"{m}m {s}s"
+
     return render_template('team/dashboard.html', 
                            team=team, 
                            tasks=tasks, 
@@ -97,7 +122,10 @@ def dashboard():
                            server_now_iso=server_now_iso,
                            progress_map=progress_map,
                            passcode_map=passcode_map,
-                           preloaded_scan_result=preloaded_scan_result)
+                           preloaded_scan_result=preloaded_scan_result,
+                           score=score,
+                           clue_completion_times=clue_completion_times,
+                           clue_durations=clue_durations)
 
 @team_bp.route('/team/request-r1', methods=['POST'])
 @check_team_role

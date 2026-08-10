@@ -33,7 +33,7 @@
 <div class="premium-header house-{{ team.house.name.lower() }} mx-2 mt-2 position-relative">
     <div class="d-flex justify-content-between align-items-start">
         <div>
-            <span class="badge bg-white text-dark mb-2 small fw-bold">Team Leader Profile</span>
+            <span class="badge bg-white text-dark mb-2 small fw-bold">Team Leader Profile | Score: {{ score }} pts</span>
             <h3 class="fw-bold mb-1">{{ team.team_name }}</h3>
             <p class="mb-0 small"><i class="bi bi-shield-fill-check me-1"></i>House: <strong>{{ team.house.name }}</strong></p>
         </div>
@@ -83,6 +83,9 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link rounded-3 py-2 fw-semibold" id="info-tab" data-bs-toggle="pill" data-bs-target="#info-pane" type="button" role="tab"><i class="bi bi-people me-1"></i>Team</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link rounded-3 py-2 fw-semibold" id="logs-tab" data-bs-toggle="pill" data-bs-target="#logs-pane" type="button" role="tab"><i class="bi bi-clock-history me-1"></i>Logs</button>
         </li>
     </ul>
 
@@ -416,6 +419,73 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Tab 3: Activity / Timestamps Logs -->
+        <div class="tab-pane fade" id="logs-pane" role="tabpanel" tabindex="0">
+            <h5 class="fw-bold mb-3"><i class="bi bi-clock-history me-2"></i>Clue Timestamps & Durations</h5>
+            <div class="glass-card p-3 mb-4">
+                <div class="table-responsive">
+                    <table class="table table-sm table-borderless mb-0">
+                        <thead>
+                            <tr class="border-bottom">
+                                <th class="text-secondary small font-monospace">STAGE</th>
+                                <th class="text-secondary small font-monospace text-end">SOLVED AT</th>
+                                <th class="text-secondary small font-monospace text-end">DURATION</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Round 1 Approval -->
+                            <tr class="align-middle border-bottom">
+                                <td>
+                                    <div class="fw-bold text-dark">Round 1 Tasks</div>
+                                    <small class="text-muted">100 points</small>
+                                </td>
+                                <td class="text-end font-monospace small">
+                                    {% if approved_iso %}
+                                        {{ approved_iso|replace('T', ' ')|replace('Z', '') }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td class="text-end font-monospace small text-primary fw-semibold">
+                                    {% if approved_iso %}
+                                        Completed
+                                    {% else %}
+                                        Active
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            
+                            <!-- Round 2 Clues -->
+                            {% for lvl in range(1, 8) %}
+                                <tr class="align-middle border-bottom">
+                                    <td>
+                                        <div class="fw-bold text-dark">Clue #{{ lvl }}</div>
+                                        <small class="text-muted">10 points</small>
+                                    </td>
+                                    <td class="text-end font-monospace small">
+                                        {% if lvl in clue_completion_times %}
+                                            {{ clue_completion_times[lvl].strftime('%Y-%m-%d %H:%M:%S') }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end font-monospace small text-primary fw-semibold">
+                                        {% if lvl in clue_durations %}
+                                            {{ clue_durations[lvl] }}
+                                        {% elif team.current_round == 2 and team.round2_current_clue == lvl and not team.round2_completed %}
+                                            <span class="badge bg-warning text-dark animate__animated animate__pulse animate__infinite">Active</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -447,14 +517,14 @@
 
 <!-- Clue Image Viewer Modal -->
 <div class="modal fade" id="imageViewerModal" tabindex="-1" aria-labelledby="imageViewerModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-fullscreen-sm-down">
         <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
             <div class="modal-header border-0 bg-light py-2.5 px-3">
                 <h6 class="modal-title fw-bold mb-0 text-dark" id="imageViewerModalLabel">Clue Image</h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-0 text-center bg-dark d-flex align-items-center justify-content-center" style="min-height: 300px;">
-                <img id="imageViewerSource" src="" class="img-fluid" style="max-height: 80vh; object-fit: contain;" alt="Zoomed Clue Image">
+            <div class="modal-body p-0 text-center bg-dark d-flex align-items-center justify-content-center" style="min-height: 400px;">
+                <img id="imageViewerSource" src="" class="img-fluid" style="max-height: 90vh; max-width: 100%; width: auto; height: auto; object-fit: contain;" alt="Zoomed Clue Image">
             </div>
             <div class="modal-footer border-0 bg-light py-2 px-3 justify-content-end">
                 <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Close</button>
@@ -584,6 +654,9 @@ function displayScanResults(result) {
     // Scroll to results
     card.scrollIntoView({ behavior: 'smooth' });
 
+    // Make sure dismiss button is visible by default
+    document.getElementById('dismissResultBtn').style.display = 'inline-block';
+
     if (result.status === 'success' || result.status === 'completed_hunt') {
         title.innerText = "Correct Clue Found!";
         icon.innerHTML = `<i class="bi bi-check-circle-fill text-success fs-1"></i>`;
@@ -601,10 +674,13 @@ function displayScanResults(result) {
             imgWrapper.innerHTML = '';
         }
         
-        // Update local clue states
-        if (result.status === 'completed_hunt') {
-            setTimeout(() => window.location.reload(), 3000);
-        }
+        // Hide dismiss button when the clue is correct
+        document.getElementById('dismissResultBtn').style.display = 'none';
+        
+        // Automatically reload page after 4 seconds to sync progress
+        setTimeout(() => {
+            window.location.reload();
+        }, 4000);
     } 
     else if (result.status === 'dummy') {
         title.innerText = "Decoy Clue Scanned!";

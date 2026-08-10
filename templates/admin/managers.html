@@ -71,9 +71,12 @@
                     </h6>
                     <small class="text-secondary"><i class="bi bi-flag-fill text-{{ mgr.house.name.lower() }} me-1"></i>{{ mgr.house.name }} House</small>
                 </div>
-                <div>
+                <div class="d-flex gap-2 align-items-center">
+                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="openEditManagerModal({{ mgr.id }}, '{{ mgr.user.username }}', {{ mgr.house_id }})">
+                        Edit
+                    </button>
                     {% if not is_seeded %}
-                        <form method="POST" action="{{ url_for('admin.delete_manager', mgr_id=mgr.id) }}" onsubmit="return confirm('Remove manager {{ mgr.user.username }}?');">
+                        <form method="POST" action="{{ url_for('admin.delete_manager', mgr_id=mgr.id) }}" onsubmit="return confirm('Remove manager {{ mgr.user.username }}?');" class="mb-0">
                             <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">
                                 Remove
                             </button>
@@ -88,4 +91,54 @@
         </div>
     {% endfor %}
 </div>
+
+<!-- Edit Manager Modal -->
+<div class="modal fade" id="editManagerModal" tabindex="-1" aria-labelledby="editManagerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header border-0 bg-light py-2.5 px-3">
+                <h6 class="modal-title fw-bold mb-0 text-dark" id="editManagerModalLabel">Edit House Manager</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" id="editManagerForm" action="">
+                <div class="modal-body p-3">
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control form-control-sm" id="edit_username" name="username" placeholder="Username" required>
+                        <label for="edit_username">Manager Username</label>
+                    </div>
+                    
+                    <div class="form-floating mb-3">
+                        <input type="password" class="form-control form-control-sm" id="edit_password" name="password" placeholder="Password (leave blank to keep current)">
+                        <label for="edit_password">New Password (optional)</label>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="edit_house_id" class="form-label small text-secondary">House Assignment</label>
+                        <select class="form-select" id="edit_house_id" name="house_id" required>
+                            {% for h in houses %}
+                                <option value="{{ h.id }}">{{ h.name }} House</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 bg-light py-2 px-3 justify-content-end gap-2">
+                    <button type="button" class="btn btn-sm btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-primary rounded-pill px-4">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openEditManagerModal(id, username, houseId) {
+    const form = document.getElementById('editManagerForm');
+    form.action = '/admin/managers/edit/' + id;
+    document.getElementById('edit_username').value = username;
+    document.getElementById('edit_password').value = '';
+    document.getElementById('edit_house_id').value = houseId;
+    const modal = new bootstrap.Modal(document.getElementById('editManagerModal'));
+    modal.show();
+}
+</script>
 {% endblock %}

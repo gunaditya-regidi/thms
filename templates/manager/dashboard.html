@@ -99,6 +99,14 @@
                     <strong class="text-primary font-monospace" style="font-size: 13px;">{{ first_clue.password }}</strong>
                 </div>
             </div>
+            {% if first_clue.image_path %}
+            <div class="col-12 mt-2">
+                <div class="bg-light p-2 rounded-3 border text-center">
+                    <span class="text-secondary small d-block font-monospace mb-1" style="font-size: 10px;">FIRST CLUE IMAGE</span>
+                    <img src="/team/clue-image/1" class="img-fluid rounded border shadow-sm" style="max-height: 180px; cursor: zoom-in;" onclick="viewClueImage('/team/clue-image/1', 'First Clue')" alt="First Clue Image">
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
     {% endif %}
@@ -119,6 +127,16 @@
         <!-- Tab 1: Teams List -->
         <div class="tab-pane fade show active" id="teams-pane" role="tabpanel" tabindex="0">
             <h5 class="fw-bold mb-3"><i class="bi bi-card-list me-2"></i>Active House Teams</h5>
+            
+            <!-- Search bar -->
+            <div class="glass-card p-2 mb-3 bg-light">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0 text-secondary">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" class="form-control border-start-0" id="managerTeamSearch" placeholder="Search teams by name, leader, or status..." oninput="filterManagerTeams()">
+                </div>
+            </div>
             
             {% for team in teams %}
                 {% set completions_map = {} %}
@@ -363,7 +381,45 @@ function startAllStopwatches() {
         });
     }, 1000);
 }
+
+function filterManagerTeams() {
+    const query = document.getElementById('managerTeamSearch').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('[id^="teamCard_"]');
+    cards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        if (text.includes(query)) {
+            card.style.setProperty('display', '', 'important');
+        } else {
+            card.style.setProperty('display', 'none', 'important');
+        }
+    });
+}
+
+function viewClueImage(src, title) {
+    document.getElementById('imageViewerSource').src = src;
+    document.getElementById('imageViewerModalLabel').innerText = title;
+    const modal = new bootstrap.Modal(document.getElementById('imageViewerModal'));
+    modal.show();
+}
 </script>
+
+<!-- Clue Image Viewer Modal -->
+<div class="modal fade" id="imageViewerModal" tabindex="-1" aria-labelledby="imageViewerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header border-0 bg-light py-2.5 px-3">
+                <h6 class="modal-title fw-bold mb-0 text-dark" id="imageViewerModalLabel">Clue Image</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0 text-center bg-dark d-flex align-items-center justify-content-center" style="min-height: 300px;">
+                <img id="imageViewerSource" src="" class="img-fluid" style="max-height: 80vh; object-fit: contain;" alt="Zoomed Clue Image">
+            </div>
+            <div class="modal-footer border-0 bg-light py-2 px-3 justify-content-end">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <style>
     .dark-mode-hidden { display: inline-block; }

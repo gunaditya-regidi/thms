@@ -121,7 +121,10 @@
                         {% for t in teams %}
                             {% if t.house.name.lower() == 'red' %}
                                 <div class="d-flex justify-content-between align-items-center border rounded-3 bg-white shadow-sm" style="font-size: 15px; gap: 4px; padding: 10px 12px !important;">
-                                    <span class="fw-bold text-dark" style="word-break: break-word; line-height: 1.2;">{{ t.team_name }}</span>
+                                    <div class="d-flex align-items-center" style="min-width: 0;">
+                                        <span class="d-inline-block rounded-circle bg-{% if t.user.current_login_token %}success{% else %}secondary{% endif %} me-2" style="width: 9px; height: 9px; flex-shrink: 0;" title="{% if t.user.current_login_token %}Logged In{% else %}Logged Out{% endif %}"></span>
+                                        <span class="fw-bold text-dark" style="word-break: break-word; line-height: 1.2;">{{ t.team_name }}</span>
+                                    </div>
                                     {% if t.round2_completed %}
                                         <span class="badge bg-success" style="font-size: 11px;">FIN 🏆</span>
                                     {% elif t.current_round == 2 or t.round1_status == 'approved' %}
@@ -153,7 +156,10 @@
                         {% for t in teams %}
                             {% if t.house.name.lower() == 'blue' %}
                                 <div class="d-flex justify-content-between align-items-center border rounded-3 bg-white shadow-sm" style="font-size: 15px; gap: 4px; padding: 10px 12px !important;">
-                                    <span class="fw-bold text-dark" style="word-break: break-word; line-height: 1.2;">{{ t.team_name }}</span>
+                                    <div class="d-flex align-items-center" style="min-width: 0;">
+                                        <span class="d-inline-block rounded-circle bg-{% if t.user.current_login_token %}success{% else %}secondary{% endif %} me-2" style="width: 9px; height: 9px; flex-shrink: 0;" title="{% if t.user.current_login_token %}Logged In{% else %}Logged Out{% endif %}"></span>
+                                        <span class="fw-bold text-dark" style="word-break: break-word; line-height: 1.2;">{{ t.team_name }}</span>
+                                    </div>
                                     {% if t.round2_completed %}
                                         <span class="badge bg-success" style="font-size: 11px;">FIN 🏆</span>
                                     {% elif t.current_round == 2 or t.round1_status == 'approved' %}
@@ -185,7 +191,10 @@
                         {% for t in teams %}
                             {% if t.house.name.lower() == 'green' %}
                                 <div class="d-flex justify-content-between align-items-center border rounded-3 bg-white shadow-sm" style="font-size: 15px; gap: 4px; padding: 10px 12px !important;">
-                                    <span class="fw-bold text-dark" style="word-break: break-word; line-height: 1.2;">{{ t.team_name }}</span>
+                                    <div class="d-flex align-items-center" style="min-width: 0;">
+                                        <span class="d-inline-block rounded-circle bg-{% if t.user.current_login_token %}success{% else %}secondary{% endif %} me-2" style="width: 9px; height: 9px; flex-shrink: 0;" title="{% if t.user.current_login_token %}Logged In{% else %}Logged Out{% endif %}"></span>
+                                        <span class="fw-bold text-dark" style="word-break: break-word; line-height: 1.2;">{{ t.team_name }}</span>
+                                    </div>
                                     {% if t.round2_completed %}
                                         <span class="badge bg-success" style="font-size: 11px;">FIN 🏆</span>
                                     {% elif t.current_round == 2 or t.round1_status == 'approved' %}
@@ -217,7 +226,10 @@
                         {% for t in teams %}
                             {% if t.house.name.lower() == 'yellow' %}
                                 <div class="d-flex justify-content-between align-items-center border rounded-3 bg-white shadow-sm" style="font-size: 15px; gap: 4px; padding: 10px 12px !important;">
-                                    <span class="fw-bold text-dark" style="word-break: break-word; line-height: 1.2;">{{ t.team_name }}</span>
+                                    <div class="d-flex align-items-center" style="min-width: 0;">
+                                        <span class="d-inline-block rounded-circle bg-{% if t.user.current_login_token %}success{% else %}secondary{% endif %} me-2" style="width: 9px; height: 9px; flex-shrink: 0;" title="{% if t.user.current_login_token %}Logged In{% else %}Logged Out{% endif %}"></span>
+                                        <span class="fw-bold text-dark" style="word-break: break-word; line-height: 1.2;">{{ t.team_name }}</span>
+                                    </div>
                                     {% if t.round2_completed %}
                                         <span class="badge bg-success" style="font-size: 11px;">FIN 🏆</span>
                                     {% elif t.current_round == 2 or t.round1_status == 'approved' %}
@@ -590,13 +602,19 @@ function updateStatsView(data) {
             badgeHtml = '<span class="badge bg-primary" style="font-size: 11px;">R1</span>';
         }
 
+        const dotBg = team.is_logged_in ? 'success' : 'secondary';
+        const dotTitle = team.is_logged_in ? 'Logged In' : 'Logged Out';
+
         const card = document.createElement('div');
         card.className = 'd-flex justify-content-between align-items-center border rounded-3 bg-white shadow-sm';
         card.style.fontSize = '15px';
         card.style.gap = '4px';
         card.style.padding = '10px 12px';
         card.innerHTML = `
-            <span class="fw-bold text-dark" style="word-break: break-word; line-height: 1.2;">${teamName}</span>
+            <div class="d-flex align-items-center" style="min-width: 0;">
+                <span class="d-inline-block rounded-circle bg-${dotBg} me-2" style="width: 9px; height: 9px; flex-shrink: 0;" title="${dotTitle}"></span>
+                <span class="fw-bold text-dark" style="word-break: break-word; line-height: 1.2;">${teamName}</span>
+            </div>
             ${badgeHtml}
         `;
         

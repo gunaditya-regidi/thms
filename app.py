@@ -231,6 +231,7 @@ def create_app(config_override=None):
                 last_act = t.created_at.strftime('%Y-%m-%d %H:%M:%S')
                 
             r1_app = Round1Approval.query.filter_by(team_id=t.id).first()
+            is_logged = t.user.current_login_token is not None
             teams_list_data.append({
                 'id': t.id,
                 'team_name': t.team_name,
@@ -241,6 +242,7 @@ def create_app(config_override=None):
                 'round2_pct': r2_pct,
                 'round2_clue': t.round2_current_clue,
                 'round2_completed': t.round2_completed,
+                'is_logged_in': is_logged,
                 'last_active': last_act,
                 'created_iso': t.created_at.isoformat() + "Z" if t.created_at else "",
                 'approved_iso': r1_app.approved_at.isoformat() + "Z" if (r1_app and r1_app.approved_at) else "",

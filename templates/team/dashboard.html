@@ -212,31 +212,35 @@
                                 <!-- Unlocked Clue Card -->
                                 <div class="card border-success bg-success bg-opacity-5 rounded-4 shadow-sm overflow-hidden">
                                     <div class="card-header bg-success bg-opacity-10 border-success border-opacity-20 d-flex justify-content-between align-items-center py-2.5 px-3">
-                                        <h6 class="fw-bold mb-0 text-success"><i class="bi bi-check-circle-fill me-2"></i>Clue #{{ lvl }} (Unlocked)</h6>
+                                        <h6 class="fw-bold mb-0 text-success"><i class="bi bi-check-circle-fill me-2"></i>Clue #{{ lvl }} (Solved)</h6>
                                         <span class="badge bg-success small rounded-pill">Solved</span>
                                     </div>
                                     <div class="card-body p-3">
                                         <div class="text-center mb-3">
-                                            <img src="/team/clue-image/{{ lvl }}" class="img-fluid rounded border shadow-sm animate__animated animate__fadeIn" style="max-height: 250px; cursor: zoom-in;" onclick="window.open('/team/clue-image/{{ lvl }}', '_blank')" alt="Clue {{ lvl }}">
+                                            <img src="/team/clue-image/{{ lvl }}" class="img-fluid rounded border shadow-sm animate__animated animate__fadeIn" style="max-height: 250px; cursor: zoom-in;" onclick="viewClueImage('/team/clue-image/{{ lvl }}', 'Clue #{{ lvl }}')" alt="Clue {{ lvl }}">
+                                        </div>
+                                        
+                                        <div class="bg-light p-2.5 rounded-3 border text-start">
+                                            <small class="text-secondary d-block"><i class="bi bi-key-fill me-1 text-success"></i>Passcode:</small>
+                                            <code class="font-monospace fw-bold text-success fs-6">{{ passcode_map.get(lvl, 'N/A') }}</code>
                                         </div>
                                     </div>
                                 </div>
                             {% elif is_active %}
                                 <!-- Active Clue Card -->
-                                <div class="card border-primary bg-primary bg-opacity-5 rounded-4 shadow-sm overflow-hidden">
+                                <div class="card border-primary bg-primary bg-opacity-5 rounded-4 shadow-sm overflow-hidden" style="border-left: 4px solid var(--house-{{ team.house.name.lower() }}) !important;">
                                     <div class="card-header bg-primary bg-opacity-10 border-primary border-opacity-20 d-flex justify-content-between align-items-center py-2.5 px-3">
                                         <h6 class="fw-bold mb-0 text-primary"><i class="bi bi-hourglass-split me-2"></i>Clue #{{ lvl }} (Active)</h6>
                                         <span class="badge bg-primary small rounded-pill">In Progress</span>
                                     </div>
                                     <div class="card-body p-3">
+                                        <div class="text-center mb-3">
+                                            <img src="/team/clue-image/{{ lvl }}" class="img-fluid rounded border shadow-sm animate__animated animate__fadeIn" style="max-height: 250px; cursor: zoom-in;" onclick="viewClueImage('/team/clue-image/{{ lvl }}', 'Clue #{{ lvl }}')" alt="Clue {{ lvl }}">
+                                        </div>
+
                                         <div class="alert alert-info border-0 rounded-4 text-start p-3 mb-3">
                                             <h6 class="fw-bold mb-1"><i class="bi bi-compass-fill me-2"></i>Location Hint</h6>
                                             <p class="mb-0 text-dark" id="currentHint">{{ next_clue_hint }}</p>
-                                            
-                                            <hr class="my-2 border-info">
-                                            
-                                            <h6 class="fw-bold mb-1"><i class="bi bi-key-fill me-2"></i>Required Passcode</h6>
-                                            <p class="mb-0 text-dark font-monospace fw-semibold" id="expectedPasscode">{{ current_clue_passcode }}</p>
                                         </div>
 
                                         <button type="button" class="btn btn-primary w-100 py-3 rounded-3 fw-bold pulse" data-bs-toggle="modal" data-bs-target="#scannerModal">
@@ -436,6 +440,24 @@
                     </label>
                     <input type="file" id="qrFile" accept="image/*" class="d-none" onchange="scanFromFile(this)">
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Clue Image Viewer Modal -->
+<div class="modal fade" id="imageViewerModal" tabindex="-1" aria-labelledby="imageViewerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header border-0 bg-light py-2.5 px-3">
+                <h6 class="modal-title fw-bold mb-0 text-dark" id="imageViewerModalLabel">Clue Image</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0 text-center bg-dark d-flex align-items-center justify-content-center" style="min-height: 300px;">
+                <img id="imageViewerSource" src="" class="img-fluid" style="max-height: 80vh; object-fit: contain;" alt="Zoomed Clue Image">
+            </div>
+            <div class="modal-footer border-0 bg-light py-2 px-3 justify-content-end">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -759,6 +781,13 @@ function startTeamStopwatch() {
     if (!finishedStr) {
         setInterval(updateTimer, 1000);
     }
+}
+
+function viewClueImage(src, title) {
+    document.getElementById('imageViewerSource').src = src;
+    document.getElementById('imageViewerModalLabel').innerText = title;
+    const modal = new bootstrap.Modal(document.getElementById('imageViewerModal'));
+    modal.show();
 }
 </script>
 

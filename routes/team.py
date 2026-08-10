@@ -49,13 +49,9 @@ def dashboard():
                     current_clue = aq
                     break
 
-            if team.round2_current_clue == 1:
-                next_clue_hint = "First Clue: Report to your House Manager to receive your first clue location and passcode."
-                current_clue_passcode = "Get passcode from House Manager"
-            else:
-                if current_clue:
-                    next_clue_hint = current_clue.hint
-                    current_clue_passcode = current_clue.password
+            if current_clue:
+                next_clue_hint = current_clue.hint
+                current_clue_passcode = current_clue.password
 
     # Pop preloaded scan result from session
     from flask import session as flask_session
@@ -66,6 +62,17 @@ def dashboard():
 
     # Progress map for timeline display
     progress_map = {p.clue_number: p.completed_at for p in team.round2_progresses}
+
+    # Build passcode map for solved clues
+    passcode_map = {}
+    all_qrs = QRCode.query.filter_by(is_dummy=False).all()
+    for q in all_qrs:
+        if not q.allowed_houses:
+            passcode_map[q.clue_number] = q.password
+        else:
+            allowed_list = [h.strip().lower() for h in q.allowed_houses.split(',')]
+            if team.house.name.lower() in allowed_list:
+                passcode_map[q.clue_number] = q.password
 
     # Pass ISO timestamps for client stopwatch
     r1_app = Round1Approval.query.filter_by(team_id=team.id).first()
@@ -89,6 +96,7 @@ def dashboard():
                            finished_iso=finished_iso,
                            server_now_iso=server_now_iso,
                            progress_map=progress_map,
+                           passcode_map=passcode_map,
                            preloaded_scan_result=preloaded_scan_result)
 
 @team_bp.route('/team/request-r1', methods=['POST'])
@@ -642,17 +650,51 @@ CLUE_FILES = {
     }
 }
 
-@team_bp.route('/clue-image/<int:level>')
+@team_bp.route('/team/clue-image/<int:level>')
 @login_required
 def serve_clue_image_by_level(level):
-    from flask import send_from_directory, abort
+    from flask import send_from_directory, abort, redirect
+    import os
     team = current_user.team_profile
     if not team:
         abort(403)
         
-    if level >= team.round2_current_clue and not team.round2_completed:
+    # Allow viewing active clue (level == round2_current_clue) but restrict future locked clues
+    if level > team.round2_current_clue and not team.round2_completed:
         abort(403)
         
+    # Query database for the clue matching the level and house restriction
+    clue = None
+    qrs = QRCode.query.filter_by(clue_number=level, is_dummy=False).all()
+    for q in qrs:
+        if not q.allowed_houses:
+            clue = q
+            break
+        allowed_list = [h.strip().lower() for h in q.allowed_houses.split(',')]
+        if team.house.name.lower() in allowed_list:
+            clue = q
+            break
+            
+    if not clue:
+        abort(404)
+        
+    # If the database has an image path
+    if clue.image_path:
+        # Check if it's a static upload path (starts with /static/)
+        if clue.image_path.startswith('/static/'):
+            return redirect(clue.image_path)
+            
+        # Check if it's a relative/absolute file path or just a filename
+        filename = clue.image_path
+        clues_dir = r'C:\Users\ASUS\Downloads\clues'
+        # Fallback to upload directory if not in clues_dir
+        if not os.path.exists(os.path.join(clues_dir, filename)):
+            upload_dir = current_app.config.get('UPLOAD_FOLDER', 'static/uploads')
+            if os.path.exists(os.path.join(upload_dir, filename)):
+                return send_from_directory(upload_dir, filename)
+        return send_from_directory(clues_dir, filename)
+        
+    # Otherwise fallback to CLUE_FILES mapping
     house_name = team.house.name
     filename = None
     if level in CLUE_FILES:
@@ -664,7 +706,7 @@ def serve_clue_image_by_level(level):
     clues_dir = r'C:\Users\ASUS\Downloads\clues'
     return send_from_directory(clues_dir, filename)
 
-@team_bp.route('/clue-image/dummy')
+@team_bp.route('/team/clue-image/dummy')
 @login_required
 def serve_dummy_image():
     from flask import send_from_directory

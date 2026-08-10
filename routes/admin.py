@@ -575,6 +575,10 @@ def manage_qrs():
                     file.save(file_save_path)
                     image_path = f"/static/uploads/{filename}"
 
+            # Process allowed houses list
+            allowed_houses_list = request.form.getlist('allowed_houses[]')
+            allowed_houses = ",".join(allowed_houses_list) if allowed_houses_list else None
+
             # Create code record
             code_uuid = str(uuid.uuid4())
             new_qr = QRCode(
@@ -583,7 +587,8 @@ def manage_qrs():
                 password=password,
                 hint=hint,
                 image_path=image_path,
-                is_dummy=is_dummy
+                is_dummy=is_dummy,
+                allowed_houses=allowed_houses
             )
             db.session.add(new_qr)
             db.session.flush() # gets ID for filename creation

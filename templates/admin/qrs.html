@@ -104,12 +104,34 @@
         </div>
     </div>
 
-    <!-- Clues Grid -->
-    <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-card-list me-2"></i>Active QR Codes ({{ qrs|length }})</h6>
+    <!-- Clues Grid Header & Bulk Operations Toolbar -->
+    <div class="d-flex justify-content-between align-items-center mb-3 mt-4">
+        <h6 class="fw-bold text-secondary mb-0"><i class="bi bi-card-list me-2"></i>Active QR Codes ({{ qrs|length }})</h6>
+        {% if qrs %}
+        <div class="d-flex gap-2 align-items-center">
+            <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-semibold d-none" id="deleteSelectedBtn" onclick="deleteSelectedQRs()">
+                <i class="bi bi-trash-fill me-1"></i>Delete Selected
+            </button>
+            <form method="POST" action="{{ url_for('admin.delete_all_qrs') }}" onsubmit="return confirm('WARNING: Are you sure you want to completely delete ALL generated QR Code clues? This action cannot be undone.');" class="mb-0">
+                <button type="submit" class="btn btn-danger btn-sm rounded-pill px-3 fw-semibold">
+                    <i class="bi bi-trash3-fill me-1"></i>Delete All QRs
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if qrs %}
+    <div class="d-flex align-items-center gap-2 mb-3 bg-light p-2 rounded-3 border">
+        <input type="checkbox" id="selectAllQRs" class="form-check-input" style="width: 18px; height: 18px; cursor: pointer; margin-left: 5px;">
+        <label for="selectAllQRs" class="small fw-bold text-secondary mb-0" style="cursor: pointer; user-select: none;">Select All Clues</label>
+    </div>
+    {% endif %}
     
     {% for qr in qrs %}
         <div class="glass-card mb-3 p-3">
             <div class="d-flex align-items-center gap-3">
+                <input type="checkbox" value="{{ qr.id }}" class="form-check-input qr-checkbox" style="width: 18px; height: 18px; cursor: pointer; flex-shrink: 0;">
                 <!-- QR Image thumbnail -->
                 <div class="border rounded p-1 bg-white">
                     <img src="/static/qrs/qr_{{ qr.uuid }}.png" style="width: 75px; height: 75px; object-fit: contain;" alt="QR Clue">
@@ -172,6 +194,67 @@ function toggleDummyState(isChecked) {
         clueDropdown.disabled = false;
         clueDropdown.required = true;
     }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const selectAllCheckbox = document.getElementById('selectAllQRs');
+    const qrCheckboxes = document.querySelectorAll('.qr-checkbox');
+    const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+    
+    function updateDeleteSelectedBtn() {
+        const checkedCount = document.querySelectorAll('.qr-checkbox:checked').length;
+        if (deleteSelectedBtn) {
+            if (checkedCount > 0) {
+                deleteSelectedBtn.classList.remove('d-none');
+            } else {
+                deleteSelectedBtn.classList.add('d-none');
+            }
+        }
+    }
+    
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', () => {
+            const isChecked = selectAllCheckbox.checked;
+            qrCheckboxes.forEach(cb => {
+                cb.checked = isChecked;
+            });
+            updateDeleteSelectedBtn();
+        });
+    }
+    
+    qrCheckboxes.forEach(cb => {
+        cb.addEventListener('change', () => {
+            const allChecked = document.querySelectorAll('.qr-checkbox:checked').length === qrCheckboxes.length;
+            if (selectAllCheckbox) {
+                selectAllCheckbox.checked = allChecked;
+            }
+            updateDeleteSelectedBtn();
+        });
+    });
+});
+
+function deleteSelectedQRs() {
+    const checkedBoxes = document.querySelectorAll('.qr-checkbox:checked');
+    if (checkedBoxes.length === 0) return;
+    
+    if (!confirm(`Are you sure you want to delete the ${checkedBoxes.length} selected QR clues?`)) {
+        return;
+    }
+    
+    const ids = Array.from(checkedBoxes).map(cb => cb.value);
+    
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = "{{ url_for('admin.delete_selected_qrs') }}";
+    
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'ids';
+    input.value = JSON.stringify(ids);
+    form.appendChild(input);
+    
+    document.body.appendChild(form);
+    form.submit();
 }
 </script>
 {% endblock %}

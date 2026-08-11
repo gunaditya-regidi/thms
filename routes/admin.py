@@ -653,6 +653,109 @@ def delete_qr(qr_id):
 
     return redirect(url_for('admin.manage_qrs'))
 
+@admin_bp.route('/admin/qrs/delete-all', methods=['POST'])
+@check_admin_role
+def delete_all_qrs():
+    qrs = QRCode.query.all()
+    deleted_count = 0
+    try:
+        for qr in qrs:
+            filename = f"qr_{qr.uuid}.png"
+            filepath = os.path.join(current_app.config['QR_FOLDER'], filename)
+            if os.path.exists(filepath):
+                try:
+                    os.remove(filepath)
+                except Exception:
+                    pass
+                
+            if qr.image_path:
+                img_filename = qr.image_path.split('/')[-1]
+                img_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], img_filename)
+                if os.path.exists(img_filepath):
+                    try:
+                        os.remove(img_filepath)
+                    except Exception:
+                        pass
+
+            db.session.delete(qr)
+            deleted_count += 1
+            
+        log = SystemLog(
+            action='all_qrs_deleted',
+            details=f"Admin '{current_user.username}' deleted all {deleted_count} QR Clues.",
+            user_id=current_user.id
+        )
+        db.session.add(log)
+        db.session.commit()
+        
+        flash(f"Successfully deleted all {deleted_count} QR Code clues.", "success")
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error deleting all QRs: {str(e)}")
+        flash("An error occurred during bulk deletion.", "danger")
+
+    return redirect(url_for('admin.manage_qrs'))
+
+@admin_bp.route('/admin/qrs/delete-selected', methods=['POST'])
+@check_admin_role
+def delete_selected_qrs():
+    import json
+    ids_str = request.form.get('ids')
+    if not ids_str:
+        flash("No QR Codes selected.", "danger")
+        return redirect(url_for('admin.manage_qrs'))
+        
+    try:
+        ids = json.loads(ids_str)
+    except Exception:
+        flash("Invalid request data.", "danger")
+        return redirect(url_for('admin.manage_qrs'))
+        
+    if not ids:
+        flash("No QR Codes selected.", "danger")
+        return redirect(url_for('admin.manage_qrs'))
+        
+    deleted_count = 0
+    try:
+        for qr_id in ids:
+            qr = QRCode.query.get(int(qr_id))
+            if qr:
+                filename = f"qr_{qr.uuid}.png"
+                filepath = os.path.join(current_app.config['QR_FOLDER'], filename)
+                if os.path.exists(filepath):
+                    try:
+                        os.remove(filepath)
+                    except Exception:
+                        pass
+                    
+                if qr.image_path:
+                    img_filename = qr.image_path.split('/')[-1]
+                    img_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], img_filename)
+                    if os.path.exists(img_filepath):
+                        try:
+                            os.remove(img_filepath)
+                        except Exception:
+                            pass
+
+                db.session.delete(qr)
+                deleted_count += 1
+                
+        log = SystemLog(
+            action='selected_qrs_deleted',
+            details=f"Admin '{current_user.username}' deleted {deleted_count} selected QR Clues.",
+            user_id=current_user.id
+        )
+        db.session.add(log)
+        db.session.commit()
+        
+        flash(f"Successfully deleted {deleted_count} selected QR Code clues.", "success")
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error deleting selected QRs: {str(e)}")
+        flash("An error occurred during selection deletion.", "danger")
+
+    return redirect(url_for('admin.manage_qrs'))
+
 @admin_bp.route('/admin/qrs/export-zip')
 @check_admin_role
 def export_qrs_zip():

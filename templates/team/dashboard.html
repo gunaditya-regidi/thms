@@ -10,19 +10,45 @@
         --bs-primary-rgb: {% if team.house.name.lower() == 'red' %}220, 53, 69{% elif team.house.name.lower() == 'blue' %}13, 110, 253{% elif team.house.name.lower() == 'green' %}25, 135, 84{% elif team.house.name.lower() == 'yellow' %}234, 179, 8{% endif %} !important;
     }
     
+    /* Global Navigation Tab styling in relation to house theme */
+    .nav-pills .nav-link {
+        color: #64748b;
+        transition: all 0.2s ease;
+    }
+    .nav-pills .nav-link:hover {
+        color: var(--bs-primary);
+    }
+    .nav-pills .nav-link.active {
+        background-color: var(--bs-primary) !important;
+        color: {% if team.house.name.lower() == 'yellow' %}#000{% else %}#fff{% endif %} !important;
+        font-weight: 700;
+    }
+
     /* Ensure high contrast text on yellow theme elements */
     {% if team.house.name.lower() == 'yellow' %}
+    .text-primary {
+        color: #854d0e !important;
+    }
     .btn-primary {
+        color: #000 !important;
+        background-color: #eab308 !important;
+        border-color: #eab308 !important;
+    }
+    .btn-outline-primary {
+        color: #854d0e !important;
+        border-color: #eab308 !important;
+    }
+    .btn-outline-primary:hover {
+        background-color: #eab308 !important;
         color: #000 !important;
     }
     .badge.bg-primary {
         color: #000 !important;
-    }
-    .nav-pills .nav-link.active {
-        color: #000 !important;
+        background-color: #eab308 !important;
     }
     .progress-bar {
         color: #000 !important;
+        background-color: #eab308 !important;
     }
     {% endif %}
 </style>
@@ -388,10 +414,10 @@
                     
                     <!-- Member List -->
                     {% for member in team.members %}
-                        <div class="list-group-item py-3 px-3" style="border-left: 4px solid rgba(108, 117, 125, 0.25) !important;">
+                        <div class="list-group-item py-3 px-3" style="border-left: 4px solid rgba(var(--bs-primary-rgb), 0.4) !important;">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h6 class="fw-bold mb-0 text-secondary">{{ member.name }}</h6>
+                                    <h6 class="fw-bold mb-0 text-primary">{{ member.name }}</h6>
                                     <small class="text-secondary">Member {{ member.member_index }}</small>
                                 </div>
                                 <span class="badge bg-secondary rounded-pill">{{ member.phone }}</span>
@@ -437,7 +463,11 @@
                             <!-- Round 1 Approval -->
                             <tr class="align-middle border-bottom">
                                 <td>
-                                    <div class="fw-bold text-dark">Round 1 Tasks</div>
+                                    {% if approved_iso %}
+                                        <div class="fw-bold text-primary"><i class="bi bi-check-circle-fill me-1"></i>Round 1 Tasks</div>
+                                    {% else %}
+                                        <div class="fw-bold text-warning"><i class="bi bi-hourglass-split me-1"></i>Round 1 Tasks</div>
+                                    {% endif %}
                                     <small class="text-muted">100 points</small>
                                 </td>
                                 <td class="text-end font-monospace small">
@@ -460,7 +490,13 @@
                             {% for lvl in range(1, 8) %}
                                 <tr class="align-middle border-bottom">
                                     <td>
-                                        <div class="fw-bold text-dark">Clue #{{ lvl }}</div>
+                                        {% if lvl in clue_completion_times %}
+                                            <div class="fw-bold text-primary"><i class="bi bi-check-circle-fill me-1"></i>Clue #{{ lvl }}</div>
+                                        {% elif team.current_round == 2 and team.round2_current_clue == lvl and not team.round2_completed %}
+                                            <div class="fw-bold text-warning"><i class="bi bi-hourglass-split me-1"></i>Clue #{{ lvl }}</div>
+                                        {% else %}
+                                            <div class="fw-bold text-secondary"><i class="bi bi-lock-fill me-1"></i>Clue #{{ lvl }}</div>
+                                        {% endif %}
                                         <small class="text-muted">10 points</small>
                                     </td>
                                     <td class="text-end font-monospace small">

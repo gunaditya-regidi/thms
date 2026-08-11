@@ -305,7 +305,7 @@
                         <p class="mb-0 small d-none"><strong>Next Hint:</strong> <span id="clueHint"></span></p>
                     </div>
                     
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-4" onclick="closeResultCard()">Dismiss</button>
+                    <button type="button" id="dismissResultBtn" class="btn btn-sm btn-outline-secondary rounded-pill px-4" onclick="closeResultCard()">Dismiss</button>
                 </div>
             </div>
 
@@ -642,10 +642,18 @@ function processScannedToken(scannedText) {
     
     console.log("Parsed Token:", token);
     
-    // Prompt for passcode
-    const passcode = prompt("Clue station scanned successfully! Enter the passcode to verify this station:");
-    if (passcode === null) {
-        return; // User cancelled
+    let passcode = "";
+    // If the team is currently on Clue 1 (Round 2), do not prompt for a passcode
+    const currentClueNumber = {{ team.round2_current_clue }};
+    const currentRound = {{ team.current_round }};
+    const round2Completed = {% if team.round2_completed %}true{% else %}false{% endif %};
+    
+    if (!(currentRound === 2 && currentClueNumber === 1 && !round2Completed)) {
+        // Prompt for passcode
+        passcode = prompt("Clue station scanned successfully! Enter the passcode to verify this station:");
+        if (passcode === null) {
+            return; // User cancelled
+        }
     }
     
     // Send to AJAX verification
@@ -687,7 +695,12 @@ function displayScanResults(result) {
     card.scrollIntoView({ behavior: 'smooth' });
 
     // Make sure dismiss button is visible by default
-    document.getElementById('dismissResultBtn').style.display = 'inline-block';
+    const dismissBtn = document.getElementById('dismissResultBtn');
+    if (dismissBtn) {
+        dismissBtn.style.display = 'inline-block';
+        dismissBtn.innerText = "Dismiss";
+        dismissBtn.className = "btn btn-sm btn-outline-secondary rounded-pill px-4";
+    }
 
     if (result.status === 'success' || result.status === 'completed_hunt') {
         title.innerText = "Correct Clue Found!";
@@ -706,13 +719,16 @@ function displayScanResults(result) {
             imgWrapper.innerHTML = '';
         }
         
-        // Hide dismiss button when the clue is correct
-        document.getElementById('dismissResultBtn').style.display = 'none';
+        // In place of dismiss button, change it to "Unlock Next Clue" text/style
+        if (dismissBtn) {
+            dismissBtn.innerText = "Unlock Next Clue";
+            dismissBtn.className = "btn btn-success text-white rounded-pill px-4 fw-bold animate__animated animate__pulse animate__infinite";
+        }
         
-        // Automatically reload page after 4 seconds to sync progress
+        // Automatically reload page after 10 seconds to sync progress
         setTimeout(() => {
             window.location.reload();
-        }, 4000);
+        }, 10000);
     } 
     else if (result.status === 'dummy') {
         title.innerText = "Decoy Clue Scanned!";

@@ -204,6 +204,16 @@ def direct_scan(uuid):
         flash("Invalid QR Code scanned!", "danger")
         return redirect(url_for('team.dashboard'))
 
+    # If it is Clue 1, not a dummy, team is in Round 2, and they are currently solving Clue 1,
+    # automatically process without prompting for passcode on GET request.
+    if request.method == 'GET' and qr.clue_number == 1 and not qr.is_dummy and team.current_round == 2 and team.round2_current_clue == 1 and not team.round2_completed:
+        result = process_qr_scan(team, uuid, "", request)
+        if result['status'] in ['success', 'completed_hunt']:
+            from flask import session as flask_session
+            flask_session['direct_scan_result'] = result
+            flash(f"Success: {result['message']}", "success")
+            return redirect(url_for('team.dashboard'))
+
     if request.method == 'POST':
         passcode = request.form.get('passcode', '').strip()
         result = process_qr_scan(team, uuid, passcode, request)
@@ -341,22 +351,26 @@ def process_qr_scan(team, token, passcode, req):
             return {'status': 'wrong_house', 'message': 'Wrong Clue! This station belongs to another house.'}
 
     # Determine the required passcode for this station.
-    # Level 1 requires its own seeded password (given by manager).
+    # Level 1 requires no passcode (it is immediately available).
     # Level > 1 requires the password of the previous level clue (Clue X-1).
-    required_password = qr.password
-    if qr.clue_number > 1 and not qr.is_dummy:
-        prev_qrs = QRCode.query.filter_by(clue_number=qr.clue_number - 1, is_dummy=False).all()
-        for pq in prev_qrs:
-            if not pq.allowed_houses:
-                required_password = pq.password
-                break
-            allowed_list = [h.strip().lower() for h in pq.allowed_houses.split(',')]
-            if team.house.name.lower() in allowed_list:
-                required_password = pq.password
-                break
+    if qr.clue_number == 1 and not qr.is_dummy:
+        required_password = ""
+    else:
+        required_password = qr.password
+        if qr.clue_number > 1 and not qr.is_dummy:
+            prev_qrs = QRCode.query.filter_by(clue_number=qr.clue_number - 1, is_dummy=False).all()
+            for pq in prev_qrs:
+                if not pq.allowed_houses:
+                    required_password = pq.password
+                    break
+                allowed_list = [h.strip().lower() for h in pq.allowed_houses.split(',')]
+                if team.house.name.lower() in allowed_list:
+                    required_password = pq.password
+                    break
 
     # 3. Verify passcode (Case-insensitive check for user convenience)
-    if not passcode or required_password.strip().lower() != passcode.strip().lower():
+    # If required_password is empty, it does not require a passcode.
+    if required_password != "" and (not passcode or required_password.strip().lower() != passcode.strip().lower()):
         # Log wrong password scan
         log = QRScanLog(
             team_id=team.id,

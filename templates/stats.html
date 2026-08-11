@@ -7,7 +7,7 @@
 <!-- Navbar / Status Bar -->
 <div class="navbar navbar-expand-lg bg-dark navbar-dark py-3 px-4 shadow-sm">
     <div class="container-fluid d-flex justify-content-between align-items-center">
-        <span class="navbar-brand fw-bold mb-0 text-warning"><i class="bi bi-bar-chart-line-fill me-2 text-warning"></i>Live Stats Dashboard</span>
+        <span class="navbar-brand fw-bold mb-0 text-warning"><i class="bi bi-bar-chart-line-fill me-2 text-warning"></i>TREASURE HUNT - LRDC 2026</span>
         <div class="d-flex align-items-center">
             <!-- Ticking Digital Clock -->
             <div id="gameTimer" class="badge bg-danger fs-6 rounded-pill px-3 py-2 font-monospace me-3 d-flex align-items-center">
@@ -649,9 +649,9 @@ function updateStatsView(data) {
             const rank = row[0];
             const teamName = row[1];
             const houseName = row[2];
-            const roundLabel = row[3];
-            const durationText = row[4];
-            const clueProgress = row[5];
+            const points = row[3];
+            const clueProgress = row[4];
+            const durationText = row[5];
             
             const teamKey = 'leader_team_' + teamName.replace(/[^a-zA-Z0-9]/g, '_');
             activeTeamKeys.add(teamKey);
@@ -699,13 +699,14 @@ function updateStatsView(data) {
                 <div class="d-flex align-items-center gap-3">
                     <span class="badge bg-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 34px; height: 34px; font-size: 14px;">#${rank}</span>
                     <div>
-                        <span class="fw-bold text-dark" style="font-size: 17px; margin-right: 4px;">${teamName}</span>
-                        <span class="badge ${houseBadgeClass} font-monospace" style="font-size: 11px; padding: 3px 6px;">${houseName}</span>
+                        <span class="fw-bold text-dark" style="font-size: 16px; margin-right: 4px;">${teamName}</span>
+                        <span class="badge ${houseBadgeClass} font-monospace" style="font-size: 10px; padding: 2px 5px;">${houseName}</span>
                     </div>
                 </div>
-                <div class="d-flex align-items-center gap-4">
-                    <span class="text-secondary fw-semibold" style="font-size: 15px;">${roundLabel}: ${clueProgress}</span>
-                    <span class="badge bg-primary font-monospace" style="font-size: 14px; padding: 4px 8px;">Dur: ${durationText}</span>
+                <div class="d-flex align-items-center gap-3">
+                    <span class="text-secondary" style="font-size: 14px;">Pts: <strong class="text-primary">${points}</strong></span>
+                    <span class="text-secondary" style="font-size: 14px;">Prog: <strong class="text-dark">${clueProgress}</strong></span>
+                    <span class="badge bg-primary font-monospace" style="font-size: 13px; padding: 3px 6px;">Dur: ${durationText}</span>
                 </div>
             `;
         });

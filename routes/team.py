@@ -744,8 +744,7 @@ def serve_dummy_image():
 @team_bp.route('/api/status')
 @login_required
 def team_api_status():
-    from models import Team
-    team = Team.query.get(current_user.id)
+    team = current_user.team_profile
     if not team:
         return jsonify({'error': 'Team not found'}), 404
     return jsonify({

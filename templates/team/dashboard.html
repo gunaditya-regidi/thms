@@ -811,7 +811,7 @@ function pollStartStatus() {
     fetch('/api/status')
         .then(res => res.json())
         .then(data => {
-            if (data) {
+            if (data && data.round1_status !== undefined && data.current_round !== undefined && data.round2_completed !== undefined) {
                 const stopwatchEl = document.getElementById('teamStopwatch');
                 if (stopwatchEl) {
                     const currentStatus = stopwatchEl.getAttribute('data-status');

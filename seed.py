@@ -63,16 +63,16 @@ def run_seed(drop_tables=True):
 
     # 4. Seed 10 Round 1 Tasks
     tasks_data = [
-        ("Team Registration & Briefing", "Verify team details, collect event kits, and attend the safety briefing."),
-        ("Notice Board Decryption", "Locate the main library notice board, find the cipher message, and decrypt it."),
-        ("Mechanical Equilibrium", "Balance 3 objects of different weights using simple items in the Physics lab."),
-        ("Historic Publication Hunt", "Find the oldest book in the main library archive and write down its publication year."),
-        ("Golden Ratio Structure", "Locate the architecture block, find the golden ratio design, and click a group photo."),
-        ("Mystery Compound Identification", "Perform the chemical test at Chemistry Lab 3 and identify the compound."),
-        ("Founder's Statue Inscription", "Find the main statue of the founder and copy down the exact date engraved on the plaque."),
-        ("Morse Code Translation", "Listen to the audio Morse code broadcast in the Seminar Hall and write the message."),
-        ("Logical Sequence Puzzle", "Solve the sequence challenge posted near the IT Department block."),
-        ("Final Alignment Test", "Gather as a team at the central plaza and complete the physical coordination challenge.")
+        ("Stream Colour Hunt", "Collect five different objects that match your stream colour. (Must be completed with every team member present)"),
+        ("Make a Star", "Draw/Make a star by any means and make sure it is clearly visible in your group photo. (Must be completed with every team member present)"),
+        ("Team Logo Design", "Design a unique team logo that represents your group and capture it in a group photo. (Must be completed with every team member present)"),
+        ("Reel Dance Video", "Create a 20-second video of all team members dancing/performing together to a trending reel. (Must be completed with every team member present)"),
+        ("Creative Wave", "Stand in a line and pass a creative wave from one team member to the next using body movements, and record the full chain. (Must be completed with every team member present)"),
+        ("Seven Colours Collage", "Click a group photo that includes seven different colours and arrange them creatively into a collage. (Must be completed with every team member present)"),
+        ("Five Shapes Challenge", "Click a group picture with five objects of different shapes, such as a circle, square, triangle, rectangle, and any other shape. (Must be completed with every team member present)"),
+        ("Silly Dance Collaboration", "Convince one person outside your team to join you for a 10-second silly dance and capture it on video. (Must be completed with every team member present)"),
+        ("Patriotic Chorus", "Capture a group video with all the team members singing a patriotic song. (Must be completed with every team member present)"),
+        ("Iconic Movie Pose", "Recreate a famous Movie pose from its iconic scenes or poster; capture it in a group video. (Must be completed with every team member present)")
     ]
     
     for index, (title, desc) in enumerate(tasks_data, start=1):
@@ -81,6 +81,10 @@ def run_seed(drop_tables=True):
             task = Task(title=title, description=desc, task_number=index)
             db.session.add(task)
             print(f"Seeded Task {index}: {title}")
+        else:
+            task.title = title
+            task.description = desc
+            print(f"Updated Task {index}: {title}")
     db.session.commit()
 
     # 5. Seed 7 Round 2 Clue Levels (Level 1 & 2: house-specific, Level 3: Red/Blue & Green/Yellow shared, Level 4-7: single shared)

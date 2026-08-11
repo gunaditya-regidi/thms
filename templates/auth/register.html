@@ -47,9 +47,9 @@
         </div>
 
         <div class="form-floating mb-3">
-            <input type="tel" class="form-control" id="leader_phone" name="leader_phone" placeholder="Leader Phone Number" pattern="[0-9]{10,15}" required>
+            <input type="tel" class="form-control" id="leader_phone" name="leader_phone" placeholder="Leader Phone Number" pattern="[0-9]{10}" maxlength="10" minlength="10" required>
             <label for="leader_phone">Leader Phone Number</label>
-            <div class="form-text small">Must be unique across the entire system.</div>
+            <div class="form-text small">Must be exactly 10 digits and unique across the entire system.</div>
         </div>
 
         <div class="form-floating mb-4">
@@ -75,7 +75,7 @@
                     <input type="text" class="form-control form-control-sm mb-2" id="member2_name" name="member2_name" placeholder="Name" required>
                 </div>
                 <div>
-                    <input type="tel" class="form-control form-control-sm" id="member2_phone" name="member2_phone" placeholder="Phone" pattern="[0-9]{10,15}" required>
+                    <input type="tel" class="form-control form-control-sm" id="member2_phone" name="member2_phone" placeholder="Phone (10 digits)" pattern="[0-9]{10}" maxlength="10" minlength="10" required>
                 </div>
             </div>
 
@@ -86,7 +86,7 @@
                     <input type="text" class="form-control form-control-sm mb-2" id="member3_name" name="member3_name" placeholder="Name" required>
                 </div>
                 <div>
-                    <input type="tel" class="form-control form-control-sm" id="member3_phone" name="member3_phone" placeholder="Phone" pattern="[0-9]{10,15}" required>
+                    <input type="tel" class="form-control form-control-sm" id="member3_phone" name="member3_phone" placeholder="Phone (10 digits)" pattern="[0-9]{10}" maxlength="10" minlength="10" required>
                 </div>
             </div>
 
@@ -97,7 +97,7 @@
                     <input type="text" class="form-control form-control-sm mb-2" id="member4_name" name="member4_name" placeholder="Name" required>
                 </div>
                 <div>
-                    <input type="tel" class="form-control form-control-sm" id="member4_phone" name="member4_phone" placeholder="Phone" pattern="[0-9]{10,15}" required>
+                    <input type="tel" class="form-control form-control-sm" id="member4_phone" name="member4_phone" placeholder="Phone (10 digits)" pattern="[0-9]{10}" maxlength="10" minlength="10" required>
                 </div>
             </div>
         </div>

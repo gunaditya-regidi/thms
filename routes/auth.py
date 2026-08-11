@@ -58,6 +58,19 @@ def register():
             flash("All main team fields are required.", "danger")
             return render_template('auth/register.html')
 
+        # Validate exactly 10-digit numbers
+        def is_valid_10_digit_phone(phone):
+            return len(phone) == 10 and phone.isdigit()
+
+        if not is_valid_10_digit_phone(leader_phone):
+            flash("Leader phone number must be exactly 10 digits (0-9).", "danger")
+            return render_template('auth/register.html')
+
+        for m_name, m_phone, m_idx in members_data:
+            if not is_valid_10_digit_phone(m_phone):
+                flash(f"Member {m_idx} phone number must be exactly 10 digits (0-9).", "danger")
+                return render_template('auth/register.html')
+
         # Check unique Team Name / Username
         if User.query.filter_by(username=team_name).first() or Team.query.filter_by(team_name=team_name).first():
             flash("Team Name is already registered. Please choose another.", "danger")

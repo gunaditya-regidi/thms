@@ -69,10 +69,7 @@
                 <small class="text-muted d-block mt-1" style="font-size: 11px;">Leave unchecked if this clue applies to all houses.</small>
             </div>
 
-            <div class="mb-3">
-                <label for="hint" class="form-label small text-secondary">Location Hint</label>
-                <textarea class="form-control form-control-sm" id="hint" name="hint" rows="2" placeholder="e.g. Check under the banyan tree" required></textarea>
-            </div>
+            <input type="hidden" name="hint" value="Clue Hint">
 
             <div class="mb-3">
                 <label for="image" class="form-label small text-secondary">Clue Image (Optional)</label>
@@ -136,7 +133,7 @@
                     </div>
                     <p class="mb-0 text-secondary small font-monospace">UUID: {{ qr.uuid[:12] }}...</p>
                     <p class="mb-0 text-secondary small"><strong>Pwd:</strong> <span class="badge bg-light text-dark border">{{ qr.password }}</span></p>
-                    <p class="mb-0 text-secondary small text-truncate" style="max-width: 220px;"><strong>Hint:</strong> {{ qr.hint }}</p>
+
                     {% if qr.allowed_houses %}
                         <p class="mb-0 text-secondary small"><strong>Houses:</strong> 
                             {% for h in qr.allowed_houses.split(',') %}

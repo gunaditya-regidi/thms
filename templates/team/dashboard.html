@@ -267,11 +267,6 @@
                                             <img src="/team/clue-image/{{ lvl }}" class="img-fluid rounded border shadow-sm animate__animated animate__fadeIn" style="max-height: 250px; cursor: zoom-in;" onclick="viewClueImage('/team/clue-image/{{ lvl }}', 'Clue #{{ lvl }}')" alt="Clue {{ lvl }}">
                                         </div>
 
-                                        <div class="alert alert-info border-0 rounded-4 text-start p-3 mb-3">
-                                            <h6 class="fw-bold mb-1"><i class="bi bi-compass-fill me-2"></i>Location Hint</h6>
-                                            <p class="mb-0 text-dark" id="currentHint">{{ next_clue_hint }}</p>
-                                        </div>
-
                                         <button type="button" class="btn btn-primary w-100 py-3 rounded-3 fw-bold pulse" data-bs-toggle="modal" data-bs-target="#scannerModal">
                                             <i class="bi bi-qr-code-scan me-2"></i>Scan Clue QR Code
                                         </button>
@@ -306,7 +301,7 @@
                             <!-- Image will load dynamically -->
                         </div>
                         <p class="mb-1 small"><strong>Clue Password:</strong> <span class="badge bg-success" id="cluePassword"></span></p>
-                        <p class="mb-0 small"><strong>Next Hint:</strong> <span id="clueHint"></span></p>
+                        <p class="mb-0 small d-none"><strong>Next Hint:</strong> <span id="clueHint"></span></p>
                     </div>
                     
                     <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-4" onclick="closeResultCard()">Dismiss</button>

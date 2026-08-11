@@ -204,16 +204,6 @@ def direct_scan(uuid):
         flash("Invalid QR Code scanned!", "danger")
         return redirect(url_for('team.dashboard'))
 
-    # If it is Clue 1, not a dummy, team is in Round 2, and they are currently solving Clue 1,
-    # automatically process without prompting for passcode on GET request.
-    if request.method == 'GET' and qr.clue_number == 1 and not qr.is_dummy and team.current_round == 2 and team.round2_current_clue == 1 and not team.round2_completed:
-        result = process_qr_scan(team, uuid, "", request)
-        if result['status'] in ['success', 'completed_hunt']:
-            from flask import session as flask_session
-            flask_session['direct_scan_result'] = result
-            flash(f"Success: {result['message']}", "success")
-            return redirect(url_for('team.dashboard'))
-
     if request.method == 'POST':
         passcode = request.form.get('passcode', '').strip()
         result = process_qr_scan(team, uuid, passcode, request)
@@ -565,8 +555,8 @@ def process_qr_scan(team, token, passcode, req):
         # Update team expected clue
         team.round2_current_clue = team.round2_current_clue + 1
         
-        # Check if they have scanned clue 7 (completion of Hunt)
-        is_final = (qr.clue_number == 7)
+        # Check if they have completed the Hunt (Clue 6 is the final scanned level)
+        is_final = (qr.clue_number == 6)
         if is_final:
             team.round2_completed = True
             team.round2_completion_time = timestamp
@@ -701,8 +691,8 @@ def serve_clue_image_by_level(level):
     if not team:
         abort(403)
         
-    # Allow viewing active clue (level == round2_current_clue) but restrict future locked clues
-    if level > team.round2_current_clue and not team.round2_completed:
+    # Allow viewing solved clues but restrict the active clue level and future locked clues
+    if level >= team.round2_current_clue and not team.round2_completed:
         abort(403)
         
     # Query database for the clue matching the level and house restriction

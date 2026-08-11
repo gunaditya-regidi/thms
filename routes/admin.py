@@ -223,6 +223,7 @@ def approve_r1(team_id):
     try:
         team.round1_status = 'approved'
         team.current_round = 2 # Automatically unlocks Round 2!
+        team.round2_current_clue = 2
         
         # Load or create approval record
         approval = Round1Approval.query.filter_by(team_id=team_id).first()
@@ -376,6 +377,7 @@ def promote_r2(team_id):
         # Set status approved and round to 2
         team.round1_status = 'approved'
         team.current_round = 2
+        team.round2_current_clue = 2
         
         # Build approval record
         approval = Round1Approval.query.filter_by(team_id=team.id).first()
@@ -434,7 +436,7 @@ def reset_team(team_id):
         # Reset team attributes
         team.current_round = 1
         team.round1_status = 'pending_start'
-        team.round2_current_clue = 1
+        team.round2_current_clue = 2
         team.round2_completed = False
         team.round2_completion_time = None
         
@@ -474,7 +476,7 @@ def reset_qr_progress(team_id):
         # Clear round 2 progress only
         Round2Progress.query.filter_by(team_id=team_id).delete()
         
-        team.round2_current_clue = 1
+        team.round2_current_clue = 2
         team.round2_completed = False
         team.round2_completion_time = None
         
@@ -521,7 +523,7 @@ def reset_all_teams():
         for team in teams:
             team.current_round = 1
             team.round1_status = 'pending_start'
-            team.round2_current_clue = 1
+            team.round2_current_clue = 2
             team.round2_completed = False
             team.round2_completion_time = None
             
@@ -613,8 +615,69 @@ def manage_qrs():
             
         return redirect(url_for('admin.manage_qrs'))
 
-    qrs = QRCode.query.order_by(QRCode.is_dummy, QRCode.clue_number).all()
-    return render_template('admin/qrs.html', qrs=qrs)
+    qrs = QRCode.query.filter(QRCode.clue_number < 7).order_by(QRCode.is_dummy, QRCode.clue_number).all()
+    final_qr = QRCode.query.filter_by(clue_number=7, is_dummy=False).first()
+    final_image = None
+    if final_qr and final_qr.image_path:
+        final_image = final_qr.image_path
+        
+    return render_template('admin/qrs.html', qrs=qrs, final_clue_image_path=final_image)
+
+@admin_bp.route('/admin/qrs/upload-final', methods=['POST'])
+@check_admin_role
+def upload_final_clue_image():
+    if 'final_image' not in request.files:
+        flash("No file part", "danger")
+        return redirect(url_for('admin.manage_qrs'))
+        
+    file = request.files['final_image']
+    if file.filename == '':
+        flash("No selected file", "danger")
+        return redirect(url_for('admin.manage_qrs'))
+        
+    if file:
+        filename = secure_filename(f"final_clue_7_{uuid.uuid4().hex[:6]}_{file.filename}")
+        upload_dir = current_app.config['UPLOAD_FOLDER']
+        os.makedirs(upload_dir, exist_ok=True)
+        file_save_path = os.path.join(upload_dir, filename)
+        file.save(file_save_path)
+        image_path = f"/static/uploads/{filename}"
+        
+        # Check if clue 7 QRCode entry already exists, otherwise create it
+        qr = QRCode.query.filter_by(clue_number=7, is_dummy=False).first()
+        if not qr:
+            qr = QRCode(
+                uuid=f"final-clue-7-image-{uuid.uuid4().hex[:8]}",
+                clue_number=7,
+                password="final-treasure-location", # placeholder
+                hint="Go to admin for last clue location",
+                is_dummy=False,
+                image_path=image_path
+            )
+            db.session.add(qr)
+        else:
+            # Delete old file if it exists and is different
+            if qr.image_path and not qr.image_path.startswith('/static/'):
+                old_filename = qr.image_path.split('/')[-1]
+                old_filepath = os.path.join(upload_dir, old_filename)
+                if os.path.exists(old_filepath):
+                    try:
+                        os.remove(old_filepath)
+                    except Exception:
+                        pass
+            qr.image_path = image_path
+            
+        # Log action
+        log = SystemLog(
+            action='upload_final_clue_7_image',
+            details=f"Admin '{current_user.username}' uploaded/updated Final Clue 7 Image.",
+            user_id=current_user.id
+        )
+        db.session.add(log)
+        db.session.commit()
+        flash("Final Clue 7 Image uploaded successfully!", "success")
+        
+    return redirect(url_for('admin.manage_qrs'))
 
 @admin_bp.route('/admin/qrs/delete/<int:qr_id>', methods=['POST'])
 @check_admin_role

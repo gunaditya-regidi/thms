@@ -67,7 +67,7 @@ class Team(db.Model):
     
     current_round = db.Column(db.Integer, default=1) # 1 or 2
     round1_status = db.Column(db.String(30), default='pending_start') # 'pending_start', 'active', 'requested', 'verified', 'approved'
-    round2_current_clue = db.Column(db.Integer, default=1) # 1 to 7. Clue 7 is the final clue.
+    round2_current_clue = db.Column(db.Integer, default=2) # 2 to 7. Clue 1 is solved by default.
     round2_completed = db.Column(db.Boolean, default=False)
     round2_completion_time = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)

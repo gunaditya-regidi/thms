@@ -555,13 +555,19 @@ def reset_all_teams():
 @check_admin_role
 def manage_qrs():
     if request.method == 'POST':
-        clue_number = int(request.form.get('clue_number', 0))
-        password = request.form.get('password', '').strip()
-        hint = request.form.get('hint', '').strip()
         is_dummy = request.form.get('is_dummy') == 'true'
+        clue_number = int(request.form.get('clue_number', 0)) if not is_dummy else 99
+        password = request.form.get('password', '').strip() if not is_dummy else 'dummy-decoy'
+        hint = 'Decoy Clue'
         
-        if not password or not hint:
-            flash("Password and Hint are required.", "danger")
+        if not is_dummy and not password:
+            flash("Password is required for standard clues.", "danger")
+            return redirect(url_for('admin.manage_qrs'))
+
+        # Image is required for dummy decoy clues
+        image_file = request.files.get('image')
+        if is_dummy and (not image_file or image_file.filename == ''):
+            flash("Image upload is required for decoy dummy clues.", "danger")
             return redirect(url_for('admin.manage_qrs'))
 
         try:
@@ -870,20 +876,9 @@ def export_qrs_pdf():
         'DocTitle',
         parent=styles['Heading1'],
         fontName='Helvetica-Bold',
-        fontSize=48,
-        leading=56,
+        fontSize=28,
+        leading=34,
         textColor=colors.HexColor('#000000'),
-        alignment=1, # Center
-        spaceAfter=0
-    )
-    
-    subtitle_style = ParagraphStyle(
-        'DocSubtitle',
-        parent=styles['Normal'],
-        fontName='Helvetica-Bold',
-        fontSize=24,
-        leading=28,
-        textColor=colors.HexColor('#666666'),
         alignment=1, # Center
         spaceAfter=0
     )
@@ -896,23 +891,11 @@ def export_qrs_pdf():
         if not os.path.exists(filepath):
             generate_qr_image(qr.uuid)
             
-        # Large heading style
-        if qr.is_dummy:
-            heading_text = "CLUE"
-        elif qr.allowed_houses:
-            heading_text = f"CLUE #{qr.clue_number} ({qr.allowed_houses.upper()})"
-        else:
-            heading_text = f"CLUE #{qr.clue_number}"
-        
-        elements.append(Paragraph(heading_text, title_style))
+        elements.append(Paragraph("LRDC 2026 TREASURE HUNT", title_style))
         elements.append(Spacer(1, 0.4*inch))
         
-        # "Scan Here" instruction
-        elements.append(Paragraph("SCAN HERE", subtitle_style))
-        elements.append(Spacer(1, 0.5*inch))
-        
-        # Giant QR Code Image centered
-        qr_image = Image(filepath, width=5.5*inch, height=5.5*inch)
+        # Giant QR Code Image centered (6.5 inches by 6.5 inches)
+        qr_image = Image(filepath, width=6.5*inch, height=6.5*inch)
         qr_table = Table([[qr_image]], colWidths=[7.5*inch])
         qr_table.setStyle(TableStyle([
             ('ALIGN', (0,0), (-1,-1), 'CENTER'),
@@ -921,6 +904,34 @@ def export_qrs_pdf():
             ('TOPPADDING', (0,0), (-1,-1), 0)
         ]))
         elements.append(qr_table)
+        
+        # Spacer to push footer to bottom
+        elements.append(Spacer(1, 1.5*inch))
+        
+        # Tiny bottom right identification text (< 5 pt)
+        id_style = ParagraphStyle(
+            f'ClueID_{idx}',
+            parent=styles['Normal'],
+            fontName='Helvetica',
+            fontSize=4.5,
+            leading=5,
+            alignment=2, # Right
+            textColor=colors.HexColor('#777777')
+        )
+        if qr.is_dummy:
+            id_text = f"Decoy - {qr.uuid}"
+        elif qr.allowed_houses:
+            id_text = f"Clue #{qr.clue_number} ({qr.allowed_houses}) - {qr.uuid}"
+        else:
+            id_text = f"Clue #{qr.clue_number} - {qr.uuid}"
+            
+        id_table = Table([[Paragraph(id_text, id_style)]], colWidths=[7.5*inch])
+        id_table.setStyle(TableStyle([
+            ('ALIGN', (0,0), (-1,-1), 'RIGHT'),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+            ('TOPPADDING', (0,0), (-1,-1), 0)
+        ]))
+        elements.append(id_table)
         
         # Page break except for the last clue sheet
         if idx < len(qrs) - 1:

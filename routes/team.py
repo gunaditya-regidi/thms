@@ -204,6 +204,15 @@ def direct_scan(uuid):
         flash("Invalid QR Code scanned!", "danger")
         return redirect(url_for('team.dashboard'))
 
+    # If it is a dummy clue, process it immediately without passcode verification
+    if request.method == 'GET' and qr.is_dummy:
+        result = process_qr_scan(team, uuid, "", request)
+        if result['status'] == 'dummy':
+            from flask import session as flask_session
+            flask_session['direct_scan_result'] = result
+            flash(f"Decoy: {result['message']}", "warning")
+            return redirect(url_for('team.dashboard'))
+
     if request.method == 'POST':
         passcode = request.form.get('passcode', '').strip()
         result = process_qr_scan(team, uuid, passcode, request)
@@ -301,6 +310,47 @@ def process_qr_scan(team, token, passcode, req):
             })
             
         return {'status': 'invalid', 'message': 'Invalid QR Code scanned!'}
+
+    # 2.1. Check if Dummy Clue (Decoy) - No passcode check required, immediately records scan
+    if qr.is_dummy:
+        log = QRScanLog(
+            team_id=team.id,
+            qr_code_id=qr.id,
+            scanned_token=token,
+            timestamp=timestamp,
+            is_correct=False,
+            is_repeated=False,
+            is_dummy=True,
+            ip_address=ip,
+            browser=ua
+        )
+        db.session.add(log)
+        
+        sys_log = SystemLog(
+            action='scan_dummy',
+            details=f"Team '{team.team_name}' scanned decoy Dummy Clue.",
+            team_id=team.id,
+            ip_address=ip,
+            browser=ua
+        )
+        db.session.add(sys_log)
+        db.session.commit()
+        
+        socketio = current_app.extensions.get('socketio')
+        if socketio:
+            socketio.emit('qr_scanned', {
+                'team_name': team.team_name,
+                'house': team.house.name,
+                'type': 'dummy',
+                'timestamp': timestamp.strftime('%Y-%m-%d %H:%M:%S')
+            })
+            
+        return {
+            'status': 'dummy',
+            'message': 'Decoy Clue Scanned! This station is a dead end. Keep looking!',
+            'image': qr.image_path,
+            'hint': qr.hint or ''
+        }
 
     # 2.5. Check if clue is restricted to specific houses
     if qr.allowed_houses:

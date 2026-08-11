@@ -79,31 +79,7 @@
         </div>
     </div>
 
-    <!-- First Clue Passcode & Location Helper Card -->
-    {% if first_clue %}
-    <div class="glass-card p-3 mb-4 border border-primary border-opacity-30">
-        <h6 class="fw-bold text-primary mb-2"><i class="bi bi-compass-fill me-1"></i>Round 2 Startup Clue (For Teams)</h6>
-        <p class="text-muted small mb-2" style="font-size: 11px; line-height: 1.4;">
-            Teams will be instructed to report to you to receive their first clue location and passcode. Please provide them with the following details:
-        </p>
-        <div class="row g-2 text-start">
-            <div class="col-12">
-                <div class="bg-light p-2 rounded-3 border">
-                    <span class="text-secondary small d-block font-monospace" style="font-size: 10px;">FIRST CLUE PASSCODE</span>
-                    <strong class="text-primary font-monospace" style="font-size: 13px;">{{ first_clue.password }}</strong>
-                </div>
-            </div>
-            {% if first_clue.image_path %}
-            <div class="col-12 mt-2">
-                <div class="bg-light p-2 rounded-3 border text-center">
-                    <span class="text-secondary small d-block font-monospace mb-1" style="font-size: 10px;">FIRST CLUE IMAGE</span>
-                    <img src="/team/clue-image/1" class="img-fluid rounded border shadow-sm" style="max-height: 180px; cursor: zoom-in;" onclick="viewClueImage('/team/clue-image/1', 'First Clue')" alt="First Clue Image">
-                </div>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-    {% endif %}
+
 
     <!-- Navigation Tabs -->
     <ul class="nav nav-pills nav-fill bg-light p-1 rounded-4 mb-4" id="managerTabs" role="tablist">
@@ -324,6 +300,24 @@ function refreshDashboardData() {
 
 function initManagerPage() {
     startAllStopwatches();
+    
+    // Listen to real-time verification requests and approvals to update R1 Pending simultaneously
+    if (window.socket) {
+        window.socket.on('r1_requested', (data) => {
+            console.log("R1 requested event received:", data);
+            const managerHouse = "{{ house.name.lower() }}";
+            if (data.house && data.house.toLowerCase() === managerHouse) {
+                window.location.reload();
+            }
+        });
+        window.socket.on('r1_verified', (data) => {
+            console.log("R1 verified event received:", data);
+            const managerHouse = "{{ house.name.lower() }}";
+            if (data.house && data.house.toLowerCase() === managerHouse) {
+                window.location.reload();
+            }
+        });
+    }
 }
 
 if (document.readyState === 'loading') {

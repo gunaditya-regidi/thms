@@ -138,11 +138,12 @@ def run_seed(drop_tables=True):
             db.session.add(qr)
             print(f"Seeded QR Level {num} ({allowed or 'All'}): {pwd}")
         
-        # Always generate PNG for local loading
-        scan_url = f"{base_url.rstrip('/')}/scan/{fixed_uuid}"
-        img = qrcode.make(scan_url)
-        filepath = os.path.join(qr_folder, f"qr_{fixed_uuid}.png")
-        img.save(filepath)
+        # Always generate PNG for local loading (except for Clue 1)
+        if num != 1:
+            scan_url = f"{base_url.rstrip('/')}/scan/{fixed_uuid}"
+            img = qrcode.make(scan_url)
+            filepath = os.path.join(qr_folder, f"qr_{fixed_uuid}.png")
+            img.save(filepath)
     db.session.commit()
 
     # 6. Seed 3 Dummy QR codes

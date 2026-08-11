@@ -595,8 +595,9 @@ def manage_qrs():
             db.session.add(new_qr)
             db.session.flush() # gets ID for filename creation
             
-            # Generate QR code PNG
-            generate_qr_image(code_uuid)
+            # Generate QR code PNG (except for Clue 1)
+            if clue_number != 1 or is_dummy:
+                generate_qr_image(code_uuid)
 
             # System log
             log = SystemLog(
@@ -823,7 +824,7 @@ def delete_selected_qrs():
 @check_admin_role
 def export_qrs_zip():
     """Generates all QR code PNGs and exports them as a single ZIP archive."""
-    qrs = QRCode.query.all()
+    qrs = QRCode.query.filter((QRCode.clue_number > 1) & (QRCode.clue_number < 7) | (QRCode.is_dummy == True)).all()
     qr_dir = current_app.config['QR_FOLDER']
     
     zip_buffer = io.BytesIO()
@@ -858,7 +859,7 @@ def export_qrs_zip():
 @check_admin_role
 def export_qrs_pdf():
     """Generates a printable PDF document with QR code sheets containing clue numbers, details, and QR codes."""
-    qrs = QRCode.query.order_by(QRCode.is_dummy, QRCode.clue_number).all()
+    qrs = QRCode.query.filter((QRCode.clue_number > 1) & (QRCode.clue_number < 7) | (QRCode.is_dummy == True)).order_by(QRCode.is_dummy, QRCode.clue_number).all()
     qr_dir = current_app.config['QR_FOLDER']
     
     pdf_buffer = io.BytesIO()

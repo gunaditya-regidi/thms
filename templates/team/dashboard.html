@@ -466,7 +466,7 @@
                                     {% endif %}
                                     <small class="text-muted">100 points</small>
                                 </td>
-                                <td class="text-end font-monospace small">
+                                <td class="text-end font-monospace small local-time-text">
                                     {% if approved_iso %}
                                         {{ approved_iso|replace('T', ' ')|replace('Z', '') }}
                                     {% else %}
@@ -495,7 +495,7 @@
                                         {% endif %}
                                         <small class="text-muted">10 points</small>
                                     </td>
-                                    <td class="text-end font-monospace small">
+                                    <td class="text-end font-monospace small local-time-text">
                                         {% if lvl in clue_completion_times %}
                                             {{ clue_completion_times[lvl].strftime('%Y-%m-%d %H:%M:%S') }}
                                         {% else %}

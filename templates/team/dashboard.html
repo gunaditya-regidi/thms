@@ -392,10 +392,13 @@
                     {% for lvl in range(1, 8) %}
                         {% set comp_at = progress_map.get(lvl) %}
                         <div class="mb-3 position-relative">
-                            {% if comp_at %}
+                            {% if comp_at or (lvl == 1 and team.current_round == 2) %}
                                 <div class="position-absolute bg-success rounded-circle" style="width: 12px; height: 12px; left: -22px; top: 4px;"></div>
                                 <h6 class="fw-bold mb-0 text-success">Level {{ lvl }} Solved</h6>
-                                <span class="text-muted font-monospace local-time-text" style="font-size: 10px;">{{ comp_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                                {% set solved_time = comp_at or (r1_app.approved_at if r1_app else team.created_at) %}
+                                {% if solved_time %}
+                                    <span class="text-muted font-monospace local-time-text" style="font-size: 10px;">{{ solved_time.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                                {% endif %}
                             {% else %}
                                 <div class="position-absolute bg-secondary rounded-circle" style="width: 12px; height: 12px; left: -22px; top: 4px;"></div>
                                 <h6 class="fw-bold mb-0 text-secondary">Level {{ lvl }}</h6>

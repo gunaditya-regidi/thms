@@ -694,12 +694,17 @@ function updateStatsView(data) {
                 houseBadgeClass = 'bg-warning text-dark';
             }
 
+            let medal = '';
+            if (rank === 1) medal = ' 🥇';
+            else if (rank === 2) medal = ' 🥈';
+            else if (rank === 3) medal = ' 🥉';
+
             // Build content
             itemEl.innerHTML = `
                 <div class="d-flex align-items-center gap-3">
                     <span class="badge bg-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 34px; height: 34px; font-size: 14px;">#${rank}</span>
                     <div>
-                        <span class="fw-bold text-dark" style="font-size: 16px; margin-right: 4px;">${teamName}</span>
+                        <span class="fw-bold text-dark" style="font-size: 16px; margin-right: 4px;">${teamName}${medal}</span>
                         <span class="badge ${houseBadgeClass} font-monospace" style="font-size: 10px; padding: 2px 5px;">${houseName}</span>
                     </div>
                 </div>

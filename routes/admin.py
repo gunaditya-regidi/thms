@@ -1458,7 +1458,9 @@ def get_report_data(report_type):
                 duration = (t.round2_completion_time - r2_start).total_seconds() if (t.round2_completion_time and r2_start) else 0
             elif t.current_round == 2:
                 clues_solved = t.round2_current_clue - 1
-                if clues_solved > 0:
+                if clues_solved == 1:
+                    duration = 0
+                elif clues_solved > 1:
                     prog = Round2Progress.query.filter_by(team_id=t.id, clue_number=clues_solved).first()
                     if prog and r2_start:
                         duration = (prog.completed_at - r2_start).total_seconds()
@@ -1481,10 +1483,19 @@ def get_report_data(report_type):
             
             progresses = Round2Progress.query.filter_by(team_id=t.id).order_by(Round2Progress.clue_number).all()
             prog_map = {p.clue_number: p.completed_at for p in progresses}
+            if t.current_round == 2:
+                prog_map[1] = r2_start
             
+            # Duration shows total active elapsed time since Round 2 started
             total_dur_sec = 0
+            if t.round2_completed:
+                total_dur_sec = int((t.round2_completion_time - r2_start).total_seconds()) if (t.round2_completion_time and r2_start) else 0
+            elif t.current_round == 2:
+                total_dur_sec = int((datetime.utcnow() - r2_start).total_seconds()) if r2_start else 0
+            else:
+                total_dur_sec = 0
+
             durations_text_list = []
-            
             for lvl in range(1, 8):
                 if lvl in prog_map:
                     if lvl == 1:
@@ -1495,21 +1506,27 @@ def get_report_data(report_type):
                             dur_sec = int((prog_map[lvl] - prev_time).total_seconds())
                         else:
                             dur_sec = 0
-                    total_dur_sec += dur_sec
-                    
                     m = dur_sec // 60
                     s = dur_sec % 60
                     durations_text_list.append(f"C{lvl}:{m}m{s}s")
                 else:
-                    durations_text_list.append(f"C{lvl}:-")
+                    if t.current_round == 2 and t.round2_current_clue == lvl:
+                        prev_time = prog_map.get(lvl - 1)
+                        if prev_time:
+                            active_dur = int((datetime.utcnow() - prev_time).total_seconds())
+                        else:
+                            active_dur = 0
+                        m = active_dur // 60
+                        s = active_dur % 60
+                        durations_text_list.append(f"C{lvl}:{m}m{s}s*")
+                    else:
+                        durations_text_list.append(f"C{lvl}:-")
                     
             h_tot = total_dur_sec // 3600
             m_tot = (total_dur_sec % 3600) // 60
             s_tot = total_dur_sec % 60
             total_time_str = f"{h_tot:02d}:{m_tot:02d}:{s_tot:02d}" if total_dur_sec > 0 else "00:00:00"
-            if total_dur_sec == 0 and t.round1_status == 'approved':
-                total_time_str = "00:00:00"
-            elif t.round1_status != 'approved':
+            if t.round1_status != 'approved' and t.current_round == 1:
                 total_time_str = "-"
                 
             clue_durs_str = ", ".join(durations_text_list)

@@ -249,12 +249,24 @@
                                             <img src="/team/clue-image/{{ lvl }}" class="img-fluid rounded border shadow-sm animate__animated animate__fadeIn" style="max-height: 250px; cursor: zoom-in;" onclick="viewClueImage('/team/clue-image/{{ lvl }}', 'Clue #{{ lvl }}')" alt="Clue {{ lvl }}">
                                         </div>
                                         
-                                        {% if lvl < 7 %}
-                                        <div class="bg-light p-2.5 rounded-3 border text-start">
-                                            <small class="text-secondary d-block"><i class="bi bi-key-fill me-1 text-success"></i>Passcode:</small>
-                                            <code class="font-monospace fw-bold text-success fs-6">{{ passcode_map.get(lvl, 'N/A') }}</code>
-                                        </div>
-                                        {% endif %}
+                                         <div class="d-flex gap-2">
+                                             {% if lvl < 7 %}
+                                             <div class="bg-light p-2.5 rounded-3 border text-start flex-grow-1">
+                                                 <small class="text-secondary d-block"><i class="bi bi-key-fill me-1 text-success"></i>Passcode:</small>
+                                                 <code class="font-monospace fw-bold text-success fs-6">{{ passcode_map.get(lvl, 'N/A') }}</code>
+                                             </div>
+                                             {% endif %}
+                                             <div class="bg-light p-2.5 rounded-3 border text-start flex-grow-1">
+                                                 <small class="text-secondary d-block"><i class="bi bi-clock-fill me-1 text-primary"></i>Time to Solve:</small>
+                                                 <span class="font-monospace fw-bold text-primary fs-6">
+                                                     {% if lvl == 1 %}
+                                                         0s (Auto)
+                                                     {% else %}
+                                                         {{ clue_durations.get(lvl, '-') }}
+                                                     {% endif %}
+                                                 </span>
+                                             </div>
+                                         </div>
                                     </div>
                                 </div>
                             {% elif is_active %}

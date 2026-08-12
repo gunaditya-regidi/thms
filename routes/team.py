@@ -90,6 +90,8 @@ def dashboard():
     r2_start = r1_app.approved_at if (r1_app and r1_app.approved_at) else team.created_at
     progresses = Round2Progress.query.filter_by(team_id=team.id).order_by(Round2Progress.clue_number).all()
     prog_map = {p.clue_number: p.completed_at for p in progresses}
+    if team.current_round == 2:
+        prog_map[1] = r2_start
     
     for lvl in range(1, 8):
         if lvl in prog_map:

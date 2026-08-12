@@ -42,8 +42,8 @@ def run_seed(drop_tables=True):
     managers_data = [
         ('Rahul', 'Red', 'aug13red'),
         ('Sayan Gosh', 'Blue', 'aug13blue'),
-        ('Shyam', 'Yellow', 'aug13yellow'),
-        ('Green', 'Green', 'aug13green')
+        ('Mithilesh', 'Yellow', 'aug13yellow'),
+        ('Shyam', 'Green', 'aug13green')
     ]
     for name, house_name, password in managers_data:
         manager_user = User.query.filter_by(username=name).first()

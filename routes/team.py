@@ -348,7 +348,7 @@ def process_qr_scan(team, token, passcode, req):
         return {
             'status': 'dummy',
             'message': 'Decoy Clue Scanned! This station is a dead end. Keep looking!',
-            'image': qr.image_path,
+            'image': url_for('team.serve_image_by_uuid', uuid=qr.uuid) if qr.image_base64 else qr.image_path,
             'hint': qr.hint or ''
         }
 
@@ -485,7 +485,7 @@ def process_qr_scan(team, token, passcode, req):
             'message': 'Wrong clue! This is a dummy station.',
             'hint': qr.hint,
             'password': qr.password,
-            'image': qr.image_path or '/static/images/dummy-image.png'
+            'image': url_for('team.serve_image_by_uuid', uuid=qr.uuid) if qr.image_base64 else (qr.image_path or '/static/images/dummy-image.png')
         }
 
     # 4. Check Round 2 eligibility
@@ -538,7 +538,7 @@ def process_qr_scan(team, token, passcode, req):
             'clue_number': qr.clue_number,
             'password': qr.password,
             'hint': qr.hint,
-            'image': qr.image_path
+            'image': url_for('team.serve_image_by_uuid', uuid=qr.uuid) if qr.image_base64 else qr.image_path
         }
 
     # If the clue scanned has a number greater than current, they are skipping
@@ -657,7 +657,7 @@ def process_qr_scan(team, token, passcode, req):
                 'clue_number': 7,
                 'password': 'N/A',
                 'hint': 'None. You completed the Hunt!',
-                'image': qr.image_path
+                'image': url_for('team.serve_image_by_uuid', uuid=qr.uuid) if qr.image_base64 else qr.image_path
             }
         else:
             # Query the next clue dynamically based on level and house restriction
@@ -679,7 +679,7 @@ def process_qr_scan(team, token, passcode, req):
                 'clue_number': qr.clue_number,
                 'password': next_pwd,
                 'hint': qr.hint,
-                'image': qr.image_path
+                'image': url_for('team.serve_image_by_uuid', uuid=qr.uuid) if qr.image_base64 else qr.image_path
             }
             
     except Exception as e:
@@ -760,6 +760,21 @@ def serve_clue_image_by_level(level):
     if not clue:
         abort(404)
         
+    # If the database has base64 data, serve it directly
+    if clue.image_base64:
+        import base64
+        import mimetypes
+        import io
+        from flask import send_file
+        mimetype, _ = mimetypes.guess_type(clue.image_path or 'image.jpg')
+        if not mimetype:
+            mimetype = 'image/jpeg'
+        image_data = base64.b64decode(clue.image_base64)
+        return send_file(
+            io.BytesIO(image_data),
+            mimetype=mimetype
+        )
+
     # If the database has an image path
     if clue.image_path:
         # Check if it's a static upload path (starts with /static/)
@@ -775,6 +790,42 @@ def serve_clue_image_by_level(level):
             if os.path.exists(os.path.join(upload_dir, filename)):
                 return send_from_directory(upload_dir, filename)
         return send_from_directory(clues_dir, filename)
+
+@team_bp.route('/team/clue-image/by-uuid/<uuid>')
+@login_required
+def serve_image_by_uuid(uuid):
+    import base64
+    import mimetypes
+    import io
+    from flask import send_file, abort, send_from_directory, redirect
+    
+    qr = QRCode.query.filter_by(uuid=uuid).first_or_404()
+    
+    # If the database has base64 data, serve it directly
+    if qr.image_base64:
+        mimetype, _ = mimetypes.guess_type(qr.image_path or 'image.jpg')
+        if not mimetype:
+            mimetype = 'image/jpeg'
+        image_data = base64.b64decode(qr.image_base64)
+        return send_file(
+            io.BytesIO(image_data),
+            mimetype=mimetype
+        )
+        
+    # Otherwise fallback to image_path
+    if qr.image_path:
+        if qr.image_path.startswith('/static/'):
+            return redirect(qr.image_path)
+            
+        filename = qr.image_path
+        clues_dir = r'C:\Users\ASUS\Downloads\clues'
+        if not os.path.exists(os.path.join(clues_dir, filename)):
+            upload_dir = current_app.config.get('UPLOAD_FOLDER', 'static/uploads')
+            if os.path.exists(os.path.join(upload_dir, filename)):
+                return send_from_directory(upload_dir, filename)
+        return send_from_directory(clues_dir, filename)
+        
+    abort(404)
         
     # Otherwise fallback to CLUE_FILES mapping
     house_name = team.house.name

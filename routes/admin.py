@@ -573,6 +573,7 @@ def manage_qrs():
         try:
             # Handle image upload
             image_path = None
+            image_base64 = None
             if 'image' in request.files:
                 file = request.files['image']
                 if file and file.filename != '':
@@ -580,6 +581,12 @@ def manage_qrs():
                     upload_dir = current_app.config['UPLOAD_FOLDER']
                     os.makedirs(upload_dir, exist_ok=True)
                     file_save_path = os.path.join(upload_dir, filename)
+                    
+                    import base64
+                    file_data = file.read()
+                    file.seek(0)
+                    image_base64 = base64.b64encode(file_data).decode('utf-8')
+                    
                     file.save(file_save_path)
                     image_path = f"/static/uploads/{filename}"
 
@@ -595,6 +602,7 @@ def manage_qrs():
                 password=password,
                 hint=hint,
                 image_path=image_path,
+                image_base64=image_base64,
                 is_dummy=is_dummy,
                 allowed_houses=allowed_houses
             )
@@ -625,8 +633,11 @@ def manage_qrs():
     qrs = QRCode.query.filter(QRCode.clue_number < 7).order_by(QRCode.is_dummy, QRCode.clue_number).all()
     final_qr = QRCode.query.filter_by(clue_number=7, is_dummy=False).first()
     final_image = None
-    if final_qr and final_qr.image_path:
-        final_image = final_qr.image_path
+    if final_qr:
+        if final_qr.image_base64:
+            final_image = url_for('team.serve_image_by_uuid', uuid=final_qr.uuid)
+        elif final_qr.image_path:
+            final_image = final_qr.image_path
         
     return render_template('admin/qrs.html', qrs=qrs, final_clue_image_path=final_image)
 
@@ -647,6 +658,12 @@ def upload_final_clue_image():
         upload_dir = current_app.config['UPLOAD_FOLDER']
         os.makedirs(upload_dir, exist_ok=True)
         file_save_path = os.path.join(upload_dir, filename)
+        
+        import base64
+        file_data = file.read()
+        file.seek(0)
+        image_base64 = base64.b64encode(file_data).decode('utf-8')
+        
         file.save(file_save_path)
         image_path = f"/static/uploads/{filename}"
         
@@ -659,7 +676,8 @@ def upload_final_clue_image():
                 password="final-treasure-location", # placeholder
                 hint="Go to admin for last clue location",
                 is_dummy=False,
-                image_path=image_path
+                image_path=image_path,
+                image_base64=image_base64
             )
             db.session.add(qr)
         else:
@@ -673,6 +691,7 @@ def upload_final_clue_image():
                     except Exception:
                         pass
             qr.image_path = image_path
+            qr.image_base64 = image_base64
             
         # Log action
         log = SystemLog(

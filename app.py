@@ -42,6 +42,11 @@ def create_app(config_override=None):
                         conn.execute(db.text("ALTER TABLE users ADD COLUMN current_login_token VARCHAR(100)"))
                 except Exception:
                     pass
+                try:
+                    with db.engine.begin() as conn:
+                        conn.execute(db.text("ALTER TABLE qr_codes ADD COLUMN image_base64 TEXT"))
+                except Exception:
+                    pass
                 
                 from seed import run_seed
                 run_seed(drop_tables=False)

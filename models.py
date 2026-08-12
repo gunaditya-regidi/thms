@@ -133,6 +133,7 @@ class QRCode(db.Model):
     password = db.Column(db.String(80), nullable=False)
     hint = db.Column(db.Text, nullable=False)
     image_path = db.Column(db.String(255), nullable=True) # relative path to clue image
+    image_base64 = db.Column(db.Text, nullable=True) # Base64 encoded image content for persistence
     is_dummy = db.Column(db.Boolean, default=False)
     allowed_houses = db.Column(db.String(100), nullable=True) # Comma-separated house names (e.g. "Red,Blue")
 

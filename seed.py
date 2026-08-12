@@ -12,6 +12,10 @@ def run_seed(drop_tables=True):
     else:
         print("Ensuring database tables exist...")
         db.create_all()
+        # If database is already seeded, skip to preserve user configurations and deletions
+        if User.query.filter_by(role='admin').first() is not None:
+            print("Database already initialized. Skipping seeding.")
+            return
 
     # 1. Seed Houses
     houses = ['Red', 'Green', 'Blue', 'Yellow']

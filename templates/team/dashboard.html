@@ -673,21 +673,11 @@ function processScannedToken(scannedText) {
     
     console.log("Parsed Token:", token);
     
-    let passcode = "";
-    // If the team is currently on Clue 1 (Round 2), do not prompt for a passcode
-    const currentClueNumber = {{ team.round2_current_clue }};
-    const currentRound = {{ team.current_round }};
-    const round2Completed = {% if team.round2_completed %}true{% else %}false{% endif %};
-    
-    if (!(currentRound === 2 && currentClueNumber === 1 && !round2Completed)) {
-        // Prompt for passcode
-        passcode = prompt("Clue station scanned successfully! Enter the passcode to verify this station:");
-        if (passcode === null) {
-            return; // User cancelled
-        }
-    }
-    
-    // Send to AJAX verification
+    // First request without prompting for passcode (Dummy clues process directly)
+    sendVerificationRequest(token, "");
+}
+
+function sendVerificationRequest(token, passcode) {
     fetch('/api/scan_qr', {
         method: 'POST',
         headers: {
@@ -702,7 +692,15 @@ function processScannedToken(scannedText) {
         return response.json();
     })
     .then(data => {
-        displayScanResults(data);
+        if (data.status === 'wrong_password') {
+            // Prompt user for passcode only when server indicates password is required/wrong
+            const userPasscode = prompt("Clue station scanned successfully! Enter the passcode to verify this station:");
+            if (userPasscode !== null) {
+                sendVerificationRequest(token, userPasscode);
+            }
+        } else {
+            displayScanResults(data);
+        }
     })
     .catch(err => {
         console.error("Verification Request failed", err);

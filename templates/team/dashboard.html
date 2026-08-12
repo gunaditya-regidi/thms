@@ -420,7 +420,7 @@
                                 <h6 class="fw-bold mb-0 text-primary">{{ team.leader_name }}</h6>
                                 <small class="text-secondary">Team Leader (Main Account)</small>
                             </div>
-                            <span class="badge bg-primary rounded-pill">{{ team.leader_phone }}</span>
+                            <span class="badge bg-primary rounded-pill">ID: {{ team.leader_phone }}</span>
                         </div>
                     </div>
                     
@@ -432,7 +432,7 @@
                                     <h6 class="fw-bold mb-0 text-primary">{{ member.name }}</h6>
                                     <small class="text-secondary">Member {{ member.member_index }}</small>
                                 </div>
-                                <span class="badge bg-secondary rounded-pill">{{ member.phone }}</span>
+                                <span class="badge bg-secondary rounded-pill">ID: {{ member.phone }}</span>
                             </div>
                         </div>
                     {% endfor %}

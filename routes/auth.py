@@ -6,26 +6,28 @@ from werkzeug.security import check_password_hash
 
 auth_bp = Blueprint('auth', __name__)
 
-def is_phone_unique(phone, exclude_team_id=None):
-    """Checks if a phone number exists anywhere in the system (leaders or members)."""
-    if not phone:
+def is_id_card_unique(id_card, exclude_team_id=None):
+    """Checks if an ID card number exists anywhere in the system (leaders or members)."""
+    if not id_card:
         return True
     
     # Check Team leaders
-    leader_query = Team.query.filter_by(leader_phone=phone)
+    leader_query = Team.query.filter_by(leader_phone=id_card)
     if exclude_team_id:
         leader_query = leader_query.filter(Team.id != exclude_team_id)
     if leader_query.first():
         return False
         
     # Check members
-    member_query = Member.query.filter_by(phone=phone)
+    member_query = Member.query.filter_by(phone=id_card)
     if exclude_team_id:
         member_query = member_query.join(Team).filter(Team.id != exclude_team_id)
     if member_query.first():
         return False
         
     return True
+
+is_phone_unique = is_id_card_unique
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
@@ -40,35 +42,35 @@ def register():
     if request.method == 'POST':
         team_name = request.form.get('team_name', '').strip()
         leader_name = request.form.get('leader_name', '').strip()
-        leader_phone = request.form.get('leader_phone', '').strip()
+        leader_id_card = request.form.get('leader_phone', '').strip()
         leader_password = request.form.get('leader_password', '').strip()
         
         # Capture member details
         members_data = []
         for i in range(2, 5):
             m_name = request.form.get(f'member{i}_name', '').strip()
-            m_phone = request.form.get(f'member{i}_phone', '').strip()
-            if not m_name or not m_phone:
-                flash(f"Please fill both Name and Phone for Member {i}. All 3 team members are required.", "danger")
+            m_id_card = request.form.get(f'member{i}_phone', '').strip()
+            if not m_name or not m_id_card:
+                flash(f"Please fill both Name and ID Card Number for Member {i}. All 3 team members are required.", "danger")
                 return render_template('auth/register.html')
-            members_data.append((m_name, m_phone, i))
+            members_data.append((m_name, m_id_card, i))
 
         # Basic validations
-        if not team_name or not leader_name or not leader_phone or not leader_password:
+        if not team_name or not leader_name or not leader_id_card or not leader_password:
             flash("All main team fields are required.", "danger")
             return render_template('auth/register.html')
 
-        # Validate exactly 10-digit numbers
-        def is_valid_10_digit_phone(phone):
-            return len(phone) == 10 and phone.isdigit()
+        # Validate max 6-digit numbers
+        def is_valid_id_card(id_card):
+            return 1 <= len(id_card) <= 6 and id_card.isdigit()
 
-        if not is_valid_10_digit_phone(leader_phone):
-            flash("Leader phone number must be exactly 10 digits (0-9).", "danger")
+        if not is_valid_id_card(leader_id_card):
+            flash("Leader ID card number must be a digit number with maximum 6 digits.", "danger")
             return render_template('auth/register.html')
 
-        for m_name, m_phone, m_idx in members_data:
-            if not is_valid_10_digit_phone(m_phone):
-                flash(f"Member {m_idx} phone number must be exactly 10 digits (0-9).", "danger")
+        for m_name, m_id_card, m_idx in members_data:
+            if not is_valid_id_card(m_id_card):
+                flash(f"Member {m_idx} ID card number must be a digit number with maximum 6 digits.", "danger")
                 return render_template('auth/register.html')
 
         # Check unique Team Name / Username
@@ -76,20 +78,20 @@ def register():
             flash("Team Name is already registered. Please choose another.", "danger")
             return render_template('auth/register.html')
 
-        # Collect all phone numbers in the submission to check duplicates inside the submission
-        all_submitted_phones = [leader_phone] + [m[1] for m in members_data]
-        if len(all_submitted_phones) != len(set(all_submitted_phones)):
-            flash("Duplicate phone numbers detected in registration form.", "danger")
+        # Collect all ID card numbers in the submission to check duplicates inside the submission
+        all_submitted_ids = [leader_id_card] + [m[1] for m in members_data]
+        if len(all_submitted_ids) != len(set(all_submitted_ids)):
+            flash("Duplicate ID card numbers detected in registration form.", "danger")
             return render_template('auth/register.html')
 
-        # Validate unique phones in database
-        if not is_phone_unique(leader_phone):
-            flash(f"Phone number {leader_phone} (Leader) is already registered.", "danger")
+        # Validate unique ID cards in database
+        if not is_id_card_unique(leader_id_card):
+            flash(f"ID card number {leader_id_card} (Leader) is already registered.", "danger")
             return render_template('auth/register.html')
             
-        for m_name, m_phone, m_idx in members_data:
-            if not is_phone_unique(m_phone):
-                flash(f"Phone number {m_phone} (Member {m_idx}) is already registered.", "danger")
+        for m_name, m_id_card, m_idx in members_data:
+            if not is_id_card_unique(m_id_card):
+                flash(f"ID card number {m_id_card} (Member {m_idx}) is already registered.", "danger")
                 return render_template('auth/register.html')
 
         try:
@@ -125,18 +127,18 @@ def register():
                 user_id=new_user.id,
                 team_name=team_name,
                 leader_name=leader_name,
-                leader_phone=leader_phone,
+                leader_phone=leader_id_card,
                 house_id=assigned_house.id
             )
             db.session.add(new_team)
             db.session.flush() # gets team.id
 
             # Add Members
-            for m_name, m_phone, m_idx in members_data:
+            for m_name, m_id_card, m_idx in members_data:
                 new_member = Member(
                     team_id=new_team.id,
                     name=m_name,
-                    phone=m_phone,
+                    phone=m_id_card,
                     member_index=m_idx
                 )
                 db.session.add(new_member)

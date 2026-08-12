@@ -682,6 +682,8 @@ def upload_final_clue_image():
         )
         db.session.add(log)
         db.session.commit()
+        # Generate physical QR PNG file for Clue 7
+        generate_qr_image(qr.uuid)
         flash("Final Clue 7 Image uploaded successfully!", "success")
         
     return redirect(url_for('admin.manage_qrs'))
@@ -830,7 +832,7 @@ def delete_selected_qrs():
 @check_admin_role
 def export_qrs_zip():
     """Generates all QR code PNGs and exports them as a single ZIP archive."""
-    qrs = QRCode.query.filter((QRCode.clue_number > 1) & (QRCode.clue_number < 7) | (QRCode.is_dummy == True)).all()
+    qrs = QRCode.query.filter((QRCode.clue_number > 1) | (QRCode.is_dummy == True)).all()
     qr_dir = current_app.config['QR_FOLDER']
     
     zip_buffer = io.BytesIO()
@@ -865,7 +867,7 @@ def export_qrs_zip():
 @check_admin_role
 def export_qrs_pdf():
     """Generates a printable PDF document with QR code sheets containing clue numbers, details, and QR codes."""
-    qrs = QRCode.query.filter((QRCode.clue_number > 1) & (QRCode.clue_number < 7) | (QRCode.is_dummy == True)).order_by(QRCode.is_dummy, QRCode.clue_number).all()
+    qrs = QRCode.query.filter((QRCode.clue_number > 1) | (QRCode.is_dummy == True)).order_by(QRCode.is_dummy, QRCode.clue_number).all()
     qr_dir = current_app.config['QR_FOLDER']
     
     pdf_buffer = io.BytesIO()
@@ -950,6 +952,116 @@ def export_qrs_pdf():
         mimetype='application/pdf',
         as_attachment=True,
         download_name='treasure_hunt_qr_sheets.pdf'
+    )
+
+@admin_bp.route('/admin/qrs/export-pdf-landscape')
+@check_admin_role
+def export_qrs_pdf_landscape():
+    """Generates a printable PDF in Landscape orientation with 2 QR codes per page side-by-side."""
+    from reportlab.lib.pagesizes import landscape
+    qrs = QRCode.query.filter((QRCode.clue_number > 1) | (QRCode.is_dummy == True)).order_by(QRCode.is_dummy, QRCode.clue_number).all()
+    qr_dir = current_app.config['QR_FOLDER']
+    
+    pdf_buffer = io.BytesIO()
+    # Landscape letter: 11 x 8.5 inches
+    doc = SimpleDocTemplate(
+        pdf_buffer,
+        pagesize=landscape(letter),
+        leftMargin=0.4*inch,
+        rightMargin=0.4*inch,
+        topMargin=0.4*inch,
+        bottomMargin=0.4*inch
+    )
+    
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'DocTitleLandscape',
+        parent=styles['Heading2'],
+        fontName='Helvetica-Bold',
+        fontSize=16,
+        leading=20,
+        textColor=colors.HexColor('#000000'),
+        alignment=1, # Center
+        spaceAfter=0
+    )
+    
+    elements = []
+    
+    def build_qr_cell(qr, idx):
+        if not qr:
+            return [Spacer(1, 1)]
+        
+        filename = f"qr_{qr.uuid}.png"
+        filepath = os.path.join(qr_dir, filename)
+        if not os.path.exists(filepath):
+            generate_qr_image(qr.uuid)
+            
+        cell_elements = []
+        cell_elements.append(Paragraph("LRDC 2026 TREASURE HUNT", title_style))
+        cell_elements.append(Spacer(1, 0.2*inch))
+        
+        # Size of QR: ~4.0 inches square (takes up most of the vertical landscape space)
+        qr_image = Image(filepath, width=4.0*inch, height=4.0*inch)
+        qr_image.hAlign = 'CENTER'
+        cell_elements.append(qr_image)
+        cell_elements.append(Spacer(1, 0.3*inch))
+        
+        # Identification
+        id_style = ParagraphStyle(
+            f'ClueID_Land_{idx}',
+            parent=styles['Normal'],
+            fontName='Helvetica',
+            fontSize=4.5,
+            leading=5,
+            alignment=2, # Right
+            textColor=colors.HexColor('#777777')
+        )
+        if qr.is_dummy:
+            id_text = f"Decoy - {qr.uuid}"
+        elif qr.allowed_houses:
+            id_text = f"Clue #{qr.clue_number} ({qr.allowed_houses}) - {qr.uuid}"
+        else:
+            id_text = f"Clue #{qr.clue_number} - {qr.uuid}"
+        
+        id_p = Paragraph(id_text, id_style)
+        id_p.hAlign = 'RIGHT'
+        cell_elements.append(id_p)
+        return cell_elements
+    
+    for i in range(0, len(qrs), 2):
+        qr1 = qrs[i]
+        qr2 = qrs[i+1] if i+1 < len(qrs) else None
+        
+        flow1 = build_qr_cell(qr1, i)
+        flow2 = build_qr_cell(qr2, i+1)
+        
+        # Column widths: 5.0 inches each
+        t = Table([[flow1, flow2]], colWidths=[5.0*inch, 5.0*inch])
+        t.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('LEFTPADDING', (0,0), (-1,-1), 10),
+            ('RIGHTPADDING', (0,0), (-1,-1), 10),
+            ('TOPPADDING', (0,0), (-1,-1), 0),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ]))
+        elements.append(t)
+        
+        if i + 2 < len(qrs):
+            elements.append(PageBreak())
+            
+    doc.build(elements)
+    pdf_buffer.seek(0)
+    
+    log = SystemLog(action='export_qrs_pdf_landscape', details="Admin exported all QR codes as Landscape PDF (2 per page).", user_id=current_user.id)
+    db.session.add(log)
+    db.session.commit()
+    
+    return send_file(
+        pdf_buffer,
+        mimetype='application/pdf',
+        as_attachment=True,
+        download_name='treasure_hunt_qr_sheets_landscape.pdf'
     )
 
 @admin_bp.route('/admin/logs')

@@ -203,11 +203,10 @@ class THMSTestSuite(unittest.TestCase):
             res = process_qr_scan(team, f"test-clue-{i}", f"pass{i-1}", req)
             self.assertEqual(res['status'], 'success')
             
-        # Final clue scan (Level 7)
+        # Final clue scan (Level 7) - returns success; completion is via direct passcode entry now
         res_final = process_qr_scan(team, "test-clue-7", "pass6", req)
-        self.assertEqual(res_final['status'], 'completed_hunt')
-        self.assertTrue(team.round2_completed)
-        self.assertIsNotNone(team.round2_completion_time)
+        self.assertEqual(res_final['status'], 'success')
+        self.assertEqual(team.round2_current_clue, 8)
         
         print("[OK] Sequential clue checks and dummy logs verified.")
 

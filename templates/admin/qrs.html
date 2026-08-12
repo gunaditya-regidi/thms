@@ -35,7 +35,7 @@
                     <label for="clue_number" class="form-label small text-secondary">Clue Number</label>
                     <select class="form-select form-select-sm" id="clue_number" name="clue_number" required>
                         <option value="" disabled selected>Select</option>
-                        {% for i in range(1, 7) %}
+                        {% for i in range(2, 8) %}
                             <option value="{{ i }}">Clue {{ i }}</option>
                         {% endfor %}
                     </select>
@@ -114,13 +114,22 @@
     <!-- Export Buttons -->
     <div class="glass-card p-3 mb-4">
         <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-download me-2"></i>Bulk Exports</h6>
-        <div class="d-flex gap-2">
-            <a href="{{ url_for('admin.export_qrs_pdf') }}" class="btn btn-danger btn-sm w-50 py-2 rounded-3 fw-semibold">
-                <i class="bi bi-file-earmark-pdf-fill me-1"></i>Print sheets PDF
-            </a>
-            <a href="{{ url_for('admin.export_qrs_zip') }}" class="btn btn-dark btn-sm w-50 py-2 rounded-3 fw-semibold">
-                <i class="bi bi-file-zip-fill me-1"></i>PNG files ZIP
-            </a>
+        <div class="row g-2">
+            <div class="col-6">
+                <a href="{{ url_for('admin.export_qrs_pdf') }}" class="btn btn-danger btn-sm w-100 py-2 rounded-3 fw-semibold">
+                    <i class="bi bi-file-earmark-pdf-fill me-1"></i>Portrait PDF (1 QR/page)
+                </a>
+            </div>
+            <div class="col-6">
+                <a href="{{ url_for('admin.export_qrs_pdf_landscape') }}" class="btn btn-warning btn-sm w-100 py-2 rounded-3 fw-semibold text-dark">
+                    <i class="bi bi-file-earmark-pdf-fill me-1"></i>Landscape PDF (2 QRs/page)
+                </a>
+            </div>
+            <div class="col-12 mt-2">
+                <a href="{{ url_for('admin.export_qrs_zip') }}" class="btn btn-dark btn-sm w-100 py-2 rounded-3 fw-semibold">
+                    <i class="bi bi-file-zip-fill me-1"></i>PNG files ZIP
+                </a>
+            </div>
         </div>
     </div>
 

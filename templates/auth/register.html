@@ -47,9 +47,9 @@
         </div>
 
         <div class="form-floating mb-3">
-            <input type="tel" class="form-control" id="leader_phone" name="leader_phone" placeholder="Leader Phone Number" pattern="[0-9]{10}" maxlength="10" minlength="10" required>
-            <label for="leader_phone">Leader Phone Number</label>
-            <div class="form-text small">Must be exactly 10 digits and unique across the entire system.</div>
+            <input type="text" class="form-control" id="leader_phone" name="leader_phone" placeholder="Leader ID Card Number" pattern="[0-9]{1,6}" maxlength="6" minlength="1" required>
+            <label for="leader_phone">Leader ID Card Number</label>
+            <div class="form-text small">Must be a digit number with maximum 6 digits and unique across the system.</div>
         </div>
 
         <div class="form-floating mb-4">
@@ -75,7 +75,7 @@
                     <input type="text" class="form-control form-control-sm mb-2" id="member2_name" name="member2_name" placeholder="Name" required>
                 </div>
                 <div>
-                    <input type="tel" class="form-control form-control-sm" id="member2_phone" name="member2_phone" placeholder="Phone (10 digits)" pattern="[0-9]{10}" maxlength="10" minlength="10" required>
+                    <input type="text" class="form-control form-control-sm" id="member2_phone" name="member2_phone" placeholder="ID Card Number (max 6 digits)" pattern="[0-9]{1,6}" maxlength="6" minlength="1" required>
                 </div>
             </div>
 
@@ -86,7 +86,7 @@
                     <input type="text" class="form-control form-control-sm mb-2" id="member3_name" name="member3_name" placeholder="Name" required>
                 </div>
                 <div>
-                    <input type="tel" class="form-control form-control-sm" id="member3_phone" name="member3_phone" placeholder="Phone (10 digits)" pattern="[0-9]{10}" maxlength="10" minlength="10" required>
+                    <input type="text" class="form-control form-control-sm" id="member3_phone" name="member3_phone" placeholder="ID Card Number (max 6 digits)" pattern="[0-9]{1,6}" maxlength="6" minlength="1" required>
                 </div>
             </div>
 
@@ -97,7 +97,7 @@
                     <input type="text" class="form-control form-control-sm mb-2" id="member4_name" name="member4_name" placeholder="Name" required>
                 </div>
                 <div>
-                    <input type="tel" class="form-control form-control-sm" id="member4_phone" name="member4_phone" placeholder="Phone (10 digits)" pattern="[0-9]{10}" maxlength="10" minlength="10" required>
+                    <input type="text" class="form-control form-control-sm" id="member4_phone" name="member4_phone" placeholder="ID Card Number (max 6 digits)" pattern="[0-9]{1,6}" maxlength="6" minlength="1" required>
                 </div>
             </div>
         </div>
@@ -122,16 +122,27 @@
 
 <script>
 function validateForm() {
-    // Ensure all 3 team members have both name and phone provided
+    // Ensure all 3 team members have both name and id card provided
     for (let i = 2; i <= 4; i++) {
         const nameVal = document.getElementById(`member${i}_name`).value.trim();
         const phoneVal = document.getElementById(`member${i}_phone`).value.trim();
         
         if (nameVal === "" || phoneVal === "") {
-            alert(`Please provide both Name and Phone for Member ${i}. All 3 team members are required.`);
+            alert(`Please provide both Name and ID Card Number for Member ${i}. All 3 team members are required.`);
+            return false;
+        }
+        if (!/^[0-9]{1,6}$/.test(phoneVal)) {
+            alert(`Member ${i} ID Card Number must be a digit number with maximum 6 digits.`);
             return false;
         }
     }
+    
+    const leaderPhone = document.getElementById('leader_phone').value.trim();
+    if (!/^[0-9]{1,6}$/.test(leaderPhone)) {
+        alert("Leader ID Card Number must be a digit number with maximum 6 digits.");
+        return false;
+    }
+    
     return true;
 }
 </script>

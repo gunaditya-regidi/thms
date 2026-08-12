@@ -101,12 +101,12 @@
 
             <!-- Team Contact Details -->
             <div class="bg-light p-2 rounded-3 small mb-3 border">
-                <div class="mb-1"><strong>Leader:</strong> <span class="fw-bold" style="color: var(--house-{{ team.house.name.lower() }});">{{ team.leader_name }}</span> ({{ team.leader_phone }})</div>
+                <div class="mb-1"><strong>Leader:</strong> <span class="fw-bold" style="color: var(--house-{{ team.house.name.lower() }});">{{ team.leader_name }}</span> (ID Card: {{ team.leader_phone }})</div>
                 {% if team.members %}
                     <div class="mb-0">
                         <strong>Members:</strong> 
                         {% for m in team.members %}
-                            {{ m.name }} ({{ m.phone }}){% if not loop.last %}, {% endif %}
+                            {{ m.name }} (ID Card: {{ m.phone }}){% if not loop.last %}, {% endif %}
                         {% endfor %}
                     </div>
                 {% endif %}

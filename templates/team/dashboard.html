@@ -678,7 +678,7 @@ function processScannedToken(scannedText) {
     sendVerificationRequest(token, "");
 }
 
-function sendVerificationRequest(token, passcode, isRetry = false) {
+function sendVerificationRequest(token, passcode) {
     fetch('/api/scan_qr', {
         method: 'POST',
         headers: {
@@ -694,14 +694,17 @@ function sendVerificationRequest(token, passcode, isRetry = false) {
     })
     .then(data => {
         if (data.status === 'wrong_password') {
-            // Prompt user for passcode with custom message indicating wrong passcode on retries
-            let promptMsg = "Clue station scanned successfully! Enter the passcode to verify this station:";
-            if (isRetry || passcode !== "") {
-                promptMsg = "❌ Incorrect passcode! Please try again:";
-            }
-            const userPasscode = prompt(promptMsg);
-            if (userPasscode !== null) {
-                sendVerificationRequest(token, userPasscode, true);
+            if (passcode === "") {
+                // First scan of standard clue: prompt once for passcode
+                const userPasscode = prompt("Clue station scanned successfully! Enter the passcode to verify this station:");
+                if (userPasscode !== null && userPasscode.trim() !== "") {
+                    sendVerificationRequest(token, userPasscode);
+                } else {
+                    displayScanResults(data);
+                }
+            } else {
+                // Second check with incorrect passcode: do not loop prompt, display inline failure card
+                displayScanResults(data);
             }
         } else {
             displayScanResults(data);

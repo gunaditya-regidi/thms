@@ -189,6 +189,21 @@ def request_r1():
 @team_bp.route('/scan/<uuid>', methods=['GET', 'POST'])
 def direct_scan(uuid):
     """Direct route for standard QR code reader apps scanning a URL."""
+    qr = QRCode.query.filter_by(uuid=uuid).first()
+    if not qr:
+        flash("Invalid QR Code scanned!", "danger")
+        return redirect(url_for('team.dashboard'))
+
+    # If it is a dummy clue, bypass authentication and passcode, directly serve the decoy page
+    if qr.is_dummy:
+        if current_user.is_authenticated and current_user.role == 'team_leader':
+            team = current_user.team_profile
+            if team:
+                process_qr_scan(team, uuid, "", request)
+        
+        image_url = url_for('team.serve_image_by_uuid', uuid=qr.uuid) if qr.image_base64 else qr.image_path
+        return render_template('team/decoy.html', qr=qr, image_url=image_url)
+
     if not current_user.is_authenticated or current_user.role != 'team_leader':
         # Store scanned code in session so they can submit after logging in
         from flask import session as flask_session
@@ -200,20 +215,6 @@ def direct_scan(uuid):
     if not team:
         flash("Logged in user does not represent a Team.", "danger")
         return redirect(url_for('auth.logout'))
-
-    qr = QRCode.query.filter_by(uuid=uuid).first()
-    if not qr:
-        flash("Invalid QR Code scanned!", "danger")
-        return redirect(url_for('team.dashboard'))
-
-    # If it is a dummy clue, process it immediately without passcode verification
-    if request.method == 'GET' and qr.is_dummy:
-        result = process_qr_scan(team, uuid, "", request)
-        if result['status'] == 'dummy':
-            from flask import session as flask_session
-            flask_session['direct_scan_result'] = result
-            flash(f"Decoy: {result['message']}", "warning")
-            return redirect(url_for('team.dashboard'))
 
     if request.method == 'POST':
         passcode = request.form.get('passcode', '').strip()

@@ -739,8 +739,10 @@ function displayScanResults(result) {
         message.innerText = result.message;
         
         clueDetail.classList.remove('d-none');
-        cluePassword.innerText = result.password;
-        clueHint.innerText = result.hint;
+        cluePassword.innerText = result.password || '';
+        cluePassword.parentElement.classList.add('d-none'); // DONT SHOW PASSWORD WHEN VALIDATING
+        clueHint.innerText = result.hint || '';
+        clueHint.parentElement.classList.remove('d-none');
         
         if (result.image) {
             imgWrapper.innerHTML = `<img src="${result.image}" class="img-fluid rounded-3 border mb-2" style="max-height: 200px; width: 100%; object-fit: cover;">`;
@@ -767,8 +769,10 @@ function displayScanResults(result) {
         message.innerText = result.message;
         
         clueDetail.classList.remove('d-none');
-        cluePassword.innerText = result.password; // Dummy fake password
-        clueHint.innerText = result.hint;
+        cluePassword.innerText = '';
+        cluePassword.parentElement.classList.add('d-none');
+        clueHint.innerText = result.hint || '';
+        clueHint.parentElement.classList.add('d-none'); // Hide hint for decoys
         
         if (result.image) {
             imgWrapper.innerHTML = `<img src="${result.image}" class="img-fluid rounded-3 border mb-2" style="max-height: 200px; width: 100%; object-fit: cover;">`;
@@ -784,8 +788,10 @@ function displayScanResults(result) {
         message.innerText = result.message;
         
         clueDetail.classList.remove('d-none');
-        cluePassword.innerText = result.password;
-        clueHint.innerText = result.hint;
+        cluePassword.innerText = result.password || '';
+        cluePassword.parentElement.classList.add('d-none'); // DONT SHOW PASSWORD WHEN VALIDATING
+        clueHint.innerText = result.hint || '';
+        clueHint.parentElement.classList.remove('d-none');
         if (result.image) {
             imgWrapper.innerHTML = `<img src="${result.image}" class="img-fluid rounded-3 border mb-2" style="max-height: 200px; width: 100%; object-fit: cover;">`;
         } else {

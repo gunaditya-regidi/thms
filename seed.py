@@ -75,16 +75,16 @@ def run_seed(drop_tables=True):
 
     # 4. Seed 10 Round 1 Tasks
     tasks_data = [
-        ("Human Statue", "The entire team must freeze in a funny pose for 30 seconds while one teammate takes a photo."),
-        ("Campus Detective", "Find a specific but commonly overlooked object on campus, such as a particular notice board, sign, statue, or room number, and take a team photo with it."),
-        ("Reverse Charades", "One team member guesses while the other 3 act together. Complete 3 words correctly within 60 seconds."),
-        ("Paper Tower", "Using only 10 sheets of paper, build the tallest free-standing tower in 3 minutes."),
-        ("Secret Message", "Solve a simple coded message provided by the game master. The decoded phrase reveals the next location/clue."),
-        ("Campus Relay", "One member runs to a designated point, memorizes a 5–7 word sentence, returns, and dictates it to the team. No writing during the run."),
-        ("Emoji Challenge", "Identify 5 movies/songs/college-related phrases represented only by emojis."),
-        ("Object Hunt", "Find 5 different objects matching clues such as “something blue,” “something circular,” “something older than 10 years,” etc., and photograph them."),
-        ("Human Alphabet", "The team must physically form 3 letters using their bodies. Game master must approve the formation."),
-        ("Final Puzzle", "Give the team 3 seemingly unrelated clues. They must identify the common connection and give the correct answer to receive the final treasure-hunt clue.")
+        ("Colour Hunt", "Collect 5 different objects matching your assigned stream colour. The objects must be different from one another and physically brought together as proof of completion."),
+        ("Team Identity", "Create a unique and creative team logo that represents your team. The logo may be drawn or designed and clearly visible."),
+        ("LRDC in Focus", "Capture a team selfie in which the word “LRDC” is clearly visible somewhere in the photograph. Ensure the entire team is visible."),
+        ("Brand Hunt", "Find and show 5 different brands. Each brand should be clearly identifiable through its logo, packaging, product or other visible branding."),
+        ("Number in Between", "Identify the vehicle whose registration number falls between the two given numbers — XX and YY. The team must locate the correct vehicle and tell its vechile number"),
+        ("Shape Hunt", "Collect 3 different objects having different geometric shapes, such as a triangle, rectangle, square or circle. The objects should clearly demonstrate the respective shapes."),
+        ("Human Wave", "Arrange all your team members in a straight line and create a coordinated human wave. Record a short video of the complete performance as evidence of the task."),
+        ("Team Sentence", "Create one meaningful English sentence using the names of all team members. Every member's name must appear naturally within the sentence."),
+        ("Team Antakshari", "Perform Antakshari as a team, with the first member starting a song and the next member continuing with a song beginning with the appropriate ending letter. Continue the sequence until every team member has participated and shoot a video."),
+        ("India", "Choose a significant historic achievement of India and recreate it through a short, creative team video or photo. The recreation should clearly convey the achievement being represented.")
     ]
     
     for index, (title, desc) in enumerate(tasks_data, start=1):

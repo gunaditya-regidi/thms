@@ -63,16 +63,20 @@ def dashboard():
     # Progress map for timeline display
     progress_map = {p.clue_number: p.completed_at for p in team.round2_progresses}
 
-    # Build passcode map for solved clues
+    # Build passcode map and image existence map for solved clues
     passcode_map = {}
+    clue_has_image_map = {}
     all_qrs = QRCode.query.filter_by(is_dummy=False).all()
     for q in all_qrs:
+        has_img = bool(q.image_path or q.image_base64)
         if not q.allowed_houses:
             passcode_map[q.clue_number] = q.password
+            clue_has_image_map[q.clue_number] = has_img
         else:
             allowed_list = [h.strip().lower() for h in q.allowed_houses.split(',')]
             if team.house.name.lower() in allowed_list:
                 passcode_map[q.clue_number] = q.password
+                clue_has_image_map[q.clue_number] = has_img
 
     # Pass ISO timestamps for client stopwatch
     r1_app = Round1Approval.query.filter_by(team_id=team.id).first()
@@ -124,6 +128,7 @@ def dashboard():
                            server_now_iso=server_now_iso,
                            progress_map=progress_map,
                            passcode_map=passcode_map,
+                           clue_has_image_map=clue_has_image_map,
                            preloaded_scan_result=preloaded_scan_result,
                            score=score,
                            clue_completion_times=clue_completion_times,
@@ -608,8 +613,7 @@ def process_qr_scan(team, token, passcode, req):
         # Update team expected clue
         team.round2_current_clue = team.round2_current_clue + 1
         
-        # No scanned clue is final anymore; completion is triggered by unlocking Clue 7 directly.
-        is_final = False
+        is_final = (qr.clue_number == 7)
         if is_final:
             team.round2_completed = True
             team.round2_completion_time = timestamp
@@ -744,8 +748,8 @@ def serve_clue_image_by_level(level):
     if not team:
         abort(403)
         
-    # Allow viewing solved clues but restrict the active clue level and future locked clues
-    if level >= team.round2_current_clue and not team.round2_completed:
+    # Allow viewing solved clues but restrict future locked clues (active level allowed for blur effect)
+    if level > team.round2_current_clue and not team.round2_completed:
         abort(403)
         
     # Query database for the clue matching the level and house restriction
@@ -861,64 +865,4 @@ def team_api_status():
         'round2_completed': team.round2_completed
     })
 
-@team_bp.route('/api/unlock_clue_7', methods=['POST'])
-@login_required
-def unlock_clue_7():
-    team = current_user.team_profile
-    if not team or team.current_round != 2 or team.round2_completed:
-        return jsonify({'status': 'error', 'message': 'Invalid state.'}), 400
-        
-    if team.round2_current_clue != 7:
-        return jsonify({'status': 'error', 'message': 'You are not on Level 7.'}), 400
-        
-    data = request.get_json() or {}
-    passcode = data.get('passcode', '').strip()
-    
-    # Verify passcode against Clue 6's password
-    clue6_qrs = QRCode.query.filter_by(clue_number=6, is_dummy=False).all()
-    clue6_password = None
-    for q in clue6_qrs:
-        if not q.allowed_houses:
-            clue6_password = q.password
-            break
-        allowed_list = [h.strip().lower() for h in q.allowed_houses.split(',')]
-        if team.house.name.lower() in allowed_list:
-            clue6_password = q.password
-            break
-            
-    if not clue6_password:
-        return jsonify({'status': 'error', 'message': 'Clue 6 configuration not found.'}), 500
-        
-    if passcode.lower() != clue6_password.lower():
-        return jsonify({'status': 'wrong_password', 'message': 'Incorrect passcode.'})
-        
-    try:
-        team.round2_current_clue = 8
-        team.round2_completed = True
-        team.round2_completion_time = datetime.datetime.utcnow()
-        
-        # System Log
-        log = SystemLog(
-            action='hunt_completed',
-            details=f"Team '{team.team_name}' successfully unlocked Clue 7 using Clue 6's password and completed the Hunt!",
-            team_id=team.id,
-            ip_address=request.remote_addr,
-            browser=request.user_agent.string
-        )
-        db.session.add(log)
-        db.session.commit()
-        
-        # Emit SocketIO
-        socketio = current_app.extensions.get('socketio')
-        if socketio:
-            socketio.emit('team_finished', {
-                'team_id': team.id,
-                'team_name': team.team_name,
-                'house': team.house.name,
-                'timestamp': team.round2_completion_time.strftime('%Y-%m-%d %H:%M:%S')
-            })
-            
-        return jsonify({'status': 'success', 'message': 'Final Clue 7 unlocked successfully! Hunt completed!'})
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+

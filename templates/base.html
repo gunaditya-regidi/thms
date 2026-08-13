@@ -145,6 +145,7 @@
         // Global current user credentials for real-time session checking
         window.currentUser = {
             id: {% if current_user.is_authenticated %}{{ current_user.id }}{% else %}null{% endif %},
+            role: "{% if current_user.is_authenticated %}{{ current_user.role }}{% else %}{% endif %}",
             token: "{{ session.get('login_token', '') }}"
         };
 
@@ -191,7 +192,7 @@
                 });
 
                 socket.on('session_replaced', (data) => {
-                    if (window.currentUser && window.currentUser.id === data.user_id) {
+                    if (window.currentUser && window.currentUser.id === data.user_id && window.currentUser.role !== 'admin') {
                         if (window.currentUser.token !== data.login_token) {
                             window.location.href = "/login?replaced=1";
                         }

@@ -630,82 +630,8 @@ def manage_qrs():
             
         return redirect(url_for('admin.manage_qrs'))
 
-    qrs = QRCode.query.filter(QRCode.clue_number < 7).order_by(QRCode.is_dummy, QRCode.clue_number).all()
-    final_qr = QRCode.query.filter_by(clue_number=7, is_dummy=False).first()
-    final_image = None
-    if final_qr:
-        if final_qr.image_base64:
-            final_image = url_for('team.serve_image_by_uuid', uuid=final_qr.uuid)
-        elif final_qr.image_path:
-            final_image = final_qr.image_path
-        
-    return render_template('admin/qrs.html', qrs=qrs, final_clue_image_path=final_image)
-
-@admin_bp.route('/admin/qrs/upload-final', methods=['POST'])
-@check_admin_role
-def upload_final_clue_image():
-    if 'final_image' not in request.files:
-        flash("No file part", "danger")
-        return redirect(url_for('admin.manage_qrs'))
-        
-    file = request.files['final_image']
-    if file.filename == '':
-        flash("No selected file", "danger")
-        return redirect(url_for('admin.manage_qrs'))
-        
-    if file:
-        filename = secure_filename(f"final_clue_7_{uuid.uuid4().hex[:6]}_{file.filename}")
-        upload_dir = current_app.config['UPLOAD_FOLDER']
-        os.makedirs(upload_dir, exist_ok=True)
-        file_save_path = os.path.join(upload_dir, filename)
-        
-        import base64
-        file_data = file.read()
-        file.seek(0)
-        image_base64 = base64.b64encode(file_data).decode('utf-8')
-        
-        file.save(file_save_path)
-        image_path = f"/static/uploads/{filename}"
-        
-        # Check if clue 7 QRCode entry already exists, otherwise create it
-        qr = QRCode.query.filter_by(clue_number=7, is_dummy=False).first()
-        if not qr:
-            qr = QRCode(
-                uuid=f"final-clue-7-image-{uuid.uuid4().hex[:8]}",
-                clue_number=7,
-                password="final-treasure-location", # placeholder
-                hint="Go to admin for last clue location",
-                is_dummy=False,
-                image_path=image_path,
-                image_base64=image_base64
-            )
-            db.session.add(qr)
-        else:
-            # Delete old file if it exists and is different
-            if qr.image_path and not qr.image_path.startswith('/static/'):
-                old_filename = qr.image_path.split('/')[-1]
-                old_filepath = os.path.join(upload_dir, old_filename)
-                if os.path.exists(old_filepath):
-                    try:
-                        os.remove(old_filepath)
-                    except Exception:
-                        pass
-            qr.image_path = image_path
-            qr.image_base64 = image_base64
-            
-        # Log action
-        log = SystemLog(
-            action='upload_final_clue_7_image',
-            details=f"Admin '{current_user.username}' uploaded/updated Final Clue 7 Image.",
-            user_id=current_user.id
-        )
-        db.session.add(log)
-        db.session.commit()
-        # Generate physical QR PNG file for Clue 7
-        generate_qr_image(qr.uuid)
-        flash("Final Clue 7 Image uploaded successfully!", "success")
-        
-    return redirect(url_for('admin.manage_qrs'))
+    qrs = QRCode.query.filter(QRCode.clue_number <= 7).order_by(QRCode.is_dummy, QRCode.clue_number).all()
+    return render_template('admin/qrs.html', qrs=qrs)
 
 @admin_bp.route('/admin/qrs/delete/<int:qr_id>', methods=['POST'])
 @check_admin_role

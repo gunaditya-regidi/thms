@@ -246,9 +246,11 @@
                                         <span class="badge bg-success small rounded-pill">Solved</span>
                                     </div>
                                     <div class="card-body p-3">
+                                        {% if clue_has_image_map.get(lvl) %}
                                         <div class="text-center mb-3">
                                             <img src="/team/clue-image/{{ lvl }}" class="img-fluid rounded border shadow-sm animate__animated animate__fadeIn" style="max-height: 250px; cursor: zoom-in;" onclick="viewClueImage('/team/clue-image/{{ lvl }}', 'Clue #{{ lvl }}')" alt="Clue {{ lvl }}">
                                         </div>
+                                        {% endif %}
                                         
                                          <div class="d-flex gap-2">
                                              {% if lvl < 7 %}
@@ -278,27 +280,20 @@
                                         <span class="badge bg-primary small rounded-pill">In Progress</span>
                                     </div>
                                     <div class="card-body p-3 text-center">
-                                        {% if lvl == 7 %}
-                                            <div class="py-3">
-                                                <i class="bi bi-lock-fill text-primary fs-1 mb-2 d-block"></i>
-                                                <p class="small text-secondary mb-3">To unlock the final clue image, enter the passcode set by Clue 6:</p>
-                                                <div class="input-group mb-2">
-                                                    <input type="text" id="clue7_passcode" class="form-control" placeholder="Enter Passcode" aria-label="Passcode">
-                                                    <button class="btn btn-primary fw-bold" type="button" onclick="unlockClue7()">
-                                                        <i class="bi bi-unlock-fill me-1"></i>Unlock
-                                                    </button>
+                                        {% if clue_has_image_map.get(lvl) %}
+                                            <div class="mb-3 position-relative overflow-hidden rounded-4" style="max-height: 250px;">
+                                                <img src="/team/clue-image/{{ lvl }}" class="img-fluid rounded border shadow-sm animate__animated animate__fadeIn" style="max-height: 250px; width: 100%; object-fit: cover; filter: blur(25px) brightness(0.85); pointer-events: none;" alt="Locked Clue">
+                                                <div class="position-absolute top-50 start-50 translate-middle text-white bg-dark bg-opacity-65 px-3 py-2 rounded-pill small fw-bold" style="white-space: nowrap; font-size: 11px;">
+                                                    <i class="bi bi-lock-fill me-1 text-warning animate__animated animate__flash animate__infinite"></i>Scan QR & Verify to Unlock Image
                                                 </div>
-                                                <div id="clue7_error" class="text-danger small d-none"></div>
                                             </div>
-                                        {% else %}
-                                            <div class="py-4 text-white">
-                                                <i class="bi bi-qr-code-scan fs-1 mb-2 d-block text-white"></i>
-                                                <p class="small mb-0 text-white">Locate Clue #{{ lvl }} station and scan the QR code to unlock its image.</p>
-                                            </div>
-                                            <button type="button" class="btn btn-primary w-100 py-3 rounded-3 fw-bold pulse" data-bs-toggle="modal" data-bs-target="#scannerModal">
-                                                <i class="bi bi-qr-code-scan me-2"></i>Scan Clue QR Code
-                                            </button>
                                         {% endif %}
+                                        <div class="py-2 text-white">
+                                            <p class="small mb-2 text-white"><i class="bi bi-geo-alt-fill me-1"></i>Locate Clue #{{ lvl }} station and scan the QR code to unlock its image.</p>
+                                        </div>
+                                        <button type="button" class="btn btn-primary w-100 py-3 rounded-3 fw-bold pulse" data-bs-toggle="modal" data-bs-target="#scannerModal">
+                                            <i class="bi bi-qr-code-scan me-2"></i>Scan Clue QR Code
+                                        </button>
                                     </div>
                                 </div>
                             {% else %}
@@ -957,42 +952,7 @@ function viewClueImage(src, title) {
     modal.show();
 }
 
-function unlockClue7() {
-    const passcodeVal = document.getElementById('clue7_passcode').value.trim();
-    const errorDiv = document.getElementById('clue7_error');
-    if (!passcodeVal) {
-        errorDiv.innerText = "Please enter the passcode.";
-        errorDiv.classList.remove('d-none');
-        return;
-    }
-    errorDiv.classList.add('d-none');
-    
-    fetch('/api/unlock_clue_7', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ passcode: passcodeVal })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.status === 'success') {
-            alert("Success: " + data.message);
-            window.location.reload();
-        } else if (data.status === 'wrong_password') {
-            errorDiv.innerText = "Incorrect passcode. Please check Clue 6's image.";
-            errorDiv.classList.remove('d-none');
-        } else {
-            errorDiv.innerText = data.message || "An error occurred.";
-            errorDiv.classList.remove('d-none');
-        }
-    })
-    .catch(err => {
-        console.error(err);
-        errorDiv.innerText = "Network error occurred.";
-        errorDiv.classList.remove('d-none');
-    });
-}
+
 </script>
 
 <style>

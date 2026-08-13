@@ -78,6 +78,13 @@
                 <div class="text-end">
                     {% if team.round2_completed %}
                         <span class="badge bg-success rounded-pill">R2 Completed</span>
+                        {% if team.winner_rank %}
+                            <div class="mt-1">
+                                <span class="badge bg-warning text-dark rounded-pill">
+                                    {% if team.winner_rank == 1 %}🥇 1st Place{% elif team.winner_rank == 2 %}🥈 2nd Place{% elif team.winner_rank == 3 %}🥉 3rd Place{% endif %}
+                                </span>
+                            </div>
+                        {% endif %}
                     {% elif team.current_round == 2 %}
                         <span class="badge bg-info rounded-pill">R2 Level {{ team.round2_current_clue }}</span>
                     {% elif team.round1_status == 'pending_start' %}
@@ -151,7 +158,20 @@
                 <div class="mb-3 small">
                     <div class="mb-1"><i class="bi bi-qr-code me-1"></i>Level Progress: <strong>{{ team.round2_current_clue - 1 }} / 7 levels solved</strong></div>
                     {% if team.round2_completed %}
-                        <div class="text-success"><i class="bi bi-clock-fill me-1"></i>Completed Hunt: <span class="local-time-text">{{ team.round2_completion_time.strftime('%Y-%m-%d %H:%M:%S') }}</span></div>
+                        <div class="text-success mb-2"><i class="bi bi-clock-fill me-1"></i>Completed Hunt: <span class="local-time-text">{{ team.round2_completion_time.strftime('%Y-%m-%d %H:%M:%S') }}</span></div>
+                        
+                        <!-- Winner Rank Declaration form -->
+                        <div class="winner-declaration-box bg-white p-2.5 rounded-3 border mt-2">
+                            <form method="POST" action="{{ url_for('admin.declare_winner', team_id=team.id) }}" class="d-flex align-items-center gap-2">
+                                <label for="winner_rank_{{ team.id }}" class="small mb-0 fw-semibold text-secondary" style="font-size: 11px;">Declare Winner:</label>
+                                <select name="winner_rank" id="winner_rank_{{ team.id }}" class="form-select form-select-sm" style="font-size: 11px; max-width: 140px;" onchange="this.form.submit()">
+                                    <option value="" {% if not team.winner_rank %}selected{% endif %}>None (Undecided)</option>
+                                    <option value="1" {% if team.winner_rank == 1 %}selected{% endif %}>🥇 1st Place</option>
+                                    <option value="2" {% if team.winner_rank == 2 %}selected{% endif %}>🥈 2nd Place</option>
+                                    <option value="3" {% if team.winner_rank == 3 %}selected{% endif %}>🥉 3rd Place</option>
+                                </select>
+                            </form>
+                        </div>
                     {% endif %}
                 </div>
             {% endif %}

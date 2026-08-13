@@ -352,6 +352,47 @@ def approve_start_all():
 
     return redirect(url_for('admin.dashboard'))
 
+@admin_bp.route('/admin/declare-winner/<int:team_id>', methods=['POST'])
+@check_admin_role
+def declare_winner(team_id):
+    team = Team.query.get_or_404(team_id)
+    if not team.round2_completed:
+        flash("This team has not completed Round 2/Clue 7 yet.", "warning")
+        return redirect(url_for('admin.teams_list'))
+        
+    rank_val = request.form.get('winner_rank', '').strip()
+    if rank_val == '':
+        team.winner_rank = None
+        db.session.commit()
+        flash(f"Removed winner rank declaration for {team.team_name}.", "info")
+    else:
+        try:
+            rank = int(rank_val)
+            if rank not in [1, 2, 3]:
+                flash("Invalid winner rank specified.", "danger")
+                return redirect(url_for('admin.teams_list'))
+                
+            # Clear other team that has this rank assigned
+            existing = Team.query.filter_by(winner_rank=rank).first()
+            if existing and existing.id != team.id:
+                existing.winner_rank = None
+                
+            team.winner_rank = rank
+            db.session.add(team)
+            db.session.commit()
+            
+            # Emit Socket.IO event to update stats dynamically
+            socketio = current_app.extensions.get('socketio')
+            if socketio:
+                socketio.emit('winners_updated', {})
+                
+            place_names = {1: "🥇 1st Place", 2: "🥈 2nd Place", 3: "🥉 3rd Place"}
+            flash(f"Successfully declared {team.team_name} as {place_names[rank]} Winner!", "success")
+        except ValueError:
+            flash("Invalid rank format.", "danger")
+            
+    return redirect(url_for('admin.teams_list'))
+
 @admin_bp.route('/admin/promote-r2/<int:team_id>', methods=['POST'])
 @check_admin_role
 def promote_r2(team_id):
@@ -1465,7 +1506,8 @@ def get_report_data(report_type):
                 points,
                 qr_prog,
                 total_time_str,
-                clue_durs_str
+                clue_durs_str,
+                t.winner_rank
             ])
         return headers, data
         

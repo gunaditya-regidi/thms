@@ -224,6 +224,29 @@
                             <i class="bi bi-trophy-fill text-warning fs-1 block mb-3 animate__animated animate__bounceIn"></i>
                             <h4 class="fw-bold text-success">Hunt Completed!</h4>
                             <p class="text-secondary small mb-3">Congratulations, you completed all 7 levels of the hunt. Please report to your House Manager immediately to claim your treasure.</p>
+                            
+                            {% if team.winner_rank %}
+                                <div class="alert alert-success border-success bg-success bg-opacity-10 py-3 px-4 rounded-4 mb-3 d-inline-block animate__animated animate__tada">
+                                    <h5 class="fw-bold mb-1">
+                                        {% if team.winner_rank == 1 %}
+                                            🥇 Declared 1st Place Winner!
+                                        {% elif team.winner_rank == 2 %}
+                                            🥈 Declared 2nd Place Winner!
+                                        {% elif team.winner_rank == 3 %}
+                                            🥉 Declared 3rd Place Winner!
+                                        {% endif %}
+                                    </h5>
+                                    <p class="small text-success mb-0">The Admin has officially approved and declared your rank!</p>
+                                </div>
+                                <br>
+                            {% else %}
+                                <div class="alert alert-warning border-warning bg-warning bg-opacity-10 py-2 px-4 rounded-4 mb-3 d-inline-block">
+                                    <i class="bi bi-hourglass-split me-2 text-warning animate__animated animate__flash animate__infinite"></i>
+                                    <span class="small text-warning-emphasis fw-bold">Official rank pending Admin approval...</span>
+                                </div>
+                                <br>
+                            {% endif %}
+
                             {% if team.round2_completion_time %}
                                 <div class="bg-light p-3 rounded-4 border d-inline-block small text-muted">
                                     <i class="bi bi-clock-fill me-1"></i>Finish Time: <span class="local-time-text">{{ team.round2_completion_time.strftime('%Y-%m-%d %H:%M:%S') }}</span>

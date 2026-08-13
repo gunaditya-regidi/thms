@@ -125,6 +125,11 @@
                             <!-- Status Badges -->
                             {% if team.round2_completed %}
                                 <span class="badge bg-success rounded-pill">R2 Finished</span>
+                                {% if team.winner_rank %}
+                                    <span class="badge bg-warning text-dark rounded-pill">
+                                        {% if team.winner_rank == 1 %}🥇 1st Place{% elif team.winner_rank == 2 %}🥈 2nd Place{% elif team.winner_rank == 3 %}🥉 3rd Place{% endif %}
+                                    </span>
+                                {% endif %}
                             {% elif team.current_round == 2 %}
                                 <span class="badge bg-info rounded-pill">R2 Clue {{ team.round2_current_clue }}</span>
                             {% elif team.round1_status == 'requested' %}

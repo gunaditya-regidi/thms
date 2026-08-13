@@ -70,6 +70,7 @@ class Team(db.Model):
     round2_current_clue = db.Column(db.Integer, default=2) # 2 to 7. Clue 1 is solved by default.
     round2_completed = db.Column(db.Boolean, default=False)
     round2_completion_time = db.Column(db.DateTime, nullable=True)
+    winner_rank = db.Column(db.Integer, nullable=True) # 1, 2, or 3
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
 
     # Relationships

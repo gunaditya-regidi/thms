@@ -694,10 +694,11 @@ function updateStatsView(data) {
                 houseBadgeClass = 'bg-warning text-dark';
             }
 
+            const winnerRank = row[7];
             let medal = '';
-            if (rank === 1) medal = ' 🥇';
-            else if (rank === 2) medal = ' 🥈';
-            else if (rank === 3) medal = ' 🥉';
+            if (winnerRank === 1) medal = ' 🥇';
+            else if (winnerRank === 2) medal = ' 🥈';
+            else if (winnerRank === 3) medal = ' 🥉';
 
             // Build content
             itemEl.innerHTML = `

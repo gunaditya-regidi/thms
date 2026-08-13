@@ -47,6 +47,11 @@ def create_app(config_override=None):
                         conn.execute(db.text("ALTER TABLE qr_codes ADD COLUMN image_base64 TEXT"))
                 except Exception:
                     pass
+                try:
+                    with db.engine.begin() as conn:
+                        conn.execute(db.text("ALTER TABLE teams ADD COLUMN winner_rank INTEGER"))
+                except Exception:
+                    pass
                 
                 from seed import run_seed
                 run_seed(drop_tables=False)
@@ -247,6 +252,7 @@ def create_app(config_override=None):
                 'round2_pct': r2_pct,
                 'round2_clue': t.round2_current_clue,
                 'round2_completed': t.round2_completed,
+                'winner_rank': t.winner_rank,
                 'is_logged_in': is_logged,
                 'last_active': last_act,
                 'created_iso': t.created_at.isoformat() + "Z" if t.created_at else "",

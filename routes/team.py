@@ -282,6 +282,33 @@ def process_qr_scan(team, token, passcode, req):
     # 1. Fetch QR code
     qr = QRCode.query.filter_by(uuid=token).first()
     
+    # 1.5. Return passcode mismatch immediately on empty/whitespace passcode to avoid spurious logging/commits
+    if qr and not qr.is_dummy and (not passcode or passcode.strip() == ""):
+        return {'status': 'wrong_password', 'message': 'Incorrect passcode.'}
+
+    # 1.6. Rate limit check: max 5 scans per 5 minutes per team (only for actual logged attempts, skipped in testing mode)
+    if not current_app.config.get('TESTING'):
+        five_minutes_ago = timestamp - datetime.timedelta(minutes=5)
+        recent_scans_count = QRScanLog.query.filter(
+            QRScanLog.team_id == team.id,
+            QRScanLog.timestamp >= five_minutes_ago
+        ).count()
+        
+        if recent_scans_count >= 5:
+            sys_log = SystemLog(
+                action='scan_rate_limited',
+                details=f"Team '{team.team_name}' rate limited (scans in 5m: {recent_scans_count}). Attempted token: {token[:20]}...",
+                team_id=team.id,
+                ip_address=ip,
+                browser=ua
+            )
+            db.session.add(sys_log)
+            db.session.commit()
+            return {
+                'status': 'rate_limited',
+                'message': 'Rate limit reached! Maximum 5 scan attempts allowed every 5 minutes. Please wait before scanning again.'
+            }
+    
     # 2. Check if invalid token
     if not qr:
         # Log invalid scan
@@ -419,9 +446,7 @@ def process_qr_scan(team, token, passcode, req):
     # 3. Verify passcode (Case-insensitive check for user convenience)
     # If required_password is empty, it does not require a passcode.
     if required_password != "" and (not passcode or required_password.strip().lower() != passcode.strip().lower()):
-        # If the passcode was empty, do not write a failed log to prevent spurious database locks and double writes
-        if not passcode or passcode.strip() == "":
-            return {'status': 'wrong_password', 'message': 'Incorrect passcode.'}
+
             
         # Log wrong password scan
         log = QRScanLog(

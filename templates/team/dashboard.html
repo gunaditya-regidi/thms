@@ -832,6 +832,14 @@ function displayScanResults(result) {
         message.innerText = result.message;
         clueDetail.classList.add('d-none');
     }
+    else if (result.status === 'rate_limited') {
+        title.innerText = "Limit Reached";
+        icon.innerHTML = `<i class="bi bi-hourglass-split text-warning fs-1 text-warning animate__animated animate__flash animate__infinite"></i>`;
+        statusText.innerText = "Rate Limited";
+        statusText.className = "fw-bold mb-2 text-warning";
+        message.innerText = result.message;
+        clueDetail.classList.add('d-none');
+    }
     else {
         title.innerText = "Scan Failed";
         icon.innerHTML = `<i class="bi bi-x-circle-fill text-danger fs-1"></i>`;

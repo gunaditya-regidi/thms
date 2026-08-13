@@ -419,6 +419,10 @@ def process_qr_scan(team, token, passcode, req):
     # 3. Verify passcode (Case-insensitive check for user convenience)
     # If required_password is empty, it does not require a passcode.
     if required_password != "" and (not passcode or required_password.strip().lower() != passcode.strip().lower()):
+        # If the passcode was empty, do not write a failed log to prevent spurious database locks and double writes
+        if not passcode or passcode.strip() == "":
+            return {'status': 'wrong_password', 'message': 'Incorrect passcode.'}
+            
         # Log wrong password scan
         log = QRScanLog(
             team_id=team.id,

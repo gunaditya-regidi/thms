@@ -161,6 +161,10 @@
                 const socket = window.socket;
                 
                 function showLiveToast(title, body, iconClass = 'bi-bell-fill') {
+                    // Only show notification toasts to admin accounts
+                    if (!window.currentUser || window.currentUser.role !== 'admin') {
+                        return;
+                    }
                     const toastEl = document.getElementById('liveToast');
                     const clone = toastEl.cloneNode(true);
                     clone.id = 'toast_' + Date.now();

@@ -79,7 +79,7 @@ def run_seed(drop_tables=True):
         ("Team Identity", "Create a unique and creative team logo that represents your team. The logo may be drawn or designed and clearly visible."),
         ("LRDC in Focus", "Capture a team selfie in which the word “LRDC” is clearly visible somewhere in the photograph. Ensure the entire team is visible."),
         ("Brand Hunt", "Find and show 5 different brands. Each brand should be clearly identifiable through its logo, packaging, product or other visible branding."),
-        ("Number in Between", "Identify the vehicle whose registration number falls between the two given numbers — XX and YY. The team must locate the correct vehicle and tell its vechile number"),
+        ("Number in Between", "Identify the vehicle whose registration number falls between the two given numbers — AP39LG8455 and AP40KL0053. The team must locate the correct vehicle and tell its vechile number"),
         ("Shape Hunt", "Collect 3 different objects having different geometric shapes, such as a triangle, rectangle, square or circle. The objects should clearly demonstrate the respective shapes."),
         ("Human Wave", "Arrange all your team members in a straight line and create a coordinated human wave. Record a short video of the complete performance as evidence of the task."),
         ("Team Sentence", "Create one meaningful English sentence using the names of all team members. Every member's name must appear naturally within the sentence."),

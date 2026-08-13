@@ -28,6 +28,17 @@ def create_app(config_override=None):
     # Initialize extensions
     db.init_app(app)
 
+    # Thread-safe database commit queue to prevent concurrent SQLite write lock contentions
+    import threading
+    db_write_lock = threading.Lock()
+    original_commit = db.session.commit
+
+    def safe_commit():
+        with db_write_lock:
+            return original_commit()
+
+    db.session.commit = safe_commit
+
     # Configure SQLite pragmas for high concurrency & robustness
     if 'sqlite' in app.config.get('SQLALCHEMY_DATABASE_URI', ''):
         from sqlalchemy import event

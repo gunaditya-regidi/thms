@@ -159,12 +159,14 @@ def verify_r1(team_id):
         flash("Unauthorized. Team belongs to another house.", "danger")
         return redirect(url_for('manager.dashboard'))
 
-    if team.round1_status != 'requested':
-        flash("Team has not requested Round 1 verification yet or it is already processed.", "warning")
+    if team.round1_status not in ['requested', 'verified']:
+        flash("Team has not requested Round 1 verification yet or it is already approved.", "warning")
         return redirect(url_for('manager.dashboard'))
 
     try:
-        team.round1_status = 'verified'
+        team.round1_status = 'approved'
+        team.current_round = 2
+        team.round2_current_clue = 2
         
         # Load or create approval record
         approval = Round1Approval.query.filter_by(team_id=team_id).first()
@@ -172,13 +174,16 @@ def verify_r1(team_id):
             approval = Round1Approval(team_id=team_id)
             db.session.add(approval)
             
-        approval.verified_at = datetime.datetime.utcnow()
+        now = datetime.datetime.utcnow()
+        approval.verified_at = now
         approval.verified_by_manager_id = manager.id
+        approval.approved_at = now
+        approval.approved_by_admin_id = current_user.id
 
         # Audit log
         log = SystemLog(
-            action='r1_verified',
-            details=f"House Manager '{current_user.username}' physically verified and approved Round 1 for Team '{team.team_name}'.",
+            action='r1_approved',
+            details=f"House Manager '{current_user.username}' approved Round 1 for Team '{team.team_name}'. Official completion timestamp saved.",
             user_id=current_user.id,
             team_id=team_id,
             ip_address=request.remote_addr,
@@ -190,13 +195,14 @@ def verify_r1(team_id):
         # Emit SocketIO event
         socketio = current_app.extensions.get('socketio')
         if socketio:
-            socketio.emit('r1_verified', {
+            socketio.emit('r1_approved', {
                 'team_id': team_id,
                 'team_name': team.team_name,
-                'house': manager.house.name
+                'house': manager.house.name,
+                'timestamp': approval.approved_at.strftime('%Y-%m-%d %H:%M:%S')
             })
 
-        flash(f"Round 1 verification completed for Team {team.team_name}. Sent to Admin for final approval.", "success")
+        flash(f"Round 1 approved and Round 2 unlocked for Team {team.team_name}.", "success")
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Error in verifying R1 completion: {str(e)}")

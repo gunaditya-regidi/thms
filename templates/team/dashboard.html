@@ -886,6 +886,9 @@ function setupDashboardSocketListeners() {
 }
 
 function pollStartStatus() {
+    if (window.socket && window.socket.connected) {
+        return; // Skip status API queries if the WebSocket connection is actively handling real-time events
+    }
     fetch('/api/status')
         .then(res => res.json())
         .then(data => {

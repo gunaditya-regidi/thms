@@ -28,6 +28,21 @@ def create_app(config_override=None):
     # Initialize extensions
     db.init_app(app)
 
+    # Configure SQLite pragmas for high concurrency & robustness
+    if 'sqlite' in app.config.get('SQLALCHEMY_DATABASE_URI', ''):
+        from sqlalchemy import event
+        with app.app_context():
+            @event.listens_for(db.engine, 'connect')
+            def set_sqlite_pragma(dbapi_connection, connection_record):
+                cursor = dbapi_connection.cursor()
+                try:
+                    cursor.execute("PRAGMA journal_mode=WAL")
+                    cursor.execute("PRAGMA synchronous=NORMAL")
+                except Exception:
+                    pass
+                finally:
+                    cursor.close()
+
     # Self-healing database check & seed (skipped in testing mode)
     if not app.config.get('TESTING'):
         with app.app_context():
@@ -371,4 +386,6 @@ def create_app(config_override=None):
 
 if __name__ == '__main__':
     app = create_app()
-    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
+    # Disable debug mode by default to prevent reloader from crashing the port binding under concurrent execution
+    debug_mode = os.environ.get('FLASK_DEBUG', 'false').lower() in ['true', '1']
+    socketio.run(app, debug=debug_mode, host='0.0.0.0', port=5000)

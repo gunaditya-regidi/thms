@@ -20,6 +20,13 @@ class Config:
         
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
+    # Connection arguments for SQLite to handle concurrency
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'connect_args': {
+            'timeout': 30
+        } if 'sqlite' in SQLALCHEMY_DATABASE_URI else {}
+    }
+    
     # Upload folder for clue images
     UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', os.path.join(BASE_DIR, 'uploads'))
     
